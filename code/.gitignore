@@ -1,0 +1,7 @@
+.env
+*.env
+.idea/
+*.iws
+*.iml
+target/
+node_modules/
