@@ -1,6 +1,6 @@
 -- 1.CÁC KIỂU DỮ LIỆU ENUM (POSTGRESQL)
 CREATE TYPE user_role AS ENUM ('ROLE_USER', 'ROLE_ADMIN');
-CREATE TYPE user_status AS ENUM ('ACTIVE', 'BLOCKED');
+CREATE TYPE user_status AS ENUM ('PENDING', 'ACTIVE', 'BLOCKED');
 CREATE TYPE product_status AS ENUM ('AVAILABLE', 'RENTED', 'UNAVAILABLE');
 CREATE TYPE request_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
 CREATE TYPE rental_status AS ENUM ('WAITING_PAYMENT', 'ACTIVE', 'COMPLETED', 'CANCELLED');
@@ -14,21 +14,21 @@ CREATE TYPE message_type AS ENUM ('TEXT', 'PRODUCT', 'IMAGE');
 
 -- Bảng 1: users
 CREATE TABLE users (
-                       id SERIAL PRIMARY KEY,
+                       id BIGSERIAL PRIMARY KEY,
                        full_name VARCHAR(255),
                        email VARCHAR(255) UNIQUE NOT NULL,
                        password VARCHAR(255) NOT NULL,
                        phone VARCHAR(20) UNIQUE,
                        avatar_url VARCHAR(255),
                        role user_role DEFAULT 'ROLE_USER',
-                       status user_status DEFAULT 'ACTIVE',
+                       status user_status DEFAULT 'PENDING',
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Bảng 2: categories
 CREATE TABLE categories (
-                            id SERIAL PRIMARY KEY,
+                            id BIGSERIAL PRIMARY KEY,
                             name VARCHAR(255) NOT NULL,
                             slug VARCHAR(255) UNIQUE NOT NULL,
                             description TEXT,
@@ -38,9 +38,9 @@ CREATE TABLE categories (
 
 -- Bảng 3: products
 CREATE TABLE products (
-                          id SERIAL PRIMARY KEY,
-                          owner_id INT NOT NULL,
-                          category_id INT NOT NULL,
+                          id BIGSERIAL PRIMARY KEY,
+                          owner_id BIGINT NOT NULL,
+                          category_id BIGINT NOT NULL,
                           name VARCHAR(255) NOT NULL,
                           description TEXT,
                           price_per_day DECIMAL(12,2) NOT NULL,
@@ -60,8 +60,8 @@ CREATE TABLE products (
 
 -- Bảng 4: product_images
 CREATE TABLE product_images (
-                                id SERIAL PRIMARY KEY,
-                                product_id INT NOT NULL,
+                                id BIGSERIAL PRIMARY KEY,
+                                product_id BIGINT NOT NULL,
                                 image_url VARCHAR(255) NOT NULL,
                                 is_primary BOOLEAN DEFAULT FALSE,
                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -72,10 +72,10 @@ CREATE TABLE product_images (
 
 -- Bảng 5: rental_requests
 CREATE TABLE rental_requests (
-                                 id SERIAL PRIMARY KEY,
-                                 product_id INT NOT NULL,
-                                 renter_id INT NOT NULL,
-                                 owner_id INT NOT NULL,
+                                 id BIGSERIAL PRIMARY KEY,
+                                 product_id BIGINT NOT NULL,
+                                 renter_id BIGINT NOT NULL,
+                                 owner_id BIGINT NOT NULL,
                                  requested_price DECIMAL(12,2) NOT NULL,
                                  requested_deposit DECIMAL(12,2) NOT NULL,
                                  start_date DATE NOT NULL,
@@ -92,11 +92,11 @@ CREATE TABLE rental_requests (
 
 -- Bảng 6: rentals (Đơn thuê chính thức)
 CREATE TABLE rentals (
-                         id SERIAL PRIMARY KEY,
-                         request_id INT NOT NULL,
-                         product_id INT NOT NULL,
-                         renter_id INT NOT NULL,
-                         owner_id INT NOT NULL,
+                         id BIGSERIAL PRIMARY KEY,
+                         request_id BIGINT NOT NULL,
+                         product_id BIGINT NOT NULL,
+                         renter_id BIGINT NOT NULL,
+                         owner_id BIGINT NOT NULL,
                          start_date DATE NOT NULL,
                          end_date DATE NOT NULL,
                          rental_days INT NOT NULL,
@@ -115,9 +115,9 @@ CREATE TABLE rentals (
 
 -- Bảng 7: payments
 CREATE TABLE payments (
-                          id SERIAL PRIMARY KEY,
-                          rental_id INT NOT NULL,
-                          payer_id INT NOT NULL,
+                          id BIGSERIAL PRIMARY KEY,
+                          rental_id BIGINT NOT NULL,
+                          payer_id BIGINT NOT NULL,
                           payment_method payment_method NOT NULL,
                           payment_type payment_type NOT NULL,
                           amount DECIMAL(12,2) NOT NULL,
@@ -131,8 +131,8 @@ CREATE TABLE payments (
 
 -- Bảng 8: tracking
 CREATE TABLE tracking (
-                          id SERIAL PRIMARY KEY,
-                          rental_id INT NOT NULL,
+                          id BIGSERIAL PRIMARY KEY,
+                          rental_id BIGINT NOT NULL,
                           owner_pickup_confirm BOOLEAN DEFAULT FALSE,
                           renter_pickup_confirm BOOLEAN DEFAULT FALSE,
                           owner_return_confirm BOOLEAN DEFAULT FALSE,
@@ -154,10 +154,10 @@ CREATE TABLE tracking (
 
 -- Bảng 9: reviews
 CREATE TABLE reviews (
-                         id SERIAL PRIMARY KEY,
-                         rental_id INT NOT NULL,
-                         reviewer_id INT NOT NULL,
-                         reviewed_user_id INT NOT NULL,
+                         id BIGSERIAL PRIMARY KEY,
+                         rental_id BIGINT NOT NULL,
+                         reviewer_id BIGINT NOT NULL,
+                         reviewed_user_id BIGINT NOT NULL,
                          rating INT CHECK (rating >= 1 AND rating <= 5), -- Giới hạn đánh giá từ 1 đến 5 sao
                          comment TEXT,
                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -169,11 +169,11 @@ CREATE TABLE reviews (
 
 -- Bảng 10: reports
 CREATE TABLE reports (
-                         id SERIAL PRIMARY KEY,
-                         reporter_id INT NOT NULL,
-                         reported_user_id INT NOT NULL,
-                         rental_id INT,
-                         product_id INT,
+                         id BIGSERIAL PRIMARY KEY,
+                         reporter_id BIGINT NOT NULL,
+                         reported_user_id BIGINT NOT NULL,
+                         rental_id BIGINT,
+                         product_id BIGINT,
                          reason VARCHAR(255) NOT NULL,
                          description TEXT,
                          status report_status DEFAULT 'PENDING',
@@ -187,23 +187,24 @@ CREATE TABLE reports (
 
 -- Bảng 11: conversations
 CREATE TABLE conversations (
-                               id SERIAL PRIMARY KEY,
-                               user1_id INT NOT NULL,
-                               user2_id INT NOT NULL,
+                               id BIGSERIAL PRIMARY KEY,
+                               user1_id BIGINT NOT NULL,
+                               user2_id BIGINT NOT NULL,
                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
                                CONSTRAINT fk_conversation_user1 FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE RESTRICT,
-                               CONSTRAINT fk_conversation_user2 FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE RESTRICT
+                               CONSTRAINT fk_conversation_user2 FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE RESTRICT,
+                               CONSTRAINT user1_user2_unique UNIQUE (user1_id, user2_id)
 );
 
 -- Bảng 12: messages
 CREATE TABLE messages (
-                          id SERIAL PRIMARY KEY,
-                          conversation_id INT NOT NULL,
-                          sender_id INT NOT NULL,
+                          id BIGSERIAL PRIMARY KEY,
+                          conversation_id BIGINT NOT NULL,
+                          sender_id BIGINT NOT NULL,
                           message_type message_type DEFAULT 'TEXT',
                           content TEXT NOT NULL,
-                          referenced_product_id INT DEFAULT NULL,
+                          referenced_product_id BIGINT DEFAULT NULL,
                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
                           CONSTRAINT fk_message_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE RESTRICT,
@@ -213,14 +214,25 @@ CREATE TABLE messages (
 
 -- Bảng 13: favorites
 CREATE TABLE favorites (
-                           id SERIAL PRIMARY KEY,
-                           user_id INT NOT NULL,
-                           product_id INT NOT NULL,
+                           id BIGSERIAL PRIMARY KEY,
+                           user_id BIGINT NOT NULL,
+                           product_id BIGINT NOT NULL,
                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
                            CONSTRAINT fk_favorite_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                            CONSTRAINT fk_favorite_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
                            CONSTRAINT user_product_favorite_unique UNIQUE (user_id, product_id)
+);
+
+-- Bảng 13: Bảng quản lý token xác thực email
+CREATE TABLE verification_tokens (
+                                     id BIGSERIAL PRIMARY KEY,
+                                     token VARCHAR(255) NOT NULL UNIQUE,
+                                     user_id BIGINT NOT NULL UNIQUE,
+                                     expiry_date TIMESTAMP NOT NULL,
+                                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                                     CONSTRAINT fk_token_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 3. CÁC CHỈ MỤC (INDEXES) TỐI ƯU HIỆU NĂNG
@@ -231,3 +243,5 @@ CREATE INDEX idx_products_owner ON products(owner_id);                   -- Tìm
 CREATE INDEX idx_rentals_status ON rentals(status);                       -- Quản lý/Lọc trạng thái đơn hàng nhanh chóng
 CREATE INDEX idx_rentals_renter ON rentals(renter_id);                   -- Người thuê tìm lịch sử đơn hàng của mình
 CREATE INDEX idx_rentals_owner ON rentals(owner_id);                     -- Người cho thuê tìm đơn hàng khách đặt của mình
+CREATE INDEX idx_messages_conversation ON messages(conversation_id); -- Lấy tin nhắn theo phòng chat
+CREATE INDEX idx_tokens_value ON verification_tokens(token);         -- Tìm token khi user click link kích hoạt

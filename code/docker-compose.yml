@@ -11,6 +11,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
     ports:
       - "5433:5432"
 
@@ -49,7 +54,7 @@ services:
     container_name: rental_flyway
     # Mount thư mục chứa các file SQL từ máy vào bên trong container Flyway
     volumes:
-      - ./backend/db/migration:/flyway/sql
+      - ./backend/src/main/resources/db/migration:/flyway/sql
     environment:
       - FLYWAY_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       - FLYWAY_USER=${POSTGRES_USER}
@@ -62,6 +67,14 @@ services:
     # Lệnh Flyway tự động quét thư mục /flyway/sql và chạy migration
     command: -connectRetries=60 migrate
 
+  maildev:
+    image: maildev/maildev
+    container_name: renthub-maildev
+    ports:
+      - "1025:1025" # Cổng để Spring Boot kết nối và bắn mail vào
+      - "1080:1080" # Cổng mở trình duyệt (localhost:1080) xem hòm thư ảo
+
 volumes:
   postgres_data:
   pgadmin_data:
+
