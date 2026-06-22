@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: backend
+
+  profiles:
+    active: dev   # mặc định chạy dev
+
+server:
+  port: 8080
