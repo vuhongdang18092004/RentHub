@@ -33,7 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         //Dùng getRequestURI() để quét toàn bộ URL, tránh bẫy chuỗi rỗng của Tomcat
         String requestUri = request.getRequestURI();
-        if (requestUri.contains("/api/v1/auth")) {
+        if (requestUri.contains("/api/v1/auth") ||
+                requestUri.contains("/swagger-ui") ||
+                requestUri.contains("/v3/api-docs")) {
             filterChain.doFilter(request, response);
             return;
         }

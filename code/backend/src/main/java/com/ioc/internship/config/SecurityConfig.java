@@ -34,7 +34,11 @@ public class SecurityConfig {
                 // 3. Cấu hình phân quyền cho các đường dẫn API (ĐÃ SỬA: XÓA someMethod())
                 .authorizeHttpRequests(auth -> auth
                         // Cho phép các API liên quan đến Đăng ký, Đăng nhập và Xác thực Email được truy cập TỰ DO
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**").permitAll()
                         // Tất cả các API còn lại trong hệ thống bắt buộc phải ĐĂNG NHẬP
                         .anyRequest().authenticated()
                 )
