@@ -39,6 +39,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/categories/**").permitAll()
                         // Tất cả các API còn lại trong hệ thống bắt buộc phải ĐĂNG NHẬP
                         .anyRequest().authenticated()
                 )
