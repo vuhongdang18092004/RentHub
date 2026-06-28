@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 
@@ -37,11 +38,11 @@ public class UserEntity extends BaseEntity implements UserDetails {
     @Column(name = "address")
     private String address;
 
-    @Column(name = "latitude")
-    private Double latitude;
+    @Column(precision = 10, scale = 7)
+    private BigDecimal latitude;
 
-    @Column(name = "longitude")
-    private Double longitude;
+    @Column(precision = 10, scale = 7)
+    private BigDecimal longitude;
 
     @Column(name = "role")
     private String role; // Sẽ lưu giá trị chuỗi như 'ROLE_USER' hoặc 'ROLE_ADMIN'

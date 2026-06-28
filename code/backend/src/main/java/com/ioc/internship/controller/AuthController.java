@@ -26,7 +26,7 @@ public class AuthController {
     // 1. API ĐĂNG KÝ: POST http://localhost:8080/api/v1/auth/register
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        // 🌟 ĐÃ SỬA: Bốc lấy đối tượng AuthResponse chứa tokenValue từ tầng Service sinh ra
+        // Bốc lấy đối tượng AuthResponse chứa tokenValue từ tầng Service sinh ra
         AuthResponse response = authService.register(request);
 
         // Trả thẳng đối tượng AuthResponse về cho Frontend để tự động nối đuôi URL kích hoạt
