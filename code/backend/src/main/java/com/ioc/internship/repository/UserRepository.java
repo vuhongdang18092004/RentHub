@@ -2,12 +2,13 @@ package com.ioc.internship.repository;
 
 import com.ioc.internship.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<UserEntity, Long> {
+public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity> {
 
     // 1. Tìm kiếm người dùng bằng email phục vụ luồng Đăng nhập (Login)
     // Trả về Optional để tránh lỗi NullPointerException nếu không tìm thấy
@@ -18,4 +19,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     // 3. Kiểm tra xem số điện thoại đã tồn tại chưa (dùng cho luồng Đăng ký)
     boolean existsByPhone(String phone);
+
+    // 4. Kiểm tra số điện thoại tồn tại trừ ID của user đang update
+    boolean existsByPhoneAndIdNot(String phone, Long id);
 }
