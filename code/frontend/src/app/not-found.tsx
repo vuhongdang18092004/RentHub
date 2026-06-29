@@ -4,7 +4,7 @@
 
 export interface NotFoundProps {}
 
-export function NotFound(props: NotFoundProps) {
+export default function NotFound(props: NotFoundProps) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8 gap-4">
       <h1 className="text-display-md font-bold text-error-primary">404 - Not Found</h1>

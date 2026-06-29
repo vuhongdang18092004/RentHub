@@ -10,7 +10,7 @@ function VerifyEmailContent() {
   const router = useRouter();
   const { triggerToast } = useToast();
   
-  const token = searchParams.get("token");
+  const token = searchParams ? searchParams.get("token") : null;
 
   // KHỞI TẠO BIẾN CỜ HIỆU ĐỂ CHẶN CUỘC GỌI KÉP TỪ REACT STRICT MODE
   const isCalled = useRef(false);

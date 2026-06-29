@@ -36,3 +36,23 @@ input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
 input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 details summary::-webkit-details-marker { display: none; }
+
+/* Force light mode variables on auth pages */
+.auth-theme-forced {
+    --color-text-primary:          var(--color-neutral-900);
+    --color-text-secondary:        var(--color-neutral-700);
+    --color-text-tertiary:         var(--color-neutral-600);
+    --color-text-quaternary:       var(--color-neutral-500);
+    --color-text-placeholder:      var(--color-neutral-500);
+    --color-border-primary:        var(--color-neutral-300);
+    --color-border-secondary:      var(--color-neutral-200);
+    --color-border-tertiary:       var(--color-neutral-100);
+    --color-fg-primary:            var(--color-neutral-900);
+    --color-fg-secondary:          var(--color-neutral-700);
+    --color-fg-tertiary:           var(--color-neutral-600);
+    --color-fg-quaternary:         var(--color-neutral-400);
+    --color-bg-primary:            var(--color-white);
+    --color-bg-secondary:          var(--color-brand-50);
+    --color-bg-tertiary:           var(--color-neutral-100);
+    --color-bg-quaternary:         var(--color-neutral-200);
+}

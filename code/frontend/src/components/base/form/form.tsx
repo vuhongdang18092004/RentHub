@@ -1,7 +1,6 @@
 "use client";
-import { ReactNode } from "react";
 
-// TODO: Form component wrapping form inputs.
+import { ReactNode } from "react";
 
 export interface FormProps {
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -9,6 +8,10 @@ export interface FormProps {
   className?: string;
 }
 
-export function Form(props: FormProps) {
-  return <div>TODO: Form</div>;
+export function Form({ onSubmit, children, className = "" }: FormProps) {
+  return (
+    <form onSubmit={onSubmit} className={`space-y-4 ${className}`}>
+      {children}
+    </form>
+  );
 }

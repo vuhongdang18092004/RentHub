@@ -118,25 +118,26 @@
     --breakpoint-xxs: 320px;
     --breakpoint-xs: 600px;
 
-    @variant dark {
-        --color-text-primary:        var(--color-neutral-50);
-        --color-text-secondary:      var(--color-neutral-300);
-        --color-text-tertiary:       var(--color-neutral-400);
-        --color-text-quaternary:     var(--color-neutral-400);
-        --color-text-placeholder:    var(--color-neutral-500);
-        --color-border-primary:      var(--color-neutral-700);
-        --color-border-secondary:    var(--color-neutral-800);
-        --color-border-tertiary:     var(--color-neutral-800);
-        --color-fg-primary:          var(--color-white);
-        --color-fg-secondary:        var(--color-neutral-300);
-        --color-fg-tertiary:         var(--color-neutral-400);
-        --color-fg-quaternary:       var(--color-neutral-600);
-        --color-bg-primary:          var(--color-neutral-950);
-        --color-bg-secondary:        var(--color-neutral-900);
-        --color-bg-tertiary:         var(--color-neutral-800);
-        --color-bg-quaternary:       var(--color-neutral-700);
-        --color-bg-primary_hover:    var(--color-neutral-900);
-        --color-bg-secondary_hover:  var(--color-neutral-800);
-        --color-bg-overlay:          var(--color-neutral-800);
-    }
+}
+
+.dark-mode {
+    --color-text-primary:        var(--color-neutral-50);
+    --color-text-secondary:      var(--color-neutral-300);
+    --color-text-tertiary:       var(--color-neutral-400);
+    --color-text-quaternary:     var(--color-neutral-400);
+    --color-text-placeholder:    var(--color-neutral-500);
+    --color-border-primary:      var(--color-neutral-700);
+    --color-border-secondary:    var(--color-neutral-800);
+    --color-border-tertiary:     var(--color-neutral-800);
+    --color-fg-primary:          var(--color-white);
+    --color-fg-secondary:        var(--color-neutral-300);
+    --color-fg-tertiary:         var(--color-neutral-400);
+    --color-fg-quaternary:       var(--color-neutral-600);
+    --color-bg-primary:          var(--color-neutral-950);
+    --color-bg-secondary:        var(--color-neutral-900);
+    --color-bg-tertiary:         var(--color-neutral-800);
+    --color-bg-quaternary:       var(--color-neutral-700);
+    --color-bg-primary_hover:    var(--color-neutral-900);
+    --color-bg-secondary_hover:  var(--color-neutral-800);
+    --color-bg-overlay:          var(--color-neutral-800);
 }
