@@ -16,6 +16,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -41,7 +43,7 @@ public class AuthServiceImpl implements AuthService {
         if (existingUserOpt.isPresent()) {
             UserEntity existingUser = existingUserOpt.get();
             if ("ACTIVE".equals(existingUser.getStatus())) {
-                throw new RuntimeException("Email này đã được sử dụng trên hệ thống!");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email này đã được sử dụng trên hệ thống!");
             } else if ("PENDING".equals(existingUser.getStatus())) {
                 // Nếu tài khoản cũ đang PENDING, xóa sạch cả token lẫn user cũ để làm lại từ đầu
                 tokenRepository.deleteByUserId(existingUser.getId());
@@ -77,10 +79,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         UserEntity user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng!"));
 
         if (!user.isEnabled()) {
-            throw new RuntimeException("Tài khoản của bạn chưa được kích hoạt! Vui lòng kiểm tra hộp thư email.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Tài khoản của bạn chưa được kích hoạt! Vui lòng kiểm tra hộp thư email.");
         }
 
         authenticationManager.authenticate(
@@ -103,15 +105,15 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public boolean verifyUserToken(String token) {
         VerificationToken verificationToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Mã xác thực không hợp lệ hoặc đã bị chỉnh sửa!"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mã xác thực không hợp lệ hoặc đã bị chỉnh sửa!"));
 
         if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
             tokenRepository.delete(verificationToken);
-            throw new RuntimeException("Mã xác thực đã hết hạn! Vui lòng thực hiện đăng ký lại tài khoản.");
+            throw new ResponseStatusException(HttpStatus.GONE, "Mã xác thực đã hết hạn! Vui lòng thực hiện đăng ký lại tài khoản.");
         }
 
         UserEntity user = userRepository.findById(verificationToken.getUserId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng hợp lệ gắn liền với mã này!"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng hợp lệ gắn liền với mã này!"));
 
         user.setStatus("ACTIVE");
         userRepository.save(user);
