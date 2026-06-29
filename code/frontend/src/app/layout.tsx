@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { RouteProvider } from "@/providers/router-provider";
 import { Theme } from "@/providers/theme";
+import { ToastProvider } from "@/context/ToastContext";
 import "@/styles/globals.css";
 import { cx } from "@/utils/cx";
 
@@ -28,7 +29,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <html lang="en" suppressHydrationWarning>
             <body className={cx(inter.variable, "bg-primary antialiased")}>
                 <RouteProvider>
-                    <Theme>{children}</Theme>
+                    <Theme>
+                        <ToastProvider>
+                            {children}
+                        </ToastProvider>
+                    </Theme>
                 </RouteProvider>
             </body>
         </html>
