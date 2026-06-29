@@ -9,9 +9,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const storedName = localStorage.getItem("fullName");
+
     if (!token) {
       alert("Bạn chưa đăng nhập! Vui lòng quay lại.");
       router.push("/login"); // Trục xuất về trang Login nếu cố tình vào lậu
+      return;
+    }
+
+    if (storedName) {
+      setFullName(storedName);
       return;
     }
 
@@ -38,12 +45,14 @@ export default function DashboardPage() {
       console.error("Lỗi giải mã thẻ thông hành JWT:", error);
       // Nếu token rác hoặc lỗi cấu trúc, xóa đi và đá về login
       localStorage.removeItem("token");
+      localStorage.removeItem("fullName");
       router.push("/login");
     }
   }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("token"); // Xóa token trong két sắt
+    localStorage.removeItem("fullName"); // Xóa họ tên
     router.push("/login"); // Đẩy về trang đăng nhập
   };
 

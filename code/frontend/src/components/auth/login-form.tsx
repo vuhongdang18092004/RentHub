@@ -37,8 +37,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       setLoading(true);
       const res = await authService.login(data);
       
-      // Save Token to LocalStorage
+      // Save Token and Profile to LocalStorage
       localStorage.setItem("token", res.token);
+      localStorage.setItem("fullName", res.fullName);
       setLoginName(res.fullName);
       setShowToast(true);
 
