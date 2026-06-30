@@ -13,10 +13,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity // Kích hoạt tính năng bảo mật Web Security của Spring
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -39,9 +41,9 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/categories/**").permitAll()
-                        .requestMatchers("/api/admin/users/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/users/profile/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
+                        .requestMatchers("/api/admin/users", "/api/admin/users/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/users/profile", "/api/users/profile/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         // Tất cả các API còn lại trong hệ thống bắt buộc phải ĐĂNG NHẬP
                         .anyRequest().authenticated()
                 )
@@ -69,7 +71,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
         // Cho phép truyền các Header quan trọng như Content-Type và Token Authorization
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
+        configuration.setAllowedHeaders(List.of("*"));
 
         // Cho phép gửi kèm thông tin định danh (Credentials) nếu có
         configuration.setAllowCredentials(true);
