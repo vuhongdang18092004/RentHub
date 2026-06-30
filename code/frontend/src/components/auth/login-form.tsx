@@ -90,7 +90,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       <div className="space-y-1">
         <h2 className="text-display-xs font-bold text-primary">Đăng nhập</h2>
         <p className="text-sm text-secondary">
-          Chào mừng bạn quay lại với Shario
+          Chào mừng bạn quay lại với RentHub
         </p>
       </div>
 

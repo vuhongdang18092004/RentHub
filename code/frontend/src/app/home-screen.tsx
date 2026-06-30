@@ -12,7 +12,7 @@ export function HomeScreen(props: HomeScreenProps) {
     <div className="flex min-h-screen flex-col items-center justify-center p-8 gap-6 bg-secondary font-sans">
       <div className="text-center space-y-2">
         <h1 className="text-display-md font-bold text-primary">
-          RentHub & Shario Application
+          RentHub Application
         </h1>
         <p className="text-md text-secondary">
           Hệ thống chia sẻ và cho thuê đồ dùng thông minh

@@ -7,7 +7,7 @@ export interface LogoProps {
 export function Logo({ className }: LogoProps) {
   return (
     <div className={`flex items-center gap-2 select-none ${className || ""}`}>
-      {/* Shario Premium Loop Gradient Icon */}
+      {/* RentHub Premium Loop Gradient Icon */}
       <svg
         className="w-7 h-7"
         viewBox="0 0 32 32"
@@ -40,7 +40,7 @@ export function Logo({ className }: LogoProps) {
         </defs>
       </svg>
       <span className="font-bold text-xl text-zinc-900 tracking-tight dark:text-white">
-        Shario
+        RentHub
       </span>
     </div>
   );

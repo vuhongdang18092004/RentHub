@@ -81,7 +81,7 @@ export function RegisterForm() {
       <div className="space-y-1">
         <h2 className="text-display-xs font-bold text-primary">Tạo tài khoản</h2>
         <p className="text-sm text-secondary">
-          Bắt đầu thuê và cho thuê trên Shario
+          Bắt đầu thuê và cho thuê trên RentHub
         </p>
       </div>
 
