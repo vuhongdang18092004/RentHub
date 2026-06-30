@@ -26,27 +26,28 @@ export function Header() {
         {/* Center: Pill Search Bar */}
         <div className="hidden md:flex items-center bg-white border border-zinc-200 rounded-full py-1.5 pl-6 pr-2 shadow-sm hover:shadow-md transition-all divide-x divide-zinc-200 gap-3 max-w-[520px] w-full">
           <div className="flex-1 flex flex-col text-left">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Vị trí</span>
+            <span className="text-[10px] font-semibold text-zinc-400 tracking-wide">Vị trí hiện tại</span>
             <input
               type="text"
-              placeholder="Vị trí hiện tại"
+              placeholder="Nhập địa điểm..."
               className="text-xs font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 w-full"
             />
           </div>
           <div className="flex-1 pl-4 flex flex-col text-left">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Thời gian</span>
+            <span className="text-[10px] font-semibold text-zinc-400 tracking-wide">Thời gian</span>
             <span className="text-xs font-semibold text-zinc-800 truncate">Bất kỳ lúc nào</span>
           </div>
           <div className="flex-1 pl-4 flex items-center justify-between gap-2">
             <div className="flex flex-col text-left">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Từ khóa</span>
+              <span className="text-[10px] font-semibold text-zinc-400 tracking-wide">Từ khóa</span>
               <input
                 type="text"
                 placeholder="flycam"
                 className="text-xs font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 w-full"
               />
             </div>
-            <button className="w-8 h-8 rounded-full bg-brand-600 hover:bg-brand-700 flex items-center justify-center text-white shrink-0 transition-colors cursor-pointer">
+            {/* Ghost search icon — no filled circle background */}
+            <button className="p-1.5 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-full transition-all cursor-pointer shrink-0">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -63,10 +64,10 @@ export function Header() {
             Cho thuê
           </Link>
           
-          {/* Wishlist/Calendar Icon */}
+          {/* Wishlist icon — shopping bag */}
           <Link href="/profile" className="p-2 hover:bg-zinc-50 rounded-xl text-zinc-600 hover:text-zinc-900 transition-all">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
           </Link>
 
