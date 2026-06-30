@@ -7,7 +7,7 @@ import { isReactComponent } from "@/utils/is-react-component";
 import { Eye, EyeOff } from "@untitledui/icons";
 
 export type InputSize = "sm" | "md" | "lg";
-export type InputType = "text" | "email" | "password" | "search" | "tel" | "url";
+export type InputType = "text" | "email" | "password" | "search" | "tel" | "url" | "number";
 
 export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size" | "onChange"> {
   label?: string;

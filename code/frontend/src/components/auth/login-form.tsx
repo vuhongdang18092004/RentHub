@@ -11,6 +11,8 @@ import { Input } from "@/components/base/input/input";
 import { Button } from "@/components/base/buttons/button";
 import { SocialButton } from "@/components/base/buttons/social-button";
 import { Form } from "@/components/base/form/form";
+import { useAuth } from "@/context/AuthContext";
+import { userService } from "@/services/user-service";
 
 export interface LoginFormProps {
   onSuccess: (fullName: string) => void;
@@ -21,6 +23,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [loginName, setLoginName] = useState("");
+  const { login } = useAuth();
 
   const {
     register,
@@ -37,15 +40,21 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       setLoading(true);
       const res = await authService.login(data);
       
-      // Save Token and Profile to LocalStorage
+      // Temporarily store token so that getMyProfile can retrieve it
       localStorage.setItem("token", res.token);
-      localStorage.setItem("fullName", res.fullName);
-      setLoginName(res.fullName);
+
+      // Fetch user profile to retrieve the role
+      const profile = await userService.getMyProfile();
+
+      // Initialize global auth state
+      login(res.token, profile);
+      
+      setLoginName(profile.fullName);
       setShowToast(true);
 
       // Call success handler after delay to show toast
       setTimeout(() => {
-        onSuccess(res.fullName);
+        onSuccess(profile.fullName);
       }, 1200);
     } catch (err) {
       const axiosError = err as AxiosError<{ message: string }>;

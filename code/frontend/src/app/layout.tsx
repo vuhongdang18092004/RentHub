@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { RouteProvider } from "@/providers/router-provider";
 import { Theme } from "@/providers/theme";
 import { ToastProvider } from "@/context/ToastContext";
+import { AuthProvider } from "@/context/AuthContext";
 import "@/styles/globals.css";
 import { cx } from "@/utils/cx";
 
@@ -30,9 +31,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <body className={cx(inter.variable, "bg-primary antialiased")}>
                 <RouteProvider>
                     <Theme>
-                        <ToastProvider>
-                            {children}
-                        </ToastProvider>
+                        <AuthProvider>
+                            <ToastProvider>
+                                {children}
+                            </ToastProvider>
+                        </AuthProvider>
                     </Theme>
                 </RouteProvider>
             </body>

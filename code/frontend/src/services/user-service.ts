@@ -24,7 +24,7 @@ export interface UserUpdateRequest {
   longitude?: number | null;
 }
 
-const PROFILE_API_URL = "http://localhost:8080/api/users/profile";
+const PROFILE_API_URL = "/users/profile";
 
 export const userService = {
   getMyProfile: async (): Promise<UserResponse> => {

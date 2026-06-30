@@ -1,20 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/context/AuthContext";
 import { userService } from "@/services/user-service";
 import { ProfileInput, ProfileSchema } from "@/schemas/profile-schema";
 import { Input } from "@/components/base/input/input";
 import { Button } from "@/components/base/buttons/button";
 import { Form } from "@/components/base/form/form";
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 
-export default function DashboardPage() {
-  const router = useRouter();
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const tab = searchParams ? searchParams.get("tab") : null;
   const { triggerToast } = useToast();
-  const [fullName, setFullName] = useState<string>("Thành viên");
+  const { user, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<"overview" | "profile">("overview");
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -29,85 +33,54 @@ export default function DashboardPage() {
     mode: "onSubmit",
   });
 
-  // ROUTE GUARD & GREETING USERNAME INITIALIZATION
+  // Sync tab from query param
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedName = localStorage.getItem("fullName");
-
-    if (!token) {
-      alert("Bạn chưa đăng nhập! Vui lòng quay lại.");
-      router.push("/login");
-      return;
-    }
-
-    if (storedName) {
-      setFullName(storedName);
+    if (tab === "profile") {
+      setActiveTab("profile");
     } else {
-      try {
-        const payloadBase64 = token.split(".")[1];
-        if (payloadBase64) {
-          const decodedPayload = JSON.parse(
-            decodeURIComponent(
-              atob(payloadBase64)
-                .split("")
-                .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-                .join("")
-            )
-          );
-          const name = decodedPayload.fullName || decodedPayload.sub || "Thành viên";
-          setFullName(name);
-          localStorage.setItem("fullName", name);
-        }
-      } catch (error) {
-        console.error("Lỗi giải mã thẻ thông hành JWT:", error);
-        localStorage.removeItem("token");
-        localStorage.removeItem("fullName");
-        router.push("/login");
-      }
+      setActiveTab("overview");
     }
-  }, [router]);
+  }, [tab]);
 
-  // FETCH PROFILE DATA WHEN PROFILE TAB IS ACTIVE
+  // Pre-fill profile data from auth context user object
+  useEffect(() => {
+    if (user) {
+      setValue("fullName", user.fullName);
+      setValue("phone", user.phone || "");
+      setValue("address", user.address || "");
+      setValue("avatarUrl", user.avatarUrl || "");
+    }
+  }, [user, setValue]);
+
+  // Refresh profile detail explicitly if needed
   useEffect(() => {
     if (activeTab === "profile") {
-      const fetchProfile = async () => {
+      const syncProfile = async () => {
         try {
           setLoadingProfile(true);
-          const profile = await userService.getMyProfile();
-          setValue("fullName", profile.fullName);
-          setValue("phone", profile.phone || "");
-          setValue("address", profile.address || "");
-          setValue("avatarUrl", profile.avatarUrl || "");
+          await refreshProfile();
         } catch (error) {
-          console.error("Lỗi lấy thông tin hồ sơ:", error);
-          triggerToast("Không thể tải thông tin hồ sơ!");
+          console.error("Lỗi đồng bộ hồ sơ:", error);
         } finally {
           setLoadingProfile(false);
         }
       };
-      fetchProfile();
+      syncProfile();
     }
-  }, [activeTab, setValue, triggerToast]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("fullName");
-    router.push("/login");
-  };
+  }, [activeTab, refreshProfile]);
 
   const onUpdateProfile = async (data: ProfileInput) => {
     try {
       setSavingProfile(true);
-      const updated = await userService.updateMyProfile({
+      await userService.updateMyProfile({
         fullName: data.fullName,
         phone: data.phone,
         address: data.address || "",
         avatarUrl: data.avatarUrl || "",
       });
 
-      // Update local storage and greeting header
-      localStorage.setItem("fullName", updated.fullName);
-      setFullName(updated.fullName);
+      // Sync AuthContext profile
+      await refreshProfile();
       triggerToast("Cập nhật hồ sơ thành công!");
     } catch (error: any) {
       console.error("Lỗi cập nhật hồ sơ:", error);
@@ -118,50 +91,11 @@ export default function DashboardPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-secondary font-sans">
-      {/* Top Header Navigation */}
-      <nav className="bg-primary border-b border-secondary px-8 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-8">
-          <div className="font-bold text-xl text-brand-700">RentHub Dashboard</div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
-                activeTab === "overview"
-                  ? "bg-brand-50 text-brand-700"
-                  : "text-secondary hover:bg-tertiary"
-              }`}
-            >
-              Tổng quan
-            </button>
-            <button
-              onClick={() => setActiveTab("profile")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
-                activeTab === "profile"
-                  ? "bg-brand-50 text-brand-700"
-                  : "text-secondary hover:bg-tertiary"
-              }`}
-            >
-              Hồ sơ cá nhân
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-secondary">
-            Xin chào, <strong className="text-brand-700">{fullName}</strong>
-          </span>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-error-primary text-error-primary hover:bg-red-100 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </nav>
+  const fullName = user?.fullName || "Thành viên";
 
-      {/* Main Container */}
-      <main className="max-w-3xl mx-auto p-8">
+  return (
+    <DashboardLayout>
+      <div className="max-w-3xl mx-auto">
         {activeTab === "overview" ? (
           <div className="bg-primary p-8 rounded-[24px] shadow-lg border border-secondary space-y-4">
             <h2 className="text-2xl font-bold text-primary">
@@ -171,7 +105,7 @@ export default function DashboardPage() {
               Chào mừng <span className="text-brand-700 font-bold">{fullName}</span> trở lại với RentHub! 👋
             </p>
             <p className="text-quaternary text-xs">
-              Tài khoản của bạn đã được xác thực an toàn bằng JWT.
+              Tài khoản của bạn đã được xác thực an toàn bằng JWT và phân quyền thành công.
             </p>
           </div>
         ) : (
@@ -188,7 +122,6 @@ export default function DashboardPage() {
               </div>
             ) : (
               <Form onSubmit={handleSubmit(onUpdateProfile)} className="space-y-4">
-                {/* Full Name */}
                 <Input
                   {...register("fullName")}
                   label="Họ tên"
@@ -197,8 +130,6 @@ export default function DashboardPage() {
                   isRequired
                   error={errors.fullName?.message}
                 />
-
-                {/* Phone */}
                 <Input
                   {...register("phone")}
                   label="Số điện thoại"
@@ -207,8 +138,6 @@ export default function DashboardPage() {
                   isRequired
                   error={errors.phone?.message}
                 />
-
-                {/* Address */}
                 <Input
                   {...register("address")}
                   label="Địa chỉ"
@@ -216,8 +145,6 @@ export default function DashboardPage() {
                   type="text"
                   error={errors.address?.message}
                 />
-
-                {/* Avatar URL */}
                 <Input
                   {...register("avatarUrl")}
                   label="Avatar URL"
@@ -225,8 +152,6 @@ export default function DashboardPage() {
                   type="text"
                   error={errors.avatarUrl?.message}
                 />
-
-                {/* Submit Action */}
                 <div className="pt-2 flex justify-end">
                   <Button
                     type="submit"
@@ -242,7 +167,21 @@ export default function DashboardPage() {
             )}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <Suspense fallback={
+        <div className="min-h-screen w-full flex items-center justify-center bg-secondary">
+          <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      }>
+        <DashboardContent />
+      </Suspense>
+    </ProtectedRoute>
   );
 }

@@ -1,7 +1,10 @@
-"use client";
-
 import RegisterPage from "@/pages/auth/register-page";
+import { PublicRoute } from "@/components/auth/public-route";
 
 export default function Page() {
-  return <RegisterPage />;
+  return (
+    <PublicRoute>
+      <RegisterPage />
+    </PublicRoute>
+  );
 }
