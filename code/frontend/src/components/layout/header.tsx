@@ -164,7 +164,7 @@ export function Header() {
                     <div className="py-1">
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left flex px-4 py-2 text-xs font-bold text-error-primary hover:bg-red-50 hover:text-red-700 transition-colors cursor-pointer"
+                        className="w-full text-left flex px-4 py-2 text-xs font-bold text-zinc-800 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
                       >
                         Đăng xuất
                       </button>
