@@ -273,7 +273,7 @@ export function HomeScreen() {
             
             {/* Headline */}
             <div className="space-y-3">
-              <h1 className="text-[40px] md:text-[64px] font-extrabold tracking-tight leading-[1.08] text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-blue-600">
+              <h1 className="text-[40px] md:text-[64px] font-extrabold tracking-tight leading-[1.08] text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-500">
                 RentHub
               </h1>
               <h2 className="text-[32px] md:text-[52px] font-extrabold tracking-tight leading-none text-primary">

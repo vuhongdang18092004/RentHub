@@ -39,7 +39,7 @@ export function Logo({ className }: LogoProps) {
           </linearGradient>
         </defs>
       </svg>
-      <span className="font-bold text-xl text-zinc-900 tracking-tight dark:text-white">
+      <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-violet-600 to-purple-500 bg-clip-text text-transparent">
         RentHub
       </span>
     </div>
