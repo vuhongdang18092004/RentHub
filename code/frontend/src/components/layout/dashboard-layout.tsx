@@ -36,40 +36,39 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar - fixed on desktop, hidden on mobile (collapsible template) */}
       <aside className="w-64 border-r border-secondary bg-primary flex flex-col justify-between p-6 shrink-0 hidden md:flex">
         <div className="space-y-8">
-          {/* Logo Brand */}
+          {/* Logo Brand – click to go home */}
           <div className="px-2">
-            <Logo />
+            <Link href="/">
+              <Logo />
+            </Link>
           </div>
 
-          {/* Navigation Links */}
+                  {/* Navigation Links */}
           <nav className="space-y-1">
-            <Link href="/dashboard" className={navLinkClass("/dashboard")}>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              Tổng quan
-            </Link>
-
-            <Link href="/dashboard?tab=profile" className={navLinkClass("/dashboard?tab=profile")}>
+            <Link href="/profile" className={navLinkClass("/profile")}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               Hồ sơ cá nhân
             </Link>
 
-            <Link href="/products/my" className={navLinkClass("/products/my")}>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              Kho đồ của tôi
-            </Link>
+            {role !== "ROLE_ADMIN" && (
+              <>
+                <Link href="/products/my" className={navLinkClass("/products/my")}>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  Kho đồ của tôi
+                </Link>
 
-            <Link href="/products/create" className={navLinkClass("/products/create")}>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Đăng sản phẩm
-            </Link>
+                <Link href="/products/create" className={navLinkClass("/products/create")}>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Đăng sản phẩm
+                </Link>
+              </>
+            )}
 
             {/* ADMIN Specific Links */}
             {role === "ROLE_ADMIN" && (
@@ -122,7 +121,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         
         {/* Mobile Header */}
         <header className="md:hidden border-b border-secondary bg-primary px-6 py-4 flex items-center justify-between">
-          <Logo />
+          <Link href="/"><Logo /></Link>
           <button
             onClick={logout}
             className="p-2 text-error-primary hover:bg-red-50 rounded-xl transition-all cursor-pointer"

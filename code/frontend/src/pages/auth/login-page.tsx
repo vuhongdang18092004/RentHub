@@ -9,7 +9,12 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleLoginSuccess = (fullName: string) => {
-    router.push("/dashboard");
+    const role = localStorage.getItem("role");
+    if (role === "ROLE_ADMIN") {
+      router.push("/admin/users");
+    } else {
+      router.push("/");
+    }
   };
 
   // Top widgets for the login page hero

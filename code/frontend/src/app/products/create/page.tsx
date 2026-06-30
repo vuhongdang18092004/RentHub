@@ -11,6 +11,7 @@ import { Input } from "@/components/base/input/input";
 import { Button } from "@/components/base/buttons/button";
 import { Form } from "@/components/base/form/form";
 import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface CategoryOption {
   id: number;
@@ -30,9 +31,17 @@ interface CreateProductFormInput {
 export default function CreateProductPage() {
   const router = useRouter();
   const { triggerToast } = useToast();
+  const { role } = useAuth();
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Admin Route Restriction check
+  useEffect(() => {
+    if (role === "ROLE_ADMIN") {
+      router.replace("/admin/users");
+    }
+  }, [role, router]);
 
   const {
     register,

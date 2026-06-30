@@ -13,7 +13,7 @@ export function PublicRoute({ children }: { children: ReactNode }) {
       if (role === "ROLE_ADMIN") {
         router.replace("/admin/users");
       } else {
-        router.replace("/dashboard");
+        router.replace("/");
       }
     }
   }, [isAuthenticated, role, isLoading, router]);

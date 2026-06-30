@@ -6,11 +6,22 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { productService, ProductSummary } from "@/services/product-service";
 import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function MyProductsPage() {
   const { triggerToast } = useToast();
+  const { role } = useAuth();
+  const router = useRouter();
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Admin Route Restriction check
+  useEffect(() => {
+    if (role === "ROLE_ADMIN") {
+      router.replace("/admin/users");
+    }
+  }, [role, router]);
 
   useEffect(() => {
     const fetchProducts = async () => {
