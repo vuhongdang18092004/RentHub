@@ -16,7 +16,7 @@ export default function AdminProductsPage() {
   const fetchPendingProducts = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/admin/products/pending");
+      const res = await api.get("/admin/products?status=PENDING");
       setPendingProducts(res.data.content || []);
     } catch (error) {
       console.error("Lỗi lấy danh sách chờ duyệt:", error);
