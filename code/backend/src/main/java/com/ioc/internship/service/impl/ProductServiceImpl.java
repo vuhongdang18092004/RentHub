@@ -55,7 +55,7 @@ public class ProductServiceImpl implements ProductService {
                 .description(request.getDescription())
                 .pricePerDay(request.getPricePerDay())
                 .depositAmount(request.getDepositAmount())
-                .status(ProductStatus.AVAILABLE)
+                .status(ProductStatus.PENDING)
                 .build();
 
         setAddressFields(product, request.getAddress(), request.getLatitude(), request.getLongitude(), owner);
@@ -76,6 +76,19 @@ public class ProductServiceImpl implements ProductService {
 
         if (!product.getOwner().getId().equals(owner.getId())) {
             throw new RuntimeException("403 Forbidden: You are not the owner of this product");
+        }
+
+        if (product.getStatus() == ProductStatus.RENTED) {
+            throw new RuntimeException("400 Bad Request: Cannot update a product that is currently RENTED");
+        }
+
+        if (request.getStatus() != null && request.getStatus() != product.getStatus()) {
+            if ((product.getStatus() == ProductStatus.AVAILABLE && request.getStatus() == ProductStatus.UNAVAILABLE) ||
+                (product.getStatus() == ProductStatus.UNAVAILABLE && request.getStatus() == ProductStatus.AVAILABLE)) {
+                // valid transition
+            } else {
+                throw new RuntimeException("400 Bad Request: Invalid status transition. Owner can only change between AVAILABLE and UNAVAILABLE.");
+            }
         }
 
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -114,15 +127,25 @@ public class ProductServiceImpl implements ProductService {
             throw new RuntimeException("403 Forbidden: You are not the owner of this product");
         }
 
+        if (product.getStatus() == ProductStatus.RENTED) {
+            throw new RuntimeException("400 Bad Request: Cannot delete a product that is currently RENTED");
+        }
+
         productRepository.delete(product);
     }
 
     @Override
-    public Page<ProductSummaryResponse> getMyProducts(String email, int page, int size) {
+    public Page<ProductSummaryResponse> getMyProducts(String email, ProductStatus status, int page, int size) {
         UserEntity owner = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        
+        if (status != null) {
+            return productRepository.findByOwnerIdAndStatusOrderByCreatedAtDesc(owner.getId(), status, pageable)
+                    .map(ProductSummaryResponse::fromEntity);
+        }
+        
         return productRepository.findByOwnerIdOrderByCreatedAtDesc(owner.getId(), pageable)
                 .map(ProductSummaryResponse::fromEntity);
     }
@@ -135,11 +158,74 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        if (!product.getOwner().getId().equals(owner.getId())) {
+        if (!product.getOwner().getId().equals(owner.getId()) && !"ROLE_ADMIN".equals(owner.getRole())) {
             throw new RuntimeException("403 Forbidden: You are not the owner of this product");
         }
 
         return ProductDetailResponse.fromEntity(product);
+    }
+
+    @Override
+    public Page<ProductSummaryResponse> getAllProductsAdmin(ProductStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        
+        if (status != null) {
+            return productRepository.findByStatusOrderByCreatedAtDesc(status, pageable)
+                    .map(ProductSummaryResponse::fromEntity);
+        }
+        
+        return productRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(ProductSummaryResponse::fromEntity);
+    }
+
+    @Override
+    @Transactional
+    public void updateProductStatusAdmin(Long id, com.ioc.internship.dto.request.UpdateProductStatusRequest request) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        ProductStatus newStatus = request.getStatus();
+
+        if (newStatus != ProductStatus.AVAILABLE && newStatus != ProductStatus.BLOCKED) {
+            throw new RuntimeException("400 Bad Request: Admin can only set status to AVAILABLE or BLOCKED");
+        }
+
+        if (product.getStatus() == ProductStatus.RENTED) {
+             throw new RuntimeException("400 Bad Request: Cannot change status of a RENTED product");
+        }
+        if (product.getStatus() == ProductStatus.UNAVAILABLE) {
+             throw new RuntimeException("400 Bad Request: Cannot change status of an UNAVAILABLE product");
+        }
+
+        product.setStatus(newStatus);
+        productRepository.save(product);
+    }
+
+    @Override
+    @Transactional
+    public void updateMyProductStatus(Long id, com.ioc.internship.dto.request.UpdateMyProductStatusRequest request, String email) {
+        UserEntity owner = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        if (!product.getOwner().getId().equals(owner.getId())) {
+            throw new RuntimeException("403 Forbidden: You are not the owner of this product");
+        }
+
+        ProductStatus currentStatus = product.getStatus();
+        if (currentStatus == ProductStatus.PENDING || currentStatus == ProductStatus.BLOCKED || currentStatus == ProductStatus.RENTED) {
+            throw new RuntimeException("400 Bad Request: Cannot change status of a PENDING, BLOCKED, or RENTED product");
+        }
+
+        ProductStatus newStatus = request.getStatus();
+        if (newStatus != ProductStatus.AVAILABLE && newStatus != ProductStatus.UNAVAILABLE) {
+            throw new RuntimeException("400 Bad Request: Owner can only set status to AVAILABLE or UNAVAILABLE");
+        }
+
+        product.setStatus(newStatus);
+        productRepository.save(product);
     }
 
     private void setAddressFields(Product product, String address, BigDecimal latitude, BigDecimal longitude, UserEntity owner) {
