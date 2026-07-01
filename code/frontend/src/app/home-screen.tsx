@@ -215,7 +215,7 @@ export function HomeScreen() {
 
   const handleApproveProduct = async (id: number, name: string) => {
     try {
-      await api.put(`/admin/products/${id}/approve`);
+      await api.patch(`/admin/products/${id}/status`, { status: "AVAILABLE" });
       triggerToast(`Đã duyệt sản phẩm "${name}"! ✅`);
       // Update available products list in home screen as well, so it updates without F5
       const prodRes = await productService.getAvailableProducts(0, 24);
@@ -229,7 +229,7 @@ export function HomeScreen() {
 
   const handleRejectProduct = async (id: number, name: string) => {
     try {
-      await api.put(`/admin/products/${id}/reject`);
+      await api.patch(`/admin/products/${id}/status`, { status: "BLOCKED" });
       triggerToast(`Đã từ chối duyệt sản phẩm "${name}". ❌`);
       fetchPendingProducts();
     } catch (err) {

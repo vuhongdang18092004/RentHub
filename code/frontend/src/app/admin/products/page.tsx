@@ -32,7 +32,7 @@ export default function AdminProductsPage() {
 
   const handleApproveProduct = async (id: number, name: string) => {
     try {
-      await api.put(`/admin/products/${id}/approve`);
+      await api.patch(`/admin/products/${id}/status`, { status: "AVAILABLE" });
       triggerToast(`Đã duyệt sản phẩm "${name}"! ✅`);
       fetchPendingProducts();
     } catch (err) {
@@ -43,7 +43,7 @@ export default function AdminProductsPage() {
 
   const handleRejectProduct = async (id: number, name: string) => {
     try {
-      await api.put(`/admin/products/${id}/reject`);
+      await api.patch(`/admin/products/${id}/status`, { status: "BLOCKED" });
       triggerToast(`Đã từ chối duyệt sản phẩm "${name}". ❌`);
       fetchPendingProducts();
     } catch (err) {
