@@ -49,7 +49,11 @@ export function LocationAutocomplete({
 
   // Fetch suggestions from VietMap Autocomplete API
   const fetchSuggestions = async (searchText: string) => {
-    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY || "8b403eff827848616069d47a7002481863b34e24dd34964d";
+    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY;
+    if (!apiKey) {
+      setError("Cấu hình VietMap API Key thiếu trong file .env.local");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -107,10 +111,10 @@ export function LocationAutocomplete({
 
   // Fetch coordinates using VietMap Place API
   const handleSelectSuggestion = async (suggestion: any) => {
-    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY || "8b403eff827848616069d47a7002481863b34e24dd34964d";
+    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY;
     const refId = suggestion.ref_id || suggestion.refid;
 
-    if (!refId) {
+    if (!refId || !apiKey) {
       // If no ref_id, fall back to basic address with default coordinates (Hanoi center)
       setQuery(suggestion.address || suggestion.name);
       setIsOpen(false);
