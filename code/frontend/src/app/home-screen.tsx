@@ -389,12 +389,14 @@ export function HomeScreen() {
           </div>
         </div>
 
-        {/* Glowing Hero Section — forced light-mode with pastel gradient */}
-        <div className="light-mode w-full" style={{ background: "linear-gradient(135deg, #f5f0ff 0%, #eef4ff 40%, #f0f7ff 70%, #faf5ff 100%)" }}>
-          <div className="max-w-[1280px] w-full mx-auto px-6 md:px-8 py-10 md:py-16 grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 items-center">
-          
-            {/* Left Stats Grid */}
-            <div className="flex md:flex-col justify-around md:justify-center md:items-start md:gap-10 border-b md:border-b-0 md:border-r border-zinc-200 pb-8 md:pb-0 md:pr-10 shrink-0">
+        {/* Glowing Hero Section — forced light-mode with premium pastel gradient */}
+        <div 
+          className="light-mode w-full flex items-center justify-center py-20 min-h-[600px]" 
+          style={{ background: "linear-gradient(90deg, #F4ECFF 0%, #FFFFFF 50%, #EAF8FF 100%)" }}
+        >
+          <div className="w-[95%] max-w-[1000px] mx-auto">
+            {/* Left Stats Grid — HIDDEN as per Requirement 3 */}
+            <div className="hidden">
               <div className="text-center md:text-left space-y-1">
                 <h3 className="text-2xl md:text-3xl font-extrabold text-zinc-900 leading-none">4K+</h3>
                 <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Món đồ</p>
@@ -409,58 +411,126 @@ export function HomeScreen() {
               </div>
             </div>
 
-            {/* Right/Center Hero Content — white glass card */}
-            <div className="md:col-span-3 flex flex-col items-center justify-center text-center space-y-8 max-w-[840px] mx-auto w-full">
-              
-              {/* Headline */}
-              <div className="space-y-3">
-                <h1 className="text-[40px] md:text-[64px] font-extrabold tracking-tight leading-[1.08] text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-purple-400">
-                  RentHub
-                </h1>
-                <h2 className="text-[32px] md:text-[52px] font-extrabold tracking-tight leading-none text-sky-400">
-                  Thuê Đồ Gần Bạn
-                </h2>
-                <p className="text-sm md:text-base font-semibold text-zinc-500 max-w-[520px] mx-auto">
+            {/* Floating Glassmorphism Hero Card with Shario layers */}
+            <div className="w-full max-w-[1000px] mx-auto relative rounded-[1.9rem] overflow-hidden group">
+              {/* Shario absolute layers for premium glassmorphism effect */}
+              <div 
+                className="absolute inset-0 pointer-events-none" 
+                style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.04) 6%, transparent 20%)" }}
+              />
+              <div 
+                className="absolute inset-0 pointer-events-none" 
+                style={{ boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.45), inset 0 -1px 0 0 rgba(255,255,255,0.08), inset 0 30px 0 rgba(255,255,255,0.04)" }}
+              />
+              <div 
+                className="absolute inset-[1px] rounded-[calc(1.9rem-1px)] pointer-events-none" 
+                style={{ border: "0.5px solid rgba(255,255,255,0.3)" }}
+              />
+              <div 
+                className="absolute inset-0 rounded-[1.9rem] pointer-events-none" 
+                style={{ 
+                  boxShadow: "0 6px 24px -6px rgba(0,0,0,0.07), 0 3px 12px -3px rgba(0,0,0,0.03), 0 0 0 0.5px rgba(255,255,255,0.18)",
+                  background: "rgba(255, 255, 255, 0.45)"
+                }}
+              />
+              {/* Glow shadow layer - lights up on hover */}
+              <div 
+                className="absolute inset-0 rounded-[1.9rem] pointer-events-none transition-opacity duration-300 opacity-80 group-hover:opacity-100" 
+                style={{ 
+                  boxShadow: "rgba(139, 92, 246, 0.12) 0px 16px 48px -8px, rgba(59, 130, 246, 0.08) 0px 8px 24px -8px, rgba(255, 255, 255, 0.25) 0px 0px 0.5px"
+                }}
+              />
+
+              {/* Inner wrapper for card contents */}
+              <div className="relative z-10 px-5 py-12 md:px-16 md:py-16 flex flex-col items-center justify-center text-center">
+                
+                {/* Headline using Shario text structures */}
+                <div className="relative select-none flex flex-col items-center">
+                  <div 
+                    role="presentation" 
+                    className="text-center font-extrabold leading-[1.08] tracking-tight"
+                    style={{ fontSize: "clamp(2rem, 6.5vw, 5rem)" }}
+                  >
+                    <span 
+                      className="block select-none"
+                      style={{
+                        background: "linear-gradient(90deg, #8B5CF6, #A855F7)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent"
+                      }}
+                    >
+                      RentHub
+                    </span>
+                    <span 
+                      className="block mt-1 md:mt-2"
+                      style={{
+                        background: "linear-gradient(90deg, #38BDF8, #6366F1)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent"
+                      }}
+                    >
+                      Thuê Đồ Gần Bạn
+                    </span>
+                  </div>
+                </div>
+
+                <p 
+                  className="font-medium text-center mt-6"
+                  style={{
+                    fontSize: "20px",
+                    color: "#64748B",
+                    maxWidth: "700px"
+                  }}
+                >
                   Thuê đồ từ người xung quanh bạn. Nhanh chóng – tiện lợi – đúng lúc.
                 </p>
-              </div>
 
-              {/* Detailed Search Panel — white glass, ghost search icon */}
-              <div className="w-full bg-white/90 backdrop-blur-md border border-zinc-200/80 rounded-[28px] p-2.5 md:p-3 shadow-md flex flex-col sm:flex-row gap-0 divide-y sm:divide-y-0 sm:divide-x divide-zinc-200 items-stretch">
-                <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
-                  <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Ở đâu?</span>
-                  <input
-                    type="text"
-                    placeholder="Hai Bà Trưng, HN"
-                    className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
-                  />
-                </div>
-                <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
-                  <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Khi nào?</span>
-                  <input
-                    type="text"
-                    placeholder="Không giới hạn"
-                    className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
-                  />
-                </div>
-                <div className="flex-1 flex items-center justify-between pl-4 pr-2 py-2.5 gap-2">
-                  <div className="flex flex-col text-left w-full">
-                    <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Bạn cần gì?</span>
+                {/* Detailed Search Panel */}
+                <div 
+                  className="w-full mt-8 flex flex-col sm:flex-row gap-0 divide-y sm:divide-y-0 sm:divide-x divide-zinc-200 items-stretch"
+                  style={{
+                    background: "white",
+                    borderRadius: "24px",
+                    boxShadow: "0 8px 30px rgba(0,0,0,0.05)",
+                    padding: "8px",
+                    maxWidth: "800px"
+                  }}
+                >
+                  <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
+                    <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Ở đâu?</span>
                     <input
                       type="text"
-                      placeholder="Thử &quot;flycam&quot;"
+                      placeholder="Hai Bà Trưng, HN"
                       className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
                     />
                   </div>
-                  {/* Ghost search icon — no filled circle */}
-                  <button className="p-2 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-full transition-all cursor-pointer shrink-0">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </button>
+                  <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
+                    <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Khi nào?</span>
+                    <input
+                      type="text"
+                      placeholder="Không giới hạn"
+                      className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
+                    />
+                  </div>
+                  <div className="flex-1 flex items-center justify-between pl-4 pr-2 py-2.5 gap-2">
+                    <div className="flex flex-col text-left w-full">
+                      <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Bạn cần gì?</span>
+                      <input
+                        type="text"
+                        placeholder="Thử &quot;flycam&quot;"
+                        className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
+                      />
+                    </div>
+                    {/* Ghost search icon — no filled circle */}
+                    <button className="p-2 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-full transition-all cursor-pointer shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
+              </div>
             </div>
           </div>
         </div>
@@ -519,7 +589,7 @@ export function HomeScreen() {
             : CATEGORIES;
 
           return (
-            <div className="max-w-[1280px] w-full px-6 md:px-8 pb-10 flex gap-3 overflow-x-auto scrollbar-hide items-center justify-start md:justify-center">
+            <div className="max-w-[1280px] w-full px-6 md:px-8 pb-10 mt-8 flex gap-3 overflow-x-auto scrollbar-hide items-center justify-start md:justify-center">
               {activeHomeCategories.map((cat) => (
                 <button
                   key={cat.id}

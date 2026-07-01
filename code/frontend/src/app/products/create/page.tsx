@@ -12,6 +12,8 @@ import { Button } from "@/components/base/buttons/button";
 import { Form } from "@/components/base/form/form";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
+import { LocationAutocomplete } from "@/components/location/location-autocomplete";
+import { LocationMapPreview } from "@/components/location/location-map-preview";
 
 interface CategoryOption {
   id: number;
@@ -25,6 +27,8 @@ interface CreateProductFormInput {
   depositAmount: number;
   address: string;
   categoryId: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export default function CreateProductPage() {
@@ -47,6 +51,8 @@ export default function CreateProductPage() {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<CreateProductFormInput>({
     mode: "onSubmit",
@@ -176,8 +182,8 @@ export default function CreateProductPage() {
         pricePerDay: Number(data.pricePerDay || 0),
         depositAmount: Number(data.depositAmount || 0),
         address: data.address,
-        latitude: null,
-        longitude: null,
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
         images: uploadedImages,
       };
 
@@ -272,14 +278,36 @@ export default function CreateProductPage() {
                 />
 
                 {/* Address */}
-                <Input
-                  {...register("address", { required: "Địa chỉ là bắt buộc" })}
-                  label="Địa chỉ bàn giao"
-                  placeholder="Địa chỉ bàn giao trực tiếp đồ dùng"
-                  type="text"
-                  isRequired
-                  error={errors.address?.message}
-                />
+                <div className="space-y-4">
+                  <input type="hidden" {...register("address", { required: "Địa chỉ là bắt buộc" })} />
+                  <input type="hidden" {...register("latitude")} />
+                  <input type="hidden" {...register("longitude")} />
+                  
+                  <LocationAutocomplete
+                    onLocationSelect={(loc) => {
+                      setValue("address", loc.address);
+                      setValue("latitude", loc.latitude);
+                      setValue("longitude", loc.longitude);
+                    }}
+                    defaultValue={watch("address")}
+                    isRequired
+                  />
+                  
+                  {errors.address && (
+                    <p className="text-xs text-red-500 font-semibold mt-1">
+                      ⚠️ {errors.address.message}
+                    </p>
+                  )}
+
+                  {watch("latitude") && watch("longitude") && (
+                    <div className="mt-4">
+                      <LocationMapPreview 
+                        latitude={watch("latitude")!} 
+                        longitude={watch("longitude")!} 
+                      />
+                    </div>
+                  )}
+                </div>
 
                 {/* Cloudinary Multiple Image Uploader */}
                 <div className="space-y-3 font-sans">
