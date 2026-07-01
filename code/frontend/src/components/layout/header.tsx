@@ -141,6 +141,13 @@ export function Header() {
                         >
                           Quản lý danh mục
                         </Link>
+                        <Link
+                          href="/admin/products"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex px-4 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+                        >
+                          Duyệt sản phẩm
+                        </Link>
                       </div>
                     ) : (
                       <div className="py-1">

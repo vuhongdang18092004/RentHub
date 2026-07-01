@@ -67,7 +67,7 @@ export default function CreateProductPage() {
       }
     };
     fetchCategories();
-  }, [triggerToast]);
+  }, []);
 
   // Helper to upload images to Cloudinary with browser-side signature computation
   const uploadToCloudinary = async (file: File): Promise<string> => {
@@ -170,11 +170,11 @@ export default function CreateProductPage() {
       setSaving(true);
       
       const productData = {
-        categoryId: parseInt(data.categoryId),
+        categoryId: parseInt(data.categoryId || "0"),
         name: data.name,
-        description: data.description,
-        pricePerDay: parseFloat(data.pricePerDay.toString()),
-        depositAmount: parseFloat(data.depositAmount.toString()),
+        description: data.description || "",
+        pricePerDay: Number(data.pricePerDay || 0),
+        depositAmount: Number(data.depositAmount || 0),
         address: data.address,
         latitude: null,
         longitude: null,

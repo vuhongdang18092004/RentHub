@@ -14,4 +14,7 @@ public interface ProductService {
     ProductDetailResponse getProductDetail(Long id, String email);
     Page<ProductSummaryResponse> getAvailableProducts(int page, int size, Long categoryId);
     ProductDetailResponse getPublicProductDetail(Long id);
+    Page<ProductSummaryResponse> getPendingProducts(int page, int size);
+    ProductDetailResponse approveProduct(Long id);
+    ProductDetailResponse rejectProduct(Long id);
 }

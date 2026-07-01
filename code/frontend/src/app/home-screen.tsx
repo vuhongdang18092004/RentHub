@@ -154,7 +154,11 @@ export function HomeScreen() {
   const [productsLoading, setProductsLoading] = useState(true);
 
   // Active Admin Tab
-  const [adminTab, setAdminTab] = useState<"users" | "categories">("users");
+  const [adminTab, setAdminTab] = useState<"users" | "categories" | "products">("users");
+
+  // Product Approval State
+  const [pendingProducts, setPendingProducts] = useState<any[]>([]);
+  const [productsApprovalLoading, setProductsApprovalLoading] = useState(false);
 
   // User Management State
   const [users, setUsers] = useState<any[]>([]);
@@ -197,6 +201,43 @@ export function HomeScreen() {
     }
   };
 
+  const fetchPendingProducts = async () => {
+    try {
+      setProductsApprovalLoading(true);
+      const res = await api.get("/admin/products/pending");
+      setPendingProducts(res.data.content || []);
+    } catch (err) {
+      console.error("Lỗi lấy danh sách tin chờ duyệt:", err);
+    } finally {
+      setProductsApprovalLoading(false);
+    }
+  };
+
+  const handleApproveProduct = async (id: number, name: string) => {
+    try {
+      await api.put(`/admin/products/${id}/approve`);
+      triggerToast(`Đã duyệt sản phẩm "${name}"! ✅`);
+      // Update available products list in home screen as well, so it updates without F5
+      const prodRes = await productService.getAvailableProducts(0, 24);
+      setAvailableProducts(prodRes.content || []);
+      fetchPendingProducts();
+    } catch (err) {
+      console.error("Lỗi duyệt sản phẩm:", err);
+      triggerToast("Không thể duyệt sản phẩm.");
+    }
+  };
+
+  const handleRejectProduct = async (id: number, name: string) => {
+    try {
+      await api.put(`/admin/products/${id}/reject`);
+      triggerToast(`Đã từ chối duyệt sản phẩm "${name}". ❌`);
+      fetchPendingProducts();
+    } catch (err) {
+      console.error("Lỗi từ chối sản phẩm:", err);
+      triggerToast("Không thể từ chối sản phẩm.");
+    }
+  };
+
   // Initial mount load for category tags AND real products
   useEffect(() => {
     fetchCategories();
@@ -218,9 +259,12 @@ export function HomeScreen() {
   // Trigger loading when entering Admin Mode
   useEffect(() => {
     if (showAdminPanel) {
+      // Always fetch pending count to keep tab badge updated
+      fetchPendingProducts();
+
       if (adminTab === "users") {
         fetchUsers();
-      } else {
+      } else if (adminTab === "categories") {
         fetchCategories();
       }
     }
@@ -526,6 +570,19 @@ export function HomeScreen() {
                   >
                     Danh mục
                   </button>
+                  <button
+                    onClick={() => setAdminTab("products")}
+                    className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer relative ${
+                      adminTab === "products" ? "bg-white text-zinc-900 shadow-sm" : "text-secondary hover:text-primary"
+                    }`}
+                  >
+                    Duyệt tin
+                    {pendingProducts.length > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
+                        {pendingProducts.length}
+                      </span>
+                    )}
+                  </button>
                 </div>
                 
                 <button
@@ -769,6 +826,89 @@ export function HomeScreen() {
                   </div>
                 </div>
 
+              </div>
+            )}
+
+            {/* Tab 3: Pending Product Approvals */}
+            {adminTab === "products" && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center font-sans">
+                  <h3 className="text-sm font-bold text-primary">Sản phẩm chờ duyệt ({pendingProducts.length})</h3>
+                  <button onClick={fetchPendingProducts} className="text-xs font-bold text-brand-600 hover:text-brand-700 cursor-pointer">
+                    Làm mới danh sách
+                  </button>
+                </div>
+
+                {productsApprovalLoading ? (
+                  <div className="py-16 bg-white border border-secondary rounded-2xl flex flex-col items-center justify-center gap-3">
+                    <div className="w-6 h-6 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-xs text-secondary font-medium">Đang tải sản phẩm chờ duyệt...</p>
+                  </div>
+                ) : pendingProducts.length === 0 ? (
+                  <div className="py-16 bg-white border border-secondary rounded-2xl flex items-center justify-center text-center">
+                    <p className="text-xs text-secondary font-medium">Không có sản phẩm nào cần phê duyệt. 🎉</p>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-secondary rounded-2xl overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse font-sans">
+                        <thead>
+                          <tr className="bg-secondary/40 border-b border-secondary">
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Hình ảnh</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Tên sản phẩm</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Giá thuê / ngày</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Danh mục</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Người đăng</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider text-right">Phê duyệt</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-secondary/60">
+                          {pendingProducts.map((prod) => (
+                            <tr key={prod.id} className="hover:bg-secondary/20 transition-colors">
+                              <td className="px-5 py-3">
+                                <div className="w-12 h-12 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-50">
+                                  {prod.primaryImage ? (
+                                    <img src={prod.primaryImage} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-lg">📦</div>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-5 py-3 font-bold text-xs text-primary">
+                                <Link href={`/products/${prod.id}`} className="hover:underline hover:text-brand-700">
+                                  {prod.name}
+                                </Link>
+                              </td>
+                              <td className="px-5 py-3 text-xs font-semibold text-violet-700">
+                                {Number(prod.pricePerDay).toLocaleString("vi-VN")}đ
+                              </td>
+                              <td className="px-5 py-3 text-xs text-secondary font-mono">{prod.category?.name || prod.categoryName}</td>
+                              <td className="px-5 py-3 text-xs text-secondary font-semibold">{prod.ownerName || "Người dùng"}</td>
+                              <td className="px-5 py-3 text-right">
+                                <div className="flex justify-end gap-2">
+                                  <button
+                                    onClick={() => handleApproveProduct(prod.id, prod.name)}
+                                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[10px] font-extrabold shadow-sm transition-all cursor-pointer"
+                                    title="Duyệt cho thuê"
+                                  >
+                                    Đồng ý
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectProduct(prod.id, prod.name)}
+                                    className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-[10px] font-extrabold shadow-sm transition-all cursor-pointer"
+                                    title="Từ chối duyệt"
+                                  >
+                                    Từ chối
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

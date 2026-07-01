@@ -55,7 +55,7 @@ public class ProductServiceImpl implements ProductService {
                 .description(request.getDescription())
                 .pricePerDay(request.getPricePerDay())
                 .depositAmount(request.getDepositAmount())
-                .status(ProductStatus.AVAILABLE)
+                .status(ProductStatus.PENDING)
                 .build();
 
         setAddressFields(product, request.getAddress(), request.getLatitude(), request.getLongitude(), owner);
@@ -158,6 +158,33 @@ public class ProductServiceImpl implements ProductService {
     public ProductDetailResponse getPublicProductDetail(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
+        return ProductDetailResponse.fromEntity(product);
+    }
+
+    @Override
+    public Page<ProductSummaryResponse> getPendingProducts(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.PENDING, pageable)
+                .map(ProductSummaryResponse::fromEntity);
+    }
+
+    @Override
+    @Transactional
+    public ProductDetailResponse approveProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        product.setStatus(ProductStatus.AVAILABLE);
+        product = productRepository.save(product);
+        return ProductDetailResponse.fromEntity(product);
+    }
+
+    @Override
+    @Transactional
+    public ProductDetailResponse rejectProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        product.setStatus(ProductStatus.UNAVAILABLE);
+        product = productRepository.save(product);
         return ProductDetailResponse.fromEntity(product);
     }
 
