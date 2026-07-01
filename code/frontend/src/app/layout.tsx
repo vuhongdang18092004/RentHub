@@ -5,6 +5,7 @@ import { Theme } from "@/providers/theme";
 import { ToastProvider } from "@/context/ToastContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/cart-context";
+import { WishlistProvider } from "@/context/wishlist-context";
 import "@/styles/globals.css";
 import { cx } from "@/utils/cx";
 
@@ -35,7 +36,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                         <AuthProvider>
                             <CartProvider>
                                 <ToastProvider>
-                                    {children}
+                                    <WishlistProvider>
+                                        {children}
+                                    </WishlistProvider>
                                 </ToastProvider>
                             </CartProvider>
                         </AuthProvider>

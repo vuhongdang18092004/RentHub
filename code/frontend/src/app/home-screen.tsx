@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { useCart } from "@/context/cart-context";
+import { useWishlist } from "@/context/wishlist-context";
 import api from "@/lib/axios";
 import { Header } from "@/components/layout/header";
 import { productService, ProductSummary } from "@/services/product-service";
@@ -37,13 +38,21 @@ const CATEGORIES = [
 function ProductCard({ prod }: { prod: ProductSummary }) {
   const { addItem, isInCart } = useCart();
   const { triggerToast } = useToast();
+  const { isFavorited, toggleFavorite } = useWishlist();
   const inCart = isInCart(prod.id);
+  const favorited = isFavorited(prod.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addItem(prod, 1);
     triggerToast("Đã thêm vào giỏ! 🛍");
+  };
+
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await toggleFavorite(prod.id, prod.name);
   };
 
   const priceLabel = `${Number(prod.pricePerDay).toLocaleString("vi-VN")}đ`;
@@ -70,6 +79,26 @@ function ProductCard({ prod }: { prod: ProductSummary }) {
             : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />}
         </svg>
       </button>
+
+      {/* Heart Toggle Button */}
+      <button
+        onClick={handleToggleFavorite}
+        title={favorited ? "Bỏ yêu thích" : "Yêu thích"}
+        className={`absolute top-3 left-3 p-2 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
+          favorited
+            ? "bg-red-50/95 text-red-500"
+            : "bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500"
+        }`}
+      >
+        <svg 
+          className={`w-4 h-4 transition-transform duration-200 ${favorited ? "scale-110 fill-current" : "fill-none stroke-current"}`} 
+          viewBox="0 0 24 24" 
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+      </button>
+
       {/* Image */}
       <div className="h-[200px] w-full overflow-hidden relative">
         {prod.primaryImage ? (
@@ -99,8 +128,9 @@ function ProductCard({ prod }: { prod: ProductSummary }) {
 function ProductCardCompact({ prod }: { prod: ProductSummary }) {
   const { addItem, isInCart } = useCart();
   const { triggerToast } = useToast();
+  const { isFavorited, toggleFavorite } = useWishlist();
   const inCart = isInCart(prod.id);
-  const priceLabel = `${Number(prod.pricePerDay).toLocaleString("vi-VN")}đ`;
+  const favorited = isFavorited(prod.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -108,6 +138,14 @@ function ProductCardCompact({ prod }: { prod: ProductSummary }) {
     addItem(prod, 1);
     triggerToast("Đã thêm vào giỏ! 🛍");
   };
+
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await toggleFavorite(prod.id, prod.name);
+  };
+
+  const priceLabel = `${Number(prod.pricePerDay).toLocaleString("vi-VN")}đ`;
 
   return (
     <Link
@@ -124,6 +162,26 @@ function ProductCardCompact({ prod }: { prod: ProductSummary }) {
             : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />}
         </svg>
       </button>
+
+      {/* Heart Toggle Button */}
+      <button
+        onClick={handleToggleFavorite}
+        title={favorited ? "Bỏ yêu thích" : "Yêu thích"}
+        className={`absolute top-2.5 left-2.5 p-1.5 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
+          favorited
+            ? "bg-red-50/95 text-red-500"
+            : "bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500"
+        }`}
+      >
+        <svg 
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${favorited ? "scale-110 fill-current" : "fill-none stroke-current"}`} 
+          viewBox="0 0 24 24" 
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+      </button>
+
       <div className="h-[145px] w-full overflow-hidden relative">
         {prod.primaryImage
           ? <img src={prod.primaryImage} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
