@@ -49,7 +49,7 @@ export function LocationAutocomplete({
 
   // Fetch suggestions from VietMap Autocomplete API
   const fetchSuggestions = async (searchText: string) => {
-    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY || "7a45350d010dc9414c4a0149d8eb129b6adb5601c6eb6c4e";
+    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY || "8b403eff827848616069d47a7002481863b34e24dd34964d";
 
     try {
       setLoading(true);
@@ -107,7 +107,7 @@ export function LocationAutocomplete({
 
   // Fetch coordinates using VietMap Place API
   const handleSelectSuggestion = async (suggestion: any) => {
-    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY || "7a45350d010dc9414c4a0149d8eb129b6adb5601c6eb6c4e";
+    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY || "8b403eff827848616069d47a7002481863b34e24dd34964d";
     const refId = suggestion.ref_id || suggestion.refid;
 
     if (!refId) {

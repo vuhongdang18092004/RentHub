@@ -29,7 +29,7 @@ export function LocationMapPreview({ latitude, longitude }: MapPreviewProps) {
       if (!leafletInstance.current) {
         leafletInstance.current = L.map(mapRef.current).setView([latitude, longitude], 15);
         
-        const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY || "7a45350d010dc9414c4a0149d8eb129b6adb5601c6eb6c4e";
+        const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY || "8b403eff827848616069d47a7002481863b34e24dd34964d";
         
         // Define tile URL candidates
         const vietmapTileUrl1 = `https://maps.vietmap.vn/tm/{z}/{x}/{y}.png?apikey=${apiKey}`;
