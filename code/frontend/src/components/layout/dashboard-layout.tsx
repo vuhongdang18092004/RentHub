@@ -61,6 +61,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   Kho đồ của tôi
                 </Link>
 
+                <Link href="/products/favorites" className={navLinkClass("/products/favorites")}>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  Sản phẩm yêu thích
+                </Link>
+
                 <Link href="/products/create" className={navLinkClass("/products/create")}>
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />

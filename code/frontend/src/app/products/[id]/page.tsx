@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { productService, ProductDetail } from "@/services/product-service";
+import { favoriteService } from "@/services/favorite-service";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/context/ToastContext";
@@ -21,14 +22,26 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
+  const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    const fetchProduct = async () => {
+    const fetchProductAndFavorite = async () => {
       try {
         setLoading(true);
         const data = await productService.getPublicProductDetail(Number(id));
         setProduct(data);
+
+        // Fetch favorites to see if this product is favorited by user
+        if (user) {
+          try {
+            const favs = await favoriteService.getMyFavorites(0, 100);
+            const exists = favs.content.some((item) => item.productId === data.id);
+            setIsFavorited(exists);
+          } catch (favErr) {
+            console.error("Lỗi lấy danh sách yêu thích:", favErr);
+          }
+        }
       } catch (err) {
         console.error("Lỗi tải sản phẩm:", err);
         triggerToast("Không tìm thấy sản phẩm!");
@@ -37,8 +50,8 @@ export default function ProductDetailPage() {
         setLoading(false);
       }
     };
-    fetchProduct();
-  }, [id]);
+    fetchProductAndFavorite();
+  }, [id, user]);
 
   const isOwner = user && product && product.owner.id === (user as any).id;
   const canAddToCart = product?.status === "AVAILABLE" && !isOwner;
@@ -58,6 +71,24 @@ export default function ProductDetailPage() {
     };
     addItem(summary as any, 1);
     triggerToast("Đã thêm vào giỏ hàng! 🛍");
+  };
+
+  const toggleFavorite = async () => {
+    if (!product) return;
+    try {
+      if (isFavorited) {
+        await favoriteService.removeFavorite(product.id);
+        setIsFavorited(false);
+        triggerToast("Đã bỏ yêu thích sản phẩm! 💔");
+      } else {
+        await favoriteService.addFavorite(product.id);
+        setIsFavorited(true);
+        triggerToast("Đã thêm vào danh sách yêu thích! ❤️");
+      }
+    } catch (err) {
+      console.error("Lỗi cập nhật yêu thích:", err);
+      triggerToast("Không thể cập nhật trạng thái yêu thích.");
+    }
   };
 
   const statusLabel: Record<string, { text: string; cls: string }> = {
@@ -205,25 +236,41 @@ export default function ProductDetailPage() {
                       </Link>
                     </div>
                   ) : (
-                    <button
-                      disabled={!canAddToCart || alreadyInCart}
-                      onClick={handleAddToCart}
-                      className={`w-full py-3.5 rounded-xl text-sm font-extrabold transition-all ${
-                        alreadyInCart
-                          ? "bg-green-50 text-green-700 border border-green-200 cursor-default"
+                    <div className="flex gap-3">
+                      <button
+                        disabled={!canAddToCart || alreadyInCart}
+                        onClick={handleAddToCart}
+                        className={`flex-1 py-3.5 rounded-xl text-sm font-extrabold transition-all ${
+                          alreadyInCart
+                            ? "bg-green-50 text-green-700 border border-green-200 cursor-default"
+                            : canAddToCart
+                            ? "bg-violet-600 hover:bg-violet-700 text-white shadow-sm hover:shadow-md cursor-pointer"
+                            : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
+                        }`}
+                      >
+                        {alreadyInCart
+                          ? "✓ Đã có trong giỏ"
                           : canAddToCart
-                          ? "bg-violet-600 hover:bg-violet-700 text-white shadow-sm hover:shadow-md cursor-pointer"
-                          : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
-                      }`}
-                    >
-                      {alreadyInCart
-                        ? "✓ Đã có trong giỏ hàng"
-                        : canAddToCart
-                        ? "🛍 Thêm vào giỏ hàng"
-                        : product.status === "RENTED"
-                        ? "Đang được thuê"
-                        : "Không khả dụng"}
-                    </button>
+                          ? "🛍 Thêm vào giỏ"
+                          : product.status === "RENTED"
+                          ? "Đang được thuê"
+                          : "Không khả dụng"}
+                      </button>
+
+                      <button
+                        onClick={toggleFavorite}
+                        className={`px-4.5 rounded-xl border flex items-center justify-center transition-all cursor-pointer shadow-sm hover:shadow-md ${
+                          isFavorited
+                            ? "border-red-100 bg-red-50 text-red-500 hover:bg-red-100"
+                            : "border-zinc-200 bg-white text-zinc-500 hover:text-red-500 hover:bg-zinc-50"
+                        }`}
+                        title={isFavorited ? "Bỏ yêu thích" : "Yêu thích sản phẩm"}
+                      >
+                        <svg className="w-5.5 h-5.5" fill={isFavorited ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      </button>
+                    </div>
                   )}
 
                   <Link
