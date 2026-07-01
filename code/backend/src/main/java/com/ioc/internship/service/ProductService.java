@@ -14,4 +14,6 @@ public interface ProductService {
     Page<ProductSummaryResponse> getAllProductsAdmin(ProductStatus status, int page, int size);
     void updateProductStatusAdmin(Long id, com.ioc.internship.dto.request.UpdateProductStatusRequest request);
     void updateMyProductStatus(Long id, com.ioc.internship.dto.request.UpdateMyProductStatusRequest request, String email);
+    Page<ProductSummaryResponse> getAvailableProducts(int page, int size, Long categoryId);
+    ProductDetailResponse getPublicProductDetail(Long id);
 }
