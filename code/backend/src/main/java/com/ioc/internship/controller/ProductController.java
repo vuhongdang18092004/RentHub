@@ -30,23 +30,31 @@ public class ProductController {
         return new ResponseEntity<>(productService.createProduct(request, email), HttpStatus.CREATED);
     }
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<Page<ProductSummaryResponse>> getAvailableProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) Long categoryId) {
+        return ResponseEntity.ok(productService.getAvailableProducts(page, size, categoryId));
+    }
+
     @GetMapping("/my")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Page<ProductSummaryResponse>> getMyProducts(
+            @RequestParam(required = false) com.ioc.internship.entity.ProductStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         String email = authentication.getName();
-        return ResponseEntity.ok(productService.getMyProducts(email, page, size));
+        return ResponseEntity.ok(productService.getMyProducts(email, status, page, size));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<ProductDetailResponse> getProductDetail(
             @PathVariable Long id,
             Authentication authentication) {
-        String email = authentication.getName();
-        return ResponseEntity.ok(productService.getProductDetail(id, email));
+        return ResponseEntity.ok(productService.getPublicProductDetail(id));
     }
 
     @PutMapping("/{id}")
@@ -66,6 +74,17 @@ public class ProductController {
             Authentication authentication) {
         String email = authentication.getName();
         productService.deleteProduct(id, email);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<Void> updateMyProductStatus(
+            @PathVariable Long id,
+            @jakarta.validation.Valid @RequestBody com.ioc.internship.dto.request.UpdateMyProductStatusRequest request,
+            Authentication authentication) {
+        String email = authentication.getName();
+        productService.updateMyProductStatus(id, request, email);
         return ResponseEntity.noContent().build();
     }
 }

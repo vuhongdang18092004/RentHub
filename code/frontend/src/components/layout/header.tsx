@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/cart-context";
 import { Logo } from "../foundations/logo";
 
 export function Header() {
   const { isAuthenticated, user, logout } = useAuth();
+  const { itemCount } = useCart();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleLogout = () => {
@@ -64,11 +66,16 @@ export function Header() {
             Cho thuê
           </Link>
           
-          {/* Wishlist icon — shopping bag */}
-          <Link href="/profile" className="p-2 hover:bg-zinc-50 rounded-xl text-zinc-600 hover:text-zinc-900 transition-all">
+          {/* Cart icon — shopping bag with badge */}
+          <Link href="/cart" className="relative p-2 hover:bg-zinc-50 rounded-xl text-zinc-600 hover:text-zinc-900 transition-all">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
+            {itemCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                {itemCount > 99 ? "99+" : itemCount}
+              </span>
+            )}
           </Link>
 
           {/* User Account Action */}
@@ -133,6 +140,13 @@ export function Header() {
                           className="flex px-4 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
                         >
                           Quản lý danh mục
+                        </Link>
+                        <Link
+                          href="/admin/products"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex px-4 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+                        >
+                          Duyệt sản phẩm
                         </Link>
                       </div>
                     ) : (

@@ -5,8 +5,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { useCart } from "@/context/cart-context";
 import api from "@/lib/axios";
 import { Header } from "@/components/layout/header";
+import { productService, ProductSummary } from "@/services/product-service";
 
 const THUMBNAILS = [
   "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=300&auto=format&fit=crop&q=60", // bicycle
@@ -30,36 +32,113 @@ const CATEGORIES = [
   { id: "appliance", name: "Gia dụng", count: 86, icon: "🏠", color: "bg-amber-50 text-amber-700" }
 ];
 
-const SPORTS_PRODUCTS = [
-  { id: 1, name: "Xe đạp đua Trek Domane SL 7", price: "175K", rating: 4.8, loc: "Ba Đình, Hà Nội", img: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=500&auto=format&fit=crop&q=80" },
-  { id: 2, name: "Ván lướt sóng 7ft mặt xốp", price: "90K", rating: 4.4, loc: "Bình Thạnh, TP.HCM", img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=500&auto=format&fit=crop&q=80" }
-];
 
-const OUTDOOR_PRODUCTS = [
-  { id: 3, name: "Võng cắm trại kèm dây treo", price: "50K", rating: 4.8, loc: "Hai Bà Trưng, Hà Nội", img: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&auto=format&fit=crop&q=80" },
-  { id: 4, name: "Lều cắm trại 4 người", price: "110K", rating: 4.7, loc: "Đống Đa, Hà Nội", img: "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=500&auto=format&fit=crop&q=80" },
-  { id: 5, name: "Thuyền Kayak bơm hơi 2 người", price: "150K", rating: 4.5, loc: "Quận 7, TP.HCM", img: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=500&auto=format&fit=crop&q=80" }
-];
+// Product card component reused across all sections
+function ProductCard({ prod }: { prod: ProductSummary }) {
+  const { addItem, isInCart } = useCart();
+  const { triggerToast } = useToast();
+  const inCart = isInCart(prod.id);
 
-const YOU_MAY_NEED = [
-  { id: 6, name: "Bộ máy ảnh Canon EOS R5...", price: "225K", rating: 4.9, loc: "Hoàn Kiếm, Hà Nội", img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80" },
-  { id: 7, name: "Flycam DJI Mavic 3 Pro", price: "275K", rating: 4.9, loc: "Cầu Giấy, Hà Nội", img: "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=500&auto=format&fit=crop&q=80" },
-  { id: 8, name: "Máy ảnh Sony A7 IV Full Frame", price: "200K", rating: 4.8, loc: "Tây Hồ, Hà Nội", img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80" },
-  { id: 9, name: "Máy chiếu Epson Home Cl...", price: "140K", rating: 4.7, loc: "Long Biên, Hà Nội", img: "https://images.unsplash.com/photo-1535016120720-40c646be5580?w=500&auto=format&fit=crop&q=80" },
-  { id: 10, name: "Loa Bluetooth di động JBL", price: "40K", rating: 4.6, loc: "Quận 1, TP.HCM", img: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=500&auto=format&fit=crop&q=80" }
-];
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(prod, 1);
+    triggerToast("Đã thêm vào giỏ! 🛍");
+  };
 
-const TRENDING = [
-  { id: 11, name: "Lều cắm trại 4 người", price: "40K", rating: 4.7, img: "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=500&auto=format&fit=crop&q=80" },
-  { id: 12, name: "Máy ảnh Sony A7 IV Full Frame", price: "200K", rating: 4.8, img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80" },
-  { id: 13, name: "Loa Bluetooth di động JBL", price: "40K", rating: 4.6, img: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=500&auto=format&fit=crop&q=80" },
-  { id: 14, name: "Bàn DJ chuyên nghiệp", price: "190K", rating: 4.7, img: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&auto=format&fit=crop&q=80" },
-  { id: 15, name: "Võng cắm trại kèm dây treo", price: "50K", rating: 4.8, img: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&auto=format&fit=crop&q=80" },
-  { id: 16, name: "Máy chiếu Epson Home Cl...", price: "140K", rating: 4.7, img: "https://images.unsplash.com/photo-1535016120720-40c646be5580?w=500&auto=format&fit=crop&q=80" },
-  { id: 17, name: "Bộ máy ảnh Canon EOS R5...", price: "225K", rating: 4.9, img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80" },
-  { id: 18, name: "Xe đạp đua Trek Domane S...", price: "175K", rating: 4.8, img: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=500&auto=format&fit=crop&q=80" },
-  { id: 19, name: "Flycam DJI Mavic 3 Pro", price: "275K", rating: 4.9, img: "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=500&auto=format&fit=crop&q=80" }
-];
+  const priceLabel = `${Number(prod.pricePerDay).toLocaleString("vi-VN")}đ`;
+
+  return (
+    <Link
+      href={`/products/${prod.id}`}
+      className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative block"
+    >
+      {/* Cart add button */}
+      <button
+        onClick={handleAddToCart}
+        disabled={prod.status !== "AVAILABLE" || inCart}
+        title={inCart ? "Đã trong giỏ" : "Thêm vào giỏ"}
+        className={`absolute top-3 right-3 p-2 rounded-full shadow-sm transition-all z-10 cursor-pointer ${
+          inCart
+            ? "bg-green-50 text-green-600"
+            : "bg-white/80 hover:bg-white text-zinc-500 hover:text-violet-600"
+        }`}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {inCart
+            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />}
+        </svg>
+      </button>
+      {/* Image */}
+      <div className="h-[200px] w-full overflow-hidden relative">
+        {prod.primaryImage ? (
+          <img src={prod.primaryImage} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
+        ) : (
+          <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-3xl">📦</div>
+        )}
+        <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-xs font-black shadow-sm text-zinc-800">
+          {priceLabel} <span className="text-[9px] font-bold text-zinc-500">/ ngày</span>
+        </span>
+      </div>
+      {/* Info */}
+      <div className="p-4 space-y-1.5">
+        <h3 className="font-extrabold text-sm text-zinc-800 line-clamp-1 group-hover:text-violet-700 transition-colors">{prod.name}</h3>
+        <div className="flex items-center justify-between text-xs font-semibold text-zinc-500">
+          <span className="bg-zinc-100 px-2 py-0.5 rounded-md text-[10px]">{prod.category?.name}</span>
+          {prod.status !== "AVAILABLE" && (
+            <span className="text-amber-600 text-[10px] font-bold">Đang thuê</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// Compact card for trending carousel
+function ProductCardCompact({ prod }: { prod: ProductSummary }) {
+  const { addItem, isInCart } = useCart();
+  const { triggerToast } = useToast();
+  const inCart = isInCart(prod.id);
+  const priceLabel = `${Number(prod.pricePerDay).toLocaleString("vi-VN")}đ`;
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(prod, 1);
+    triggerToast("Đã thêm vào giỏ! 🛍");
+  };
+
+  return (
+    <Link
+      href={`/products/${prod.id}`}
+      className="w-[190px] shrink-0 bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative block"
+    >
+      <button onClick={handleAddToCart} disabled={prod.status !== "AVAILABLE" || inCart}
+        className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm z-10 cursor-pointer transition-all ${
+          inCart ? "bg-green-50 text-green-600" : "bg-white/80 hover:bg-white text-zinc-500 hover:text-violet-600"
+        }`}>
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {inCart
+            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />}
+        </svg>
+      </button>
+      <div className="h-[145px] w-full overflow-hidden relative">
+        {prod.primaryImage
+          ? <img src={prod.primaryImage} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
+          : <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-2xl">📦</div>}
+        <span className="absolute bottom-2.5 left-2.5 bg-white/95 px-2.5 py-0.5 rounded-md text-[10px] font-black shadow-sm text-zinc-800">
+          {priceLabel} <span className="text-[8px] font-bold text-zinc-500">/ ngày</span>
+        </span>
+      </div>
+      <div className="p-3 space-y-1">
+        <h3 className="font-extrabold text-xs text-zinc-800 line-clamp-1 group-hover:text-violet-700 transition-colors">{prod.name}</h3>
+        <span className="text-[10px] text-zinc-400">{prod.category?.name}</span>
+      </div>
+    </Link>
+  );
+}
 
 export function HomeScreen() {
   const router = useRouter();
@@ -70,8 +149,16 @@ export function HomeScreen() {
   const isAdminParam = searchParams?.get("admin") === "true";
   const showAdminPanel = role === "ROLE_ADMIN" && isAdminParam;
 
+  // Real products from API
+  const [availableProducts, setAvailableProducts] = useState<ProductSummary[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+
   // Active Admin Tab
-  const [adminTab, setAdminTab] = useState<"users" | "categories">("users");
+  const [adminTab, setAdminTab] = useState<"users" | "categories" | "products">("users");
+
+  // Product Approval State
+  const [pendingProducts, setPendingProducts] = useState<any[]>([]);
+  const [productsApprovalLoading, setProductsApprovalLoading] = useState(false);
 
   // User Management State
   const [users, setUsers] = useState<any[]>([]);
@@ -114,17 +201,70 @@ export function HomeScreen() {
     }
   };
 
-  // Initial mount load for category tags
+  const fetchPendingProducts = async () => {
+    try {
+      setProductsApprovalLoading(true);
+      const res = await api.get("/admin/products/pending");
+      setPendingProducts(res.data.content || []);
+    } catch (err) {
+      console.error("Lỗi lấy danh sách tin chờ duyệt:", err);
+    } finally {
+      setProductsApprovalLoading(false);
+    }
+  };
+
+  const handleApproveProduct = async (id: number, name: string) => {
+    try {
+      await api.put(`/admin/products/${id}/approve`);
+      triggerToast(`Đã duyệt sản phẩm "${name}"! ✅`);
+      // Update available products list in home screen as well, so it updates without F5
+      const prodRes = await productService.getAvailableProducts(0, 24);
+      setAvailableProducts(prodRes.content || []);
+      fetchPendingProducts();
+    } catch (err) {
+      console.error("Lỗi duyệt sản phẩm:", err);
+      triggerToast("Không thể duyệt sản phẩm.");
+    }
+  };
+
+  const handleRejectProduct = async (id: number, name: string) => {
+    try {
+      await api.put(`/admin/products/${id}/reject`);
+      triggerToast(`Đã từ chối duyệt sản phẩm "${name}". ❌`);
+      fetchPendingProducts();
+    } catch (err) {
+      console.error("Lỗi từ chối sản phẩm:", err);
+      triggerToast("Không thể từ chối sản phẩm.");
+    }
+  };
+
+  // Initial mount load for category tags AND real products
   useEffect(() => {
     fetchCategories();
+    // Fetch real AVAILABLE products
+    const loadProducts = async () => {
+      try {
+        setProductsLoading(true);
+        const res = await productService.getAvailableProducts(0, 24);
+        setAvailableProducts(res.content || []);
+      } catch (err) {
+        console.error("Lỗi lấy sản phẩm:", err);
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+    loadProducts();
   }, []);
 
   // Trigger loading when entering Admin Mode
   useEffect(() => {
     if (showAdminPanel) {
+      // Always fetch pending count to keep tab badge updated
+      fetchPendingProducts();
+
       if (adminTab === "users") {
         fetchUsers();
-      } else {
+      } else if (adminTab === "categories") {
         fetchCategories();
       }
     }
@@ -249,12 +389,14 @@ export function HomeScreen() {
           </div>
         </div>
 
-        {/* Glowing Hero Section — forced light-mode with pastel gradient */}
-        <div className="light-mode w-full" style={{ background: "linear-gradient(135deg, #f5f0ff 0%, #eef4ff 40%, #f0f7ff 70%, #faf5ff 100%)" }}>
-          <div className="max-w-[1280px] w-full mx-auto px-6 md:px-8 py-10 md:py-16 grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 items-center">
-          
-            {/* Left Stats Grid */}
-            <div className="flex md:flex-col justify-around md:justify-center md:items-start md:gap-10 border-b md:border-b-0 md:border-r border-zinc-200 pb-8 md:pb-0 md:pr-10 shrink-0">
+        {/* Glowing Hero Section — forced light-mode with premium pastel gradient */}
+        <div 
+          className="light-mode w-full flex items-center justify-center py-20 min-h-[600px]" 
+          style={{ background: "linear-gradient(90deg, #F4ECFF 0%, #FFFFFF 50%, #EAF8FF 100%)" }}
+        >
+          <div className="w-[95%] max-w-[1000px] mx-auto">
+            {/* Left Stats Grid — HIDDEN as per Requirement 3 */}
+            <div className="hidden">
               <div className="text-center md:text-left space-y-1">
                 <h3 className="text-2xl md:text-3xl font-extrabold text-zinc-900 leading-none">4K+</h3>
                 <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Món đồ</p>
@@ -269,58 +411,126 @@ export function HomeScreen() {
               </div>
             </div>
 
-            {/* Right/Center Hero Content — white glass card */}
-            <div className="md:col-span-3 flex flex-col items-center justify-center text-center space-y-8 max-w-[840px] mx-auto w-full">
-              
-              {/* Headline */}
-              <div className="space-y-3">
-                <h1 className="text-[40px] md:text-[64px] font-extrabold tracking-tight leading-[1.08] text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-purple-400">
-                  RentHub
-                </h1>
-                <h2 className="text-[32px] md:text-[52px] font-extrabold tracking-tight leading-none text-sky-400">
-                  Thuê Đồ Gần Bạn
-                </h2>
-                <p className="text-sm md:text-base font-semibold text-zinc-500 max-w-[520px] mx-auto">
+            {/* Floating Glassmorphism Hero Card with Shario layers */}
+            <div className="w-full max-w-[1000px] mx-auto relative rounded-[1.9rem] overflow-hidden group">
+              {/* Shario absolute layers for premium glassmorphism effect */}
+              <div 
+                className="absolute inset-0 pointer-events-none" 
+                style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.04) 6%, transparent 20%)" }}
+              />
+              <div 
+                className="absolute inset-0 pointer-events-none" 
+                style={{ boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.45), inset 0 -1px 0 0 rgba(255,255,255,0.08), inset 0 30px 0 rgba(255,255,255,0.04)" }}
+              />
+              <div 
+                className="absolute inset-[1px] rounded-[calc(1.9rem-1px)] pointer-events-none" 
+                style={{ border: "0.5px solid rgba(255,255,255,0.3)" }}
+              />
+              <div 
+                className="absolute inset-0 rounded-[1.9rem] pointer-events-none" 
+                style={{ 
+                  boxShadow: "0 6px 24px -6px rgba(0,0,0,0.07), 0 3px 12px -3px rgba(0,0,0,0.03), 0 0 0 0.5px rgba(255,255,255,0.18)",
+                  background: "rgba(255, 255, 255, 0.45)"
+                }}
+              />
+              {/* Glow shadow layer - lights up on hover */}
+              <div 
+                className="absolute inset-0 rounded-[1.9rem] pointer-events-none transition-opacity duration-300 opacity-80 group-hover:opacity-100" 
+                style={{ 
+                  boxShadow: "rgba(139, 92, 246, 0.12) 0px 16px 48px -8px, rgba(59, 130, 246, 0.08) 0px 8px 24px -8px, rgba(255, 255, 255, 0.25) 0px 0px 0.5px"
+                }}
+              />
+
+              {/* Inner wrapper for card contents */}
+              <div className="relative z-10 px-5 py-12 md:px-16 md:py-16 flex flex-col items-center justify-center text-center">
+                
+                {/* Headline using Shario text structures */}
+                <div className="relative select-none flex flex-col items-center">
+                  <div 
+                    role="presentation" 
+                    className="text-center font-extrabold leading-[1.08] tracking-tight"
+                    style={{ fontSize: "clamp(2rem, 6.5vw, 5rem)" }}
+                  >
+                    <span 
+                      className="block select-none"
+                      style={{
+                        background: "linear-gradient(90deg, #8B5CF6, #A855F7)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent"
+                      }}
+                    >
+                      RentHub
+                    </span>
+                    <span 
+                      className="block mt-1 md:mt-2"
+                      style={{
+                        background: "linear-gradient(90deg, #38BDF8, #6366F1)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent"
+                      }}
+                    >
+                      Thuê Đồ Gần Bạn
+                    </span>
+                  </div>
+                </div>
+
+                <p 
+                  className="font-medium text-center mt-6"
+                  style={{
+                    fontSize: "20px",
+                    color: "#64748B",
+                    maxWidth: "700px"
+                  }}
+                >
                   Thuê đồ từ người xung quanh bạn. Nhanh chóng – tiện lợi – đúng lúc.
                 </p>
-              </div>
 
-              {/* Detailed Search Panel — white glass, ghost search icon */}
-              <div className="w-full bg-white/90 backdrop-blur-md border border-zinc-200/80 rounded-[28px] p-2.5 md:p-3 shadow-md flex flex-col sm:flex-row gap-0 divide-y sm:divide-y-0 sm:divide-x divide-zinc-200 items-stretch">
-                <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
-                  <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Ở đâu?</span>
-                  <input
-                    type="text"
-                    placeholder="Hai Bà Trưng, HN"
-                    className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
-                  />
-                </div>
-                <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
-                  <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Khi nào?</span>
-                  <input
-                    type="text"
-                    placeholder="Không giới hạn"
-                    className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
-                  />
-                </div>
-                <div className="flex-1 flex items-center justify-between pl-4 pr-2 py-2.5 gap-2">
-                  <div className="flex flex-col text-left w-full">
-                    <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Bạn cần gì?</span>
+                {/* Detailed Search Panel */}
+                <div 
+                  className="w-full mt-8 flex flex-col sm:flex-row gap-0 divide-y sm:divide-y-0 sm:divide-x divide-zinc-200 items-stretch"
+                  style={{
+                    background: "white",
+                    borderRadius: "24px",
+                    boxShadow: "0 8px 30px rgba(0,0,0,0.05)",
+                    padding: "8px",
+                    maxWidth: "800px"
+                  }}
+                >
+                  <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
+                    <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Ở đâu?</span>
                     <input
                       type="text"
-                      placeholder="Thử &quot;flycam&quot;"
+                      placeholder="Hai Bà Trưng, HN"
                       className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
                     />
                   </div>
-                  {/* Ghost search icon — no filled circle */}
-                  <button className="p-2 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-full transition-all cursor-pointer shrink-0">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </button>
+                  <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
+                    <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Khi nào?</span>
+                    <input
+                      type="text"
+                      placeholder="Không giới hạn"
+                      className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
+                    />
+                  </div>
+                  <div className="flex-1 flex items-center justify-between pl-4 pr-2 py-2.5 gap-2">
+                    <div className="flex flex-col text-left w-full">
+                      <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Bạn cần gì?</span>
+                      <input
+                        type="text"
+                        placeholder="Thử &quot;flycam&quot;"
+                        className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
+                      />
+                    </div>
+                    {/* Ghost search icon — no filled circle */}
+                    <button className="p-2 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-full transition-all cursor-pointer shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
+              </div>
             </div>
           </div>
         </div>
@@ -379,7 +589,7 @@ export function HomeScreen() {
             : CATEGORIES;
 
           return (
-            <div className="max-w-[1280px] w-full px-6 md:px-8 pb-10 flex gap-3 overflow-x-auto scrollbar-hide items-center justify-start md:justify-center">
+            <div className="max-w-[1280px] w-full px-6 md:px-8 pb-10 mt-8 flex gap-3 overflow-x-auto scrollbar-hide items-center justify-start md:justify-center">
               {activeHomeCategories.map((cat) => (
                 <button
                   key={cat.id}
@@ -429,6 +639,19 @@ export function HomeScreen() {
                     }`}
                   >
                     Danh mục
+                  </button>
+                  <button
+                    onClick={() => setAdminTab("products")}
+                    className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer relative ${
+                      adminTab === "products" ? "bg-white text-zinc-900 shadow-sm" : "text-secondary hover:text-primary"
+                    }`}
+                  >
+                    Duyệt tin
+                    {pendingProducts.length > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
+                        {pendingProducts.length}
+                      </span>
+                    )}
                   </button>
                 </div>
                 
@@ -676,6 +899,89 @@ export function HomeScreen() {
               </div>
             )}
 
+            {/* Tab 3: Pending Product Approvals */}
+            {adminTab === "products" && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center font-sans">
+                  <h3 className="text-sm font-bold text-primary">Sản phẩm chờ duyệt ({pendingProducts.length})</h3>
+                  <button onClick={fetchPendingProducts} className="text-xs font-bold text-brand-600 hover:text-brand-700 cursor-pointer">
+                    Làm mới danh sách
+                  </button>
+                </div>
+
+                {productsApprovalLoading ? (
+                  <div className="py-16 bg-white border border-secondary rounded-2xl flex flex-col items-center justify-center gap-3">
+                    <div className="w-6 h-6 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-xs text-secondary font-medium">Đang tải sản phẩm chờ duyệt...</p>
+                  </div>
+                ) : pendingProducts.length === 0 ? (
+                  <div className="py-16 bg-white border border-secondary rounded-2xl flex items-center justify-center text-center">
+                    <p className="text-xs text-secondary font-medium">Không có sản phẩm nào cần phê duyệt. 🎉</p>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-secondary rounded-2xl overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse font-sans">
+                        <thead>
+                          <tr className="bg-secondary/40 border-b border-secondary">
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Hình ảnh</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Tên sản phẩm</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Giá thuê / ngày</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Danh mục</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider">Người đăng</th>
+                            <th className="px-5 py-3.5 text-[10px] font-bold text-tertiary uppercase tracking-wider text-right">Phê duyệt</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-secondary/60">
+                          {pendingProducts.map((prod) => (
+                            <tr key={prod.id} className="hover:bg-secondary/20 transition-colors">
+                              <td className="px-5 py-3">
+                                <div className="w-12 h-12 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-50">
+                                  {prod.primaryImage ? (
+                                    <img src={prod.primaryImage} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-lg">📦</div>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-5 py-3 font-bold text-xs text-primary">
+                                <Link href={`/products/${prod.id}`} className="hover:underline hover:text-brand-700">
+                                  {prod.name}
+                                </Link>
+                              </td>
+                              <td className="px-5 py-3 text-xs font-semibold text-violet-700">
+                                {Number(prod.pricePerDay).toLocaleString("vi-VN")}đ
+                              </td>
+                              <td className="px-5 py-3 text-xs text-secondary font-mono">{prod.category?.name || prod.categoryName}</td>
+                              <td className="px-5 py-3 text-xs text-secondary font-semibold">{prod.ownerName || "Người dùng"}</td>
+                              <td className="px-5 py-3 text-right">
+                                <div className="flex justify-end gap-2">
+                                  <button
+                                    onClick={() => handleApproveProduct(prod.id, prod.name)}
+                                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[10px] font-extrabold shadow-sm transition-all cursor-pointer"
+                                    title="Duyệt cho thuê"
+                                  >
+                                    Đồng ý
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectProduct(prod.id, prod.name)}
+                                    className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-[10px] font-extrabold shadow-sm transition-all cursor-pointer"
+                                    title="Từ chối duyệt"
+                                  >
+                                    Từ chối
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         )}
 
@@ -817,26 +1123,19 @@ export function HomeScreen() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {SPORTS_PRODUCTS.map((prod) => (
-                <div key={prod.id} className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative">
-                  <button className="absolute top-4.5 right-4.5 p-2 bg-white/80 hover:bg-white rounded-full text-zinc-500 hover:text-red-500 shadow-sm transition-all z-10 cursor-pointer">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                  <div className="h-[200px] w-full overflow-hidden relative">
-                    <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
-                    <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-xs font-black shadow-sm text-zinc-800">{prod.price} <span className="text-[9px] font-bold text-zinc-500">/ ngày</span></span>
-                  </div>
-                  <div className="p-4 space-y-2">
-                    <h3 className="font-extrabold text-sm text-zinc-800 line-clamp-1 group-hover:text-brand-700 transition-colors">{prod.name}</h3>
-                    <div className="flex items-center justify-between text-xs font-semibold text-zinc-500">
-                      <span className="flex items-center gap-1">⭐ {prod.rating}</span>
-                      <span className="truncate max-w-[120px]">📍 {prod.loc}</span>
+              {productsLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                      <div className="h-[200px] bg-zinc-200" />
+                      <div className="p-4 space-y-2">
+                        <div className="h-4 bg-zinc-200 rounded w-3/4" />
+                        <div className="h-3 bg-zinc-100 rounded w-1/2" />
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+                : availableProducts.slice(0, 4).map((prod) => (
+                    <ProductCard key={prod.id} prod={prod} />
+                  ))}
             </div>
           </div>
 
@@ -855,26 +1154,19 @@ export function HomeScreen() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {OUTDOOR_PRODUCTS.map((prod) => (
-                <div key={prod.id} className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative">
-                  <button className="absolute top-4.5 right-4.5 p-2 bg-white/80 hover:bg-white rounded-full text-zinc-500 hover:text-red-500 shadow-sm transition-all z-10 cursor-pointer">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                  <div className="h-[200px] w-full overflow-hidden relative">
-                    <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
-                    <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-xs font-black shadow-sm text-zinc-800">{prod.price} <span className="text-[9px] font-bold text-zinc-500">/ ngày</span></span>
-                  </div>
-                  <div className="p-4 space-y-2">
-                    <h3 className="font-extrabold text-sm text-zinc-800 line-clamp-1 group-hover:text-brand-700 transition-colors">{prod.name}</h3>
-                    <div className="flex items-center justify-between text-xs font-semibold text-zinc-500">
-                      <span className="flex items-center gap-1">⭐ {prod.rating}</span>
-                      <span className="truncate max-w-[120px]">📍 {prod.loc}</span>
+              {productsLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                      <div className="h-[200px] bg-zinc-200" />
+                      <div className="p-4 space-y-2">
+                        <div className="h-4 bg-zinc-200 rounded w-3/4" />
+                        <div className="h-3 bg-zinc-100 rounded w-1/2" />
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+                : availableProducts.slice(4, 8).map((prod) => (
+                    <ProductCard key={prod.id} prod={prod} />
+                  ))}
             </div>
           </div>
 
@@ -903,26 +1195,18 @@ export function HomeScreen() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
-              {YOU_MAY_NEED.map((prod) => (
-                <div key={prod.id} className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative">
-                  <button className="absolute top-4.5 right-4.5 p-2 bg-white/80 hover:bg-white rounded-full text-zinc-500 hover:text-red-500 shadow-sm transition-all z-10 cursor-pointer">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                  <div className="h-[170px] w-full overflow-hidden relative">
-                    <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
-                    <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-[10px] font-black shadow-sm text-zinc-800">{prod.price} <span className="text-[8px] font-bold text-zinc-500">/ ngày</span></span>
-                  </div>
-                  <div className="p-3.5 space-y-2">
-                    <h3 className="font-extrabold text-xs text-zinc-800 line-clamp-1 group-hover:text-brand-700 transition-colors">{prod.name}</h3>
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-500">
-                      <span className="flex items-center gap-1">⭐ {prod.rating}</span>
-                      <span className="truncate max-w-[90px]">📍 {prod.loc}</span>
+              {productsLoading
+                ? Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                      <div className="h-[170px] bg-zinc-200" />
+                      <div className="p-3.5 space-y-2">
+                        <div className="h-3 bg-zinc-200 rounded w-3/4" />
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+                : availableProducts.slice(8, 13).map((prod) => (
+                    <ProductCard key={prod.id} prod={prod} />
+                  ))}
             </div>
           </div>
 
@@ -954,27 +1238,16 @@ export function HomeScreen() {
 
             {/* Horizontal Carousel Scrolling Container */}
             <div className="flex gap-5 overflow-x-auto scrollbar-hide py-2 px-1 justify-start">
-              {TRENDING.map((prod, idx) => (
-                <div
-                  key={idx}
-                  className="w-[190px] shrink-0 bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative"
-                >
-                  <div className="h-[145px] w-full overflow-hidden relative">
-                    <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
-                    <span className="absolute bottom-2.5 left-2.5 bg-white/95 px-2.5 py-0.5 rounded-md text-[10px] font-black shadow-sm text-zinc-800">
-                      {prod.price} <span className="text-[8px] font-bold text-zinc-500">/ ngày</span>
-                    </span>
-                  </div>
-                  <div className="p-3 space-y-1.5">
-                    <h3 className="font-extrabold text-xs text-zinc-800 line-clamp-1 group-hover:text-brand-700 transition-colors">
-                      {prod.name}
-                    </h3>
-                    <div className="flex items-center text-[10px] font-semibold text-zinc-500">
-                      <span>⭐ {prod.rating}</span>
+              {productsLoading
+                ? Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="w-[190px] shrink-0 bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                      <div className="h-[145px] bg-zinc-200" />
+                      <div className="p-3"><div className="h-3 bg-zinc-200 rounded w-2/3" /></div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+                : availableProducts.map((prod) => (
+                    <ProductCardCompact key={prod.id} prod={prod} />
+                  ))}
             </div>
 
           </div>
