@@ -29,23 +29,24 @@ export function LocationMapPreview({ latitude, longitude }: MapPreviewProps) {
       if (!leafletInstance.current) {
         leafletInstance.current = L.map(mapRef.current).setView([latitude, longitude], 15);
         
-        const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY || "7a45350d010dc9414c4a0149d8eb129b6adb5601c6eb6c4e";
+        const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY;
         
         // Define tile URL candidates
-        const vietmapTileUrl1 = `https://maps.vietmap.vn/tm/{z}/{x}/{y}.png?apikey=${apiKey}`;
-        const vietmapTileUrl2 = `https://maps.vietmap.vn/api/tiles/{z}/{x}/{y}.png?apikey=${apiKey}`;
+        const vietmapTileUrl1 = apiKey ? `https://maps.vietmap.vn/tm/{z}/{x}/{y}.png?apikey=${apiKey}` : null;
+        const vietmapTileUrl2 = apiKey ? `https://maps.vietmap.vn/api/tiles/{z}/{x}/{y}.png?apikey=${apiKey}` : null;
         const osmTileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
-        const tileLayer = L.tileLayer(vietmapTileUrl1, {
-          attribution: "© VietMap",
+        const tileLayer = L.tileLayer(vietmapTileUrl1 || osmTileUrl, {
+          attribution: vietmapTileUrl1 ? "© VietMap" : "© OpenStreetMap",
           maxZoom: 19
         }).addTo(leafletInstance.current);
 
         // Fallback logic if any tile request fails (e.g. key domain restriction, incorrect api style, etc.)
         let errorCount = 0;
         tileLayer.on("tileerror", () => {
+          if (!vietmapTileUrl1) return;
           errorCount++;
-          if (errorCount === 1) {
+          if (errorCount === 1 && vietmapTileUrl2) {
             console.warn("VietMap Tile URL 1 failed, trying URL 2...");
             tileLayer.setUrl(vietmapTileUrl2);
           } else if (errorCount === 2) {
