@@ -4,6 +4,7 @@ import { RouteProvider } from "@/providers/router-provider";
 import { Theme } from "@/providers/theme";
 import { ToastProvider } from "@/context/ToastContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/cart-context";
 import "@/styles/globals.css";
 import { cx } from "@/utils/cx";
 
@@ -32,9 +33,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <RouteProvider>
                     <Theme>
                         <AuthProvider>
-                            <ToastProvider>
-                                {children}
-                            </ToastProvider>
+                            <CartProvider>
+                                <ToastProvider>
+                                    {children}
+                                </ToastProvider>
+                            </CartProvider>
                         </AuthProvider>
                     </Theme>
                 </RouteProvider>

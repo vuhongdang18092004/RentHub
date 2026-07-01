@@ -30,6 +30,15 @@ public class ProductController {
         return new ResponseEntity<>(productService.createProduct(request, email), HttpStatus.CREATED);
     }
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<Page<ProductSummaryResponse>> getAvailableProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) Long categoryId) {
+        return ResponseEntity.ok(productService.getAvailableProducts(page, size, categoryId));
+    }
+
     @GetMapping("/my")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Page<ProductSummaryResponse>> getMyProducts(
@@ -45,8 +54,7 @@ public class ProductController {
     public ResponseEntity<ProductDetailResponse> getProductDetail(
             @PathVariable Long id,
             Authentication authentication) {
-        String email = authentication.getName();
-        return ResponseEntity.ok(productService.getProductDetail(id, email));
+        return ResponseEntity.ok(productService.getPublicProductDetail(id));
     }
 
     @PutMapping("/{id}")

@@ -25,7 +25,6 @@ interface CreateProductFormInput {
   depositAmount: number;
   address: string;
   categoryId: string;
-  primaryImageUrl: string;
 }
 
 export default function CreateProductPage() {
@@ -35,6 +34,8 @@ export default function CreateProductPage() {
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<{ imageUrl: string; isPrimary: boolean }[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   // Admin Route Restriction check
   useEffect(() => {
@@ -66,24 +67,118 @@ export default function CreateProductPage() {
       }
     };
     fetchCategories();
-  }, [triggerToast]);
+  }, []);
+
+  // Helper to upload images to Cloudinary with browser-side signature computation
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
+    const apiSecret = process.env.NEXT_PUBLIC_CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      throw new Error("Cấu hình Cloudinary thiếu trong file .env");
+    }
+
+    const timestamp = Math.round(new Date().getTime() / 1000).toString();
+    const stringToSign = `timestamp=${timestamp}${apiSecret}`;
+    const buffer = new TextEncoder().encode(stringToSign);
+    const hash = await crypto.subtle.digest("SHA-1", buffer);
+    const signature = Array.from(new Uint8Array(hash))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", timestamp);
+    formData.append("signature", signature);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error?.message || "Tải ảnh thất bại");
+    }
+
+    const resData = await response.json();
+    return resData.secure_url;
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    const newUrls: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const url = await uploadToCloudinary(files[i]);
+        newUrls.push(url);
+      } catch (err: any) {
+        console.error("Lỗi upload Cloudinary:", err);
+        triggerToast(`Lỗi tải ảnh ${files[i].name}: ${err.message}`);
+      }
+    }
+
+    if (newUrls.length > 0) {
+      setUploadedImages((prev) => {
+        const updated = [...prev];
+        newUrls.forEach((url) => {
+          const isPrimary = updated.length === 0;
+          updated.push({ imageUrl: url, isPrimary });
+        });
+        return updated;
+      });
+      triggerToast(`Đã tải lên thành công ${newUrls.length} ảnh! 📸`);
+    }
+    setUploading(false);
+  };
+
+  const setPrimaryImage = (index: number) => {
+    setUploadedImages((prev) =>
+      prev.map((img, i) => ({
+        ...img,
+        isPrimary: i === index,
+      }))
+    );
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      if (prev[index]?.isPrimary && updated.length > 0) {
+        updated[0].isPrimary = true;
+      }
+      return updated;
+    });
+  };
 
   const onSubmit = async (data: CreateProductFormInput) => {
+    if (uploadedImages.length === 0) {
+      triggerToast("Vui lòng tải lên ít nhất 1 ảnh!");
+      return;
+    }
+
     try {
       setSaving(true);
       
       const productData = {
-        categoryId: parseInt(data.categoryId),
+        categoryId: parseInt(data.categoryId || "0"),
         name: data.name,
-        description: data.description,
-        pricePerDay: parseFloat(data.pricePerDay.toString()),
-        depositAmount: parseFloat(data.depositAmount.toString()),
+        description: data.description || "",
+        pricePerDay: Number(data.pricePerDay || 0),
+        depositAmount: Number(data.depositAmount || 0),
         address: data.address,
         latitude: null,
         longitude: null,
-        images: data.primaryImageUrl
-          ? [{ imageUrl: data.primaryImageUrl, isPrimary: true }]
-          : [],
+        images: uploadedImages,
       };
 
       await productService.createProduct(productData);
@@ -186,15 +281,79 @@ export default function CreateProductPage() {
                   error={errors.address?.message}
                 />
 
-                {/* Primary Image URL */}
-                <Input
-                  {...register("primaryImageUrl", { required: "Đường dẫn ảnh là bắt buộc" })}
-                  label="Đường dẫn ảnh chính sản phẩm"
-                  placeholder="Đường dẫn link ảnh (HTTP/HTTPS)"
-                  type="text"
-                  isRequired
-                  error={errors.primaryImageUrl?.message}
-                />
+                {/* Cloudinary Multiple Image Uploader */}
+                <div className="space-y-3 font-sans">
+                  <label className="text-xs font-semibold text-secondary">
+                    Hình ảnh sản phẩm <span className="text-red-500">*</span>
+                  </label>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {/* Existing uploaded images */}
+                    {uploadedImages.map((img, idx) => (
+                      <div key={idx} className="aspect-[4/3] rounded-xl overflow-hidden border border-zinc-200 bg-zinc-50 relative group">
+                        <img src={img.imageUrl} alt="" className="w-full h-full object-cover" />
+                        
+                        {/* Control overlay on hover */}
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPrimaryImage(idx)}
+                            className={`p-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                              img.isPrimary ? "bg-amber-500 text-white" : "bg-white text-zinc-700 hover:bg-zinc-100"
+                            }`}
+                            title={img.isPrimary ? "Ảnh chính" : "Đặt làm ảnh chính"}
+                          >
+                            ⭐
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeImage(idx)}
+                            className="p-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors cursor-pointer"
+                            title="Xóa ảnh"
+                          >
+                            🗑
+                          </button>
+                        </div>
+
+                        {img.isPrimary && (
+                          <span className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500 text-white text-[9px] font-black rounded-md shadow-sm uppercase tracking-wider">
+                            Ảnh chính
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Upload box */}
+                    <label className="aspect-[4/3] rounded-xl border-2 border-dashed border-zinc-300 hover:border-violet-500 bg-zinc-50 hover:bg-violet-50/20 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all duration-200 group relative">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                        disabled={uploading}
+                      />
+                      {uploading ? (
+                        <>
+                          <div className="w-6 h-6 border-2 border-violet-600 border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-[10px] font-semibold text-violet-600 animate-pulse">Đang tải...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-xl group-hover:scale-110 transition-transform">➕</span>
+                          <span className="text-[10px] font-bold text-zinc-500 group-hover:text-violet-600">Thêm ảnh</span>
+                          <span className="text-[8px] text-zinc-400">Tải lên Cloudinary</span>
+                        </>
+                      )}
+                    </label>
+                  </div>
+
+                  {uploadedImages.length === 0 && (
+                    <p className="text-[11px] text-red-500 font-semibold mt-1">Vui lòng tải lên ít nhất 1 ảnh sản phẩm</p>
+                  )}
+                </div>
+
+
 
                 {/* Description */}
                 <div className="space-y-1.5 font-sans">

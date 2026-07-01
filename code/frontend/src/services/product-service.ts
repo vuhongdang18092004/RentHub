@@ -73,4 +73,22 @@ export const productService = {
   deleteProduct: async (id: number): Promise<void> => {
     await api.delete(`/products/${id}`);
   },
+
+  // Public listing — all AVAILABLE products (not owner-restricted)
+  getAvailableProducts: async (
+    page = 0,
+    size = 12,
+    categoryId?: number
+  ): Promise<{ content: ProductSummary[]; totalElements: number; totalPages: number }> => {
+    const params: Record<string, unknown> = { page, size };
+    if (categoryId) params.categoryId = categoryId;
+    const res = await api.get(`/products`, { params });
+    return res.data;
+  },
+
+  // Public detail — any authenticated user can view
+  getPublicProductDetail: async (id: number): Promise<ProductDetail> => {
+    const res = await api.get(`/products/${id}`);
+    return res.data;
+  },
 };
