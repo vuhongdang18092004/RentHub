@@ -95,6 +95,8 @@ export default function ProductDetailPage() {
     AVAILABLE:   { text: "Có sẵn",     cls: "bg-green-100 text-green-700" },
     RENTED:      { text: "Đang cho thuê", cls: "bg-amber-100 text-amber-700" },
     UNAVAILABLE: { text: "Không khả dụng", cls: "bg-zinc-100 text-zinc-500" },
+    PENDING:     { text: "Chờ duyệt",   cls: "bg-yellow-100 text-yellow-700" },
+    BLOCKED:     { text: "Đã khóa (Admin)", cls: "bg-rose-100 text-rose-700" },
   };
 
   return (

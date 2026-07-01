@@ -10,7 +10,7 @@ export interface ProductSummary {
   id: number;
   name: string;
   pricePerDay: number;
-  status: "AVAILABLE" | "RENTED" | "UNAVAILABLE";
+  status: "PENDING" | "AVAILABLE" | "RENTED" | "UNAVAILABLE" | "BLOCKED";
   category: {
     id: number;
     name: string;

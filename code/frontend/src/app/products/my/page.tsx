@@ -142,13 +142,21 @@ export default function MyProductsPage() {
                                 ? "bg-green-50 text-green-700"
                                 : product.status === "RENTED"
                                 ? "bg-orange-50 text-orange-700"
-                                : "bg-red-50 text-red-700"
+                                : product.status === "PENDING"
+                                ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                                : product.status === "BLOCKED"
+                                ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                : "bg-zinc-150 text-zinc-600"
                             }`}
                           >
                             {product.status === "AVAILABLE"
                               ? "Sẵn sàng"
                               : product.status === "RENTED"
                               ? "Đang thuê"
+                              : product.status === "PENDING"
+                              ? "Chờ duyệt"
+                              : product.status === "BLOCKED"
+                              ? "Bị khóa"
                               : "Đã ẩn"}
                           </span>
                         </td>
