@@ -49,17 +49,11 @@ export function LocationAutocomplete({
 
   // Fetch suggestions from VietMap Autocomplete API
   const fetchSuggestions = async (searchText: string) => {
-    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY;
-    if (!apiKey) {
-      setError("Cấu hình VietMap API Key thiếu trong file .env.local");
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
 
-      const url = `https://maps.vietmap.vn/api/autocomplete/v3?apikey=${apiKey}&text=${encodeURIComponent(searchText)}`;
+      const url = `/api/vietmap?action=autocomplete&text=${encodeURIComponent(searchText)}`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error("Lỗi gọi VietMap Autocomplete API");
@@ -111,10 +105,9 @@ export function LocationAutocomplete({
 
   // Fetch coordinates using VietMap Place API
   const handleSelectSuggestion = async (suggestion: any) => {
-    const apiKey = process.env.NEXT_PUBLIC_VIETMAP_API_KEY;
     const refId = suggestion.ref_id || suggestion.refid;
 
-    if (!refId || !apiKey) {
+    if (!refId) {
       // If no ref_id, fall back to basic address with default coordinates (Hanoi center)
       setQuery(suggestion.address || suggestion.name);
       setIsOpen(false);
@@ -131,7 +124,7 @@ export function LocationAutocomplete({
       setQuery(suggestion.address || suggestion.name);
       setIsOpen(false);
 
-      const url = `https://maps.vietmap.vn/api/place/v3?apikey=${apiKey}&refid=${refId}`;
+      const url = `/api/vietmap?action=place&refid=${refId}`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error("Lỗi gọi VietMap Place API");
