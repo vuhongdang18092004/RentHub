@@ -142,6 +142,25 @@ public class ProductServiceImpl implements ProductService {
         return ProductDetailResponse.fromEntity(product);
     }
 
+    @Override
+    public Page<ProductSummaryResponse> getAvailableProducts(int page, int size, Long categoryId) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        if (categoryId != null) {
+            return productRepository.findByStatusAndCategoryIdOrderByCreatedAtDesc(
+                    ProductStatus.AVAILABLE, categoryId, pageable)
+                    .map(ProductSummaryResponse::fromEntity);
+        }
+        return productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.AVAILABLE, pageable)
+                .map(ProductSummaryResponse::fromEntity);
+    }
+
+    @Override
+    public ProductDetailResponse getPublicProductDetail(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        return ProductDetailResponse.fromEntity(product);
+    }
+
     private void setAddressFields(Product product, String address, BigDecimal latitude, BigDecimal longitude, UserEntity owner) {
         if (address != null && latitude != null && longitude != null) {
             product.setAddress(address);

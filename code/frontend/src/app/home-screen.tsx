@@ -5,8 +5,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { useCart } from "@/context/cart-context";
 import api from "@/lib/axios";
 import { Header } from "@/components/layout/header";
+import { productService, ProductSummary } from "@/services/product-service";
 
 const THUMBNAILS = [
   "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=300&auto=format&fit=crop&q=60", // bicycle
@@ -30,36 +32,113 @@ const CATEGORIES = [
   { id: "appliance", name: "Gia dụng", count: 86, icon: "🏠", color: "bg-amber-50 text-amber-700" }
 ];
 
-const SPORTS_PRODUCTS = [
-  { id: 1, name: "Xe đạp đua Trek Domane SL 7", price: "175K", rating: 4.8, loc: "Ba Đình, Hà Nội", img: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=500&auto=format&fit=crop&q=80" },
-  { id: 2, name: "Ván lướt sóng 7ft mặt xốp", price: "90K", rating: 4.4, loc: "Bình Thạnh, TP.HCM", img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=500&auto=format&fit=crop&q=80" }
-];
 
-const OUTDOOR_PRODUCTS = [
-  { id: 3, name: "Võng cắm trại kèm dây treo", price: "50K", rating: 4.8, loc: "Hai Bà Trưng, Hà Nội", img: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&auto=format&fit=crop&q=80" },
-  { id: 4, name: "Lều cắm trại 4 người", price: "110K", rating: 4.7, loc: "Đống Đa, Hà Nội", img: "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=500&auto=format&fit=crop&q=80" },
-  { id: 5, name: "Thuyền Kayak bơm hơi 2 người", price: "150K", rating: 4.5, loc: "Quận 7, TP.HCM", img: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=500&auto=format&fit=crop&q=80" }
-];
+// Product card component reused across all sections
+function ProductCard({ prod }: { prod: ProductSummary }) {
+  const { addItem, isInCart } = useCart();
+  const { triggerToast } = useToast();
+  const inCart = isInCart(prod.id);
 
-const YOU_MAY_NEED = [
-  { id: 6, name: "Bộ máy ảnh Canon EOS R5...", price: "225K", rating: 4.9, loc: "Hoàn Kiếm, Hà Nội", img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80" },
-  { id: 7, name: "Flycam DJI Mavic 3 Pro", price: "275K", rating: 4.9, loc: "Cầu Giấy, Hà Nội", img: "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=500&auto=format&fit=crop&q=80" },
-  { id: 8, name: "Máy ảnh Sony A7 IV Full Frame", price: "200K", rating: 4.8, loc: "Tây Hồ, Hà Nội", img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80" },
-  { id: 9, name: "Máy chiếu Epson Home Cl...", price: "140K", rating: 4.7, loc: "Long Biên, Hà Nội", img: "https://images.unsplash.com/photo-1535016120720-40c646be5580?w=500&auto=format&fit=crop&q=80" },
-  { id: 10, name: "Loa Bluetooth di động JBL", price: "40K", rating: 4.6, loc: "Quận 1, TP.HCM", img: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=500&auto=format&fit=crop&q=80" }
-];
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(prod, 1);
+    triggerToast("Đã thêm vào giỏ! 🛍");
+  };
 
-const TRENDING = [
-  { id: 11, name: "Lều cắm trại 4 người", price: "40K", rating: 4.7, img: "https://images.unsplash.com/photo-1510312305653-8ed496efae75?w=500&auto=format&fit=crop&q=80" },
-  { id: 12, name: "Máy ảnh Sony A7 IV Full Frame", price: "200K", rating: 4.8, img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80" },
-  { id: 13, name: "Loa Bluetooth di động JBL", price: "40K", rating: 4.6, img: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=500&auto=format&fit=crop&q=80" },
-  { id: 14, name: "Bàn DJ chuyên nghiệp", price: "190K", rating: 4.7, img: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&auto=format&fit=crop&q=80" },
-  { id: 15, name: "Võng cắm trại kèm dây treo", price: "50K", rating: 4.8, img: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&auto=format&fit=crop&q=80" },
-  { id: 16, name: "Máy chiếu Epson Home Cl...", price: "140K", rating: 4.7, img: "https://images.unsplash.com/photo-1535016120720-40c646be5580?w=500&auto=format&fit=crop&q=80" },
-  { id: 17, name: "Bộ máy ảnh Canon EOS R5...", price: "225K", rating: 4.9, img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80" },
-  { id: 18, name: "Xe đạp đua Trek Domane S...", price: "175K", rating: 4.8, img: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=500&auto=format&fit=crop&q=80" },
-  { id: 19, name: "Flycam DJI Mavic 3 Pro", price: "275K", rating: 4.9, img: "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=500&auto=format&fit=crop&q=80" }
-];
+  const priceLabel = `${Number(prod.pricePerDay).toLocaleString("vi-VN")}đ`;
+
+  return (
+    <Link
+      href={`/products/${prod.id}`}
+      className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative block"
+    >
+      {/* Cart add button */}
+      <button
+        onClick={handleAddToCart}
+        disabled={prod.status !== "AVAILABLE" || inCart}
+        title={inCart ? "Đã trong giỏ" : "Thêm vào giỏ"}
+        className={`absolute top-3 right-3 p-2 rounded-full shadow-sm transition-all z-10 cursor-pointer ${
+          inCart
+            ? "bg-green-50 text-green-600"
+            : "bg-white/80 hover:bg-white text-zinc-500 hover:text-violet-600"
+        }`}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {inCart
+            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />}
+        </svg>
+      </button>
+      {/* Image */}
+      <div className="h-[200px] w-full overflow-hidden relative">
+        {prod.primaryImage ? (
+          <img src={prod.primaryImage} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
+        ) : (
+          <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-3xl">📦</div>
+        )}
+        <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-xs font-black shadow-sm text-zinc-800">
+          {priceLabel} <span className="text-[9px] font-bold text-zinc-500">/ ngày</span>
+        </span>
+      </div>
+      {/* Info */}
+      <div className="p-4 space-y-1.5">
+        <h3 className="font-extrabold text-sm text-zinc-800 line-clamp-1 group-hover:text-violet-700 transition-colors">{prod.name}</h3>
+        <div className="flex items-center justify-between text-xs font-semibold text-zinc-500">
+          <span className="bg-zinc-100 px-2 py-0.5 rounded-md text-[10px]">{prod.category?.name}</span>
+          {prod.status !== "AVAILABLE" && (
+            <span className="text-amber-600 text-[10px] font-bold">Đang thuê</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// Compact card for trending carousel
+function ProductCardCompact({ prod }: { prod: ProductSummary }) {
+  const { addItem, isInCart } = useCart();
+  const { triggerToast } = useToast();
+  const inCart = isInCart(prod.id);
+  const priceLabel = `${Number(prod.pricePerDay).toLocaleString("vi-VN")}đ`;
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(prod, 1);
+    triggerToast("Đã thêm vào giỏ! 🛍");
+  };
+
+  return (
+    <Link
+      href={`/products/${prod.id}`}
+      className="w-[190px] shrink-0 bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative block"
+    >
+      <button onClick={handleAddToCart} disabled={prod.status !== "AVAILABLE" || inCart}
+        className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm z-10 cursor-pointer transition-all ${
+          inCart ? "bg-green-50 text-green-600" : "bg-white/80 hover:bg-white text-zinc-500 hover:text-violet-600"
+        }`}>
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {inCart
+            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />}
+        </svg>
+      </button>
+      <div className="h-[145px] w-full overflow-hidden relative">
+        {prod.primaryImage
+          ? <img src={prod.primaryImage} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
+          : <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-2xl">📦</div>}
+        <span className="absolute bottom-2.5 left-2.5 bg-white/95 px-2.5 py-0.5 rounded-md text-[10px] font-black shadow-sm text-zinc-800">
+          {priceLabel} <span className="text-[8px] font-bold text-zinc-500">/ ngày</span>
+        </span>
+      </div>
+      <div className="p-3 space-y-1">
+        <h3 className="font-extrabold text-xs text-zinc-800 line-clamp-1 group-hover:text-violet-700 transition-colors">{prod.name}</h3>
+        <span className="text-[10px] text-zinc-400">{prod.category?.name}</span>
+      </div>
+    </Link>
+  );
+}
 
 export function HomeScreen() {
   const router = useRouter();
@@ -69,6 +148,10 @@ export function HomeScreen() {
 
   const isAdminParam = searchParams?.get("admin") === "true";
   const showAdminPanel = role === "ROLE_ADMIN" && isAdminParam;
+
+  // Real products from API
+  const [availableProducts, setAvailableProducts] = useState<ProductSummary[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
 
   // Active Admin Tab
   const [adminTab, setAdminTab] = useState<"users" | "categories">("users");
@@ -114,9 +197,22 @@ export function HomeScreen() {
     }
   };
 
-  // Initial mount load for category tags
+  // Initial mount load for category tags AND real products
   useEffect(() => {
     fetchCategories();
+    // Fetch real AVAILABLE products
+    const loadProducts = async () => {
+      try {
+        setProductsLoading(true);
+        const res = await productService.getAvailableProducts(0, 24);
+        setAvailableProducts(res.content || []);
+      } catch (err) {
+        console.error("Lỗi lấy sản phẩm:", err);
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+    loadProducts();
   }, []);
 
   // Trigger loading when entering Admin Mode
@@ -817,26 +913,19 @@ export function HomeScreen() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {SPORTS_PRODUCTS.map((prod) => (
-                <div key={prod.id} className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative">
-                  <button className="absolute top-4.5 right-4.5 p-2 bg-white/80 hover:bg-white rounded-full text-zinc-500 hover:text-red-500 shadow-sm transition-all z-10 cursor-pointer">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                  <div className="h-[200px] w-full overflow-hidden relative">
-                    <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
-                    <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-xs font-black shadow-sm text-zinc-800">{prod.price} <span className="text-[9px] font-bold text-zinc-500">/ ngày</span></span>
-                  </div>
-                  <div className="p-4 space-y-2">
-                    <h3 className="font-extrabold text-sm text-zinc-800 line-clamp-1 group-hover:text-brand-700 transition-colors">{prod.name}</h3>
-                    <div className="flex items-center justify-between text-xs font-semibold text-zinc-500">
-                      <span className="flex items-center gap-1">⭐ {prod.rating}</span>
-                      <span className="truncate max-w-[120px]">📍 {prod.loc}</span>
+              {productsLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                      <div className="h-[200px] bg-zinc-200" />
+                      <div className="p-4 space-y-2">
+                        <div className="h-4 bg-zinc-200 rounded w-3/4" />
+                        <div className="h-3 bg-zinc-100 rounded w-1/2" />
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+                : availableProducts.slice(0, 4).map((prod) => (
+                    <ProductCard key={prod.id} prod={prod} />
+                  ))}
             </div>
           </div>
 
@@ -855,26 +944,19 @@ export function HomeScreen() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {OUTDOOR_PRODUCTS.map((prod) => (
-                <div key={prod.id} className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative">
-                  <button className="absolute top-4.5 right-4.5 p-2 bg-white/80 hover:bg-white rounded-full text-zinc-500 hover:text-red-500 shadow-sm transition-all z-10 cursor-pointer">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                  <div className="h-[200px] w-full overflow-hidden relative">
-                    <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
-                    <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-xs font-black shadow-sm text-zinc-800">{prod.price} <span className="text-[9px] font-bold text-zinc-500">/ ngày</span></span>
-                  </div>
-                  <div className="p-4 space-y-2">
-                    <h3 className="font-extrabold text-sm text-zinc-800 line-clamp-1 group-hover:text-brand-700 transition-colors">{prod.name}</h3>
-                    <div className="flex items-center justify-between text-xs font-semibold text-zinc-500">
-                      <span className="flex items-center gap-1">⭐ {prod.rating}</span>
-                      <span className="truncate max-w-[120px]">📍 {prod.loc}</span>
+              {productsLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                      <div className="h-[200px] bg-zinc-200" />
+                      <div className="p-4 space-y-2">
+                        <div className="h-4 bg-zinc-200 rounded w-3/4" />
+                        <div className="h-3 bg-zinc-100 rounded w-1/2" />
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+                : availableProducts.slice(4, 8).map((prod) => (
+                    <ProductCard key={prod.id} prod={prod} />
+                  ))}
             </div>
           </div>
 
@@ -903,26 +985,18 @@ export function HomeScreen() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
-              {YOU_MAY_NEED.map((prod) => (
-                <div key={prod.id} className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative">
-                  <button className="absolute top-4.5 right-4.5 p-2 bg-white/80 hover:bg-white rounded-full text-zinc-500 hover:text-red-500 shadow-sm transition-all z-10 cursor-pointer">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                  <div className="h-[170px] w-full overflow-hidden relative">
-                    <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
-                    <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-[10px] font-black shadow-sm text-zinc-800">{prod.price} <span className="text-[8px] font-bold text-zinc-500">/ ngày</span></span>
-                  </div>
-                  <div className="p-3.5 space-y-2">
-                    <h3 className="font-extrabold text-xs text-zinc-800 line-clamp-1 group-hover:text-brand-700 transition-colors">{prod.name}</h3>
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-500">
-                      <span className="flex items-center gap-1">⭐ {prod.rating}</span>
-                      <span className="truncate max-w-[90px]">📍 {prod.loc}</span>
+              {productsLoading
+                ? Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                      <div className="h-[170px] bg-zinc-200" />
+                      <div className="p-3.5 space-y-2">
+                        <div className="h-3 bg-zinc-200 rounded w-3/4" />
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+                : availableProducts.slice(8, 13).map((prod) => (
+                    <ProductCard key={prod.id} prod={prod} />
+                  ))}
             </div>
           </div>
 
@@ -954,27 +1028,16 @@ export function HomeScreen() {
 
             {/* Horizontal Carousel Scrolling Container */}
             <div className="flex gap-5 overflow-x-auto scrollbar-hide py-2 px-1 justify-start">
-              {TRENDING.map((prod, idx) => (
-                <div
-                  key={idx}
-                  className="w-[190px] shrink-0 bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative"
-                >
-                  <div className="h-[145px] w-full overflow-hidden relative">
-                    <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
-                    <span className="absolute bottom-2.5 left-2.5 bg-white/95 px-2.5 py-0.5 rounded-md text-[10px] font-black shadow-sm text-zinc-800">
-                      {prod.price} <span className="text-[8px] font-bold text-zinc-500">/ ngày</span>
-                    </span>
-                  </div>
-                  <div className="p-3 space-y-1.5">
-                    <h3 className="font-extrabold text-xs text-zinc-800 line-clamp-1 group-hover:text-brand-700 transition-colors">
-                      {prod.name}
-                    </h3>
-                    <div className="flex items-center text-[10px] font-semibold text-zinc-500">
-                      <span>⭐ {prod.rating}</span>
+              {productsLoading
+                ? Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="w-[190px] shrink-0 bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                      <div className="h-[145px] bg-zinc-200" />
+                      <div className="p-3"><div className="h-3 bg-zinc-200 rounded w-2/3" /></div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+                : availableProducts.map((prod) => (
+                    <ProductCardCompact key={prod.id} prod={prod} />
+                  ))}
             </div>
 
           </div>

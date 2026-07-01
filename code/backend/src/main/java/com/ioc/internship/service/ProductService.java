@@ -12,4 +12,6 @@ public interface ProductService {
     void deleteProduct(Long id, String email);
     Page<ProductSummaryResponse> getMyProducts(String email, int page, int size);
     ProductDetailResponse getProductDetail(Long id, String email);
+    Page<ProductSummaryResponse> getAvailableProducts(int page, int size, Long categoryId);
+    ProductDetailResponse getPublicProductDetail(Long id);
 }
