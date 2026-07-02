@@ -206,6 +206,7 @@ CREATE TABLE messages (
                           message_type message_type DEFAULT 'TEXT',
                           content TEXT NOT NULL,
                           referenced_product_id BIGINT DEFAULT NULL,
+                          is_read BOOLEAN DEFAULT FALSE,
                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
                           CONSTRAINT fk_message_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE RESTRICT,

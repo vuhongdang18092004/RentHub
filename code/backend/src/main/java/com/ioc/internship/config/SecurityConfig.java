@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/users", "/api/admin/users/**", "/api/admin/products", "/api/admin/products/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/users/profile", "/api/users/profile/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         .requestMatchers("/api/favorites", "/api/favorites/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers("/api/chat", "/api/chat/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         // Tất cả các API còn lại trong hệ thống bắt buộc phải ĐĂNG NHẬP
                         .anyRequest().authenticated()
                 )

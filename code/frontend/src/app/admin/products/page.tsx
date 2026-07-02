@@ -32,7 +32,7 @@ export default function AdminProductsPage() {
 
   const handleApproveProduct = async (id: number, name: string) => {
     try {
-      await api.patch(`/admin/products/${id}/status`, { status: "AVAILABLE" });
+      await api.patch(`/admin/products/${id}/status`, { "status": "AVAILABLE" });
       triggerToast(`Đã duyệt sản phẩm "${name}"! ✅`);
       fetchPendingProducts();
     } catch (err) {
