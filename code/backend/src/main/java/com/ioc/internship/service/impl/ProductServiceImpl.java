@@ -241,10 +241,34 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDetailResponse getPublicProductDetail(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-        return ProductDetailResponse.fromEntity(product);
+    public com.ioc.internship.dto.response.PublicProductDetailResponse getPublicProductDetail(Long id) {
+        Product product = productRepository.findByIdAndStatus(id, ProductStatus.AVAILABLE)
+                .orElseThrow(() -> new RuntimeException("404 Not Found: Product not found or not available"));
+        return com.ioc.internship.dto.response.PublicProductDetailResponse.fromEntity(product);
+    }
+
+    @Override
+    public Page<com.ioc.internship.dto.response.PublicProductSummaryResponse> getPublicProducts(
+            int page, int size, String keyword, Long categoryId,
+            BigDecimal minPrice, BigDecimal maxPrice,
+            String address, BigDecimal latitude, BigDecimal longitude,
+            Double radius, String sort) {
+        
+        Sort sortObj = Sort.by(Sort.Direction.DESC, "createdAt"); // default newest
+        if ("price_asc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.ASC, "pricePerDay");
+        } else if ("price_desc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.DESC, "pricePerDay");
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, sortObj);
+        
+        org.springframework.data.jpa.domain.Specification<Product> spec = 
+                com.ioc.internship.repository.specification.ProductSpecification.buildPublicFilters(
+                        keyword, categoryId, minPrice, maxPrice, address, latitude, longitude, radius);
+                        
+        return productRepository.findAll(spec, pageable)
+                .map(com.ioc.internship.dto.response.PublicProductSummaryResponse::fromEntity);
     }
 
     private void setAddressFields(Product product, String address, BigDecimal latitude, BigDecimal longitude, UserEntity owner) {

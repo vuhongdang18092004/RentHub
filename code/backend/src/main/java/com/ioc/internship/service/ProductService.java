@@ -15,5 +15,10 @@ public interface ProductService {
     void updateProductStatusAdmin(Long id, com.ioc.internship.dto.request.UpdateProductStatusRequest request);
     void updateMyProductStatus(Long id, com.ioc.internship.dto.request.UpdateMyProductStatusRequest request, String email);
     Page<ProductSummaryResponse> getAvailableProducts(int page, int size, Long categoryId);
-    ProductDetailResponse getPublicProductDetail(Long id);
+    com.ioc.internship.dto.response.PublicProductDetailResponse getPublicProductDetail(Long id);
+    Page<com.ioc.internship.dto.response.PublicProductSummaryResponse> getPublicProducts(
+            int page, int size, String keyword, Long categoryId,
+            java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice,
+            String address, java.math.BigDecimal latitude, java.math.BigDecimal longitude,
+            Double radius, String sort);
 }

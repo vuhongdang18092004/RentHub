@@ -51,9 +51,34 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<ProductDetailResponse> getProductDetail(
             @PathVariable Long id,
             Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(productService.getProductDetail(id, email));
+    }
+
+    @GetMapping("/public")
+    public ResponseEntity<Page<com.ioc.internship.dto.response.PublicProductSummaryResponse>> getPublicProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @RequestParam(required = false) String address,
+            @RequestParam(required = false) java.math.BigDecimal latitude,
+            @RequestParam(required = false) java.math.BigDecimal longitude,
+            @RequestParam(required = false) Double radius,
+            @RequestParam(defaultValue = "newest") String sort) {
+        return ResponseEntity.ok(productService.getPublicProducts(
+                page, size, keyword, categoryId, minPrice, maxPrice, address, latitude, longitude, radius, sort));
+    }
+
+    @GetMapping("/public/{id}")
+    public ResponseEntity<com.ioc.internship.dto.response.PublicProductDetailResponse> getPublicProductDetailApi(
+            @PathVariable Long id) {
         return ResponseEntity.ok(productService.getPublicProductDetail(id));
     }
 
