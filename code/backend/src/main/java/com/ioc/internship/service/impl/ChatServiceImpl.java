@@ -20,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
 @Service
 @RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
@@ -28,6 +30,7 @@ public class ChatServiceImpl implements ChatService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     // ===========================
     // CONVERSATION
@@ -126,7 +129,12 @@ public class ChatServiceImpl implements ChatService {
                 .build();
 
         message = messageRepository.save(message);
-        return mapToMessageResponse(message);
+        MessageResponse response = mapToMessageResponse(message);
+        
+        // Gửi realtime qua STOMP cho những người đang subscribe topic của conversation này
+        messagingTemplate.convertAndSend("/topic/chat/" + conversation.getId(), response);
+        
+        return response;
     }
 
     @Override
