@@ -139,3 +139,15 @@ export interface ProductDetailResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface RentalRequestDetailResponse {
+  id: number;
+  productId: number;
+  productName: string;
+  startDate: string;
+  endDate: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  message?: string;
+  createdAt: string;
+}
+

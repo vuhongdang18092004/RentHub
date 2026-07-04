@@ -1,4 +1,5 @@
 import api from "@/lib/axios";
+import { CategoryResponse } from "@/types/backend";
 
 export interface ProductImage {
   id: number;
@@ -88,7 +89,42 @@ export const productService = {
 
   // Public detail — any authenticated user can view
   getPublicProductDetail: async (id: number): Promise<ProductDetail> => {
-    const res = await api.get(`/products/${id}`);
+    const res = await api.get(`/products/public/${id}`);
+    return res.data;
+  },
+
+  // Public search and filtering
+  getPublicProducts: async (params: {
+    page?: number;
+    size?: number;
+    keyword?: string;
+    categoryId?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    address?: string;
+    sort?: "newest" | "price_asc" | "price_desc" | "relevant";
+  }): Promise<{ content: PublicProductSummaryResponse[]; totalElements: number; totalPages: number }> => {
+    const res = await api.get("/products/public", { params });
+    return res.data;
+  },
+
+  getCategories: async (): Promise<CategoryResponse[]> => {
+    const res = await api.get("/categories");
     return res.data;
   },
 };
+
+export interface PublicProductSummaryResponse {
+  id: number;
+  name: string;
+  pricePerDay: number;
+  depositAmount: number;
+  address: string | null;
+  categoryName: string;
+  ownerFullName: string;
+  primaryImageUrl: string | null;
+  status: "PENDING" | "AVAILABLE" | "RENTED" | "UNAVAILABLE" | "BLOCKED";
+  createdAt: string;
+}
+
+

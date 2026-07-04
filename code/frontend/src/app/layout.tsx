@@ -6,6 +6,8 @@ import { ToastProvider } from "@/context/ToastContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/cart-context";
 import { WishlistProvider } from "@/context/wishlist-context";
+import { ChatProvider } from "@/context/chat-context";
+import { ChatDrawer } from "@/components/features/chat/chat-drawer";
 import "@/styles/globals.css";
 import { cx } from "@/utils/cx";
 
@@ -37,7 +39,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                             <CartProvider>
                                 <ToastProvider>
                                     <WishlistProvider>
-                                        {children}
+                                        <ChatProvider>
+                                            {children}
+                                            <ChatDrawer />
+                                        </ChatProvider>
                                     </WishlistProvider>
                                 </ToastProvider>
                             </CartProvider>

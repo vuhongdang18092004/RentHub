@@ -51,34 +51,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 2. Cắt bỏ chữ "Bearer " để lấy chính xác chuỗi JWT Token
-        jwt = authHeader.substring(7);
+        try {
+            // 2. Cắt bỏ chữ "Bearer " để lấy chính xác chuỗi JWT Token
+            jwt = authHeader.substring(7);
 
-        // 3. Sử dụng JwtUtils để bóc tách lấy Email
-        userEmail = jwtUtils.extractEmail(jwt);
+            // 3. Sử dụng JwtUtils để bóc tách lấy Email
+            userEmail = jwtUtils.extractEmail(jwt);
 
-        // 4. Nếu bóc được Email VÀ người dùng này CHƯA được xác thực trong phiên này
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            // 4. Nếu bóc được Email VÀ người dùng này CHƯA được xác thực trong phiên này
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // Xuống DB tìm thông tin đầy đủ của User
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                // Xuống DB tìm thông tin đầy đủ của User
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-            // Kiểm tra xem Token có chính chủ và còn hạn sử dụng hay không
-            if (jwtUtils.isTokenValid(jwt, userDetails)) {
+                // Kiểm tra xem Token có chính chủ và còn hạn sử dụng hay không
+                if (jwtUtils.isTokenValid(jwt, userDetails)) {
 
-                // Tạo một chiếc "Thẻ thông hành"
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
+                    // Tạo một chiếc "Thẻ thông hành"
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
 
-                // Đóng dấu chi tiết Request
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    // Đóng dấu chi tiết Request
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // CẤT CHIẾC THẺ NÀY VÀO KÉT SẮT BẢO MẬT
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    // CẤT CHIẾC THẺ NÀY VÀO KÉT SẮT BẢO MẬT
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (Exception e) {
+            logger.warn("JWT authentication failed: " + e.getMessage());
         }
 
         // Mở cửa cho Request tiếp tục hành trình

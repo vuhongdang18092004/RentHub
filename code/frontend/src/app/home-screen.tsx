@@ -299,12 +299,25 @@ export function HomeScreen() {
   // Initial mount load for category tags AND real products
   useEffect(() => {
     fetchCategories();
-    // Fetch real AVAILABLE products
+    // Fetch real AVAILABLE products from public endpoint
     const loadProducts = async () => {
       try {
         setProductsLoading(true);
-        const res = await productService.getAvailableProducts(0, 24);
-        setAvailableProducts(res.content || []);
+        const res = await productService.getPublicProducts({ page: 0, size: 24 });
+        const mapped = (res.content || []).map((p) => ({
+          id: p.id,
+          name: p.name,
+          pricePerDay: p.pricePerDay,
+          status: p.status,
+          category: {
+            id: 0,
+            name: p.categoryName,
+            slug: "",
+          },
+          primaryImage: p.primaryImageUrl,
+          createdAt: p.createdAt,
+        }));
+        setAvailableProducts(mapped);
       } catch (err) {
         console.error("Lỗi lấy sản phẩm:", err);
       } finally {
@@ -636,7 +649,7 @@ export function HomeScreen() {
                   }
 
                   return {
-                    id: c.slug,
+                    id: c.id,
                     name: c.name,
                     count: 50 + (c.id * 17) % 250,
                     icon: icon,
@@ -651,6 +664,7 @@ export function HomeScreen() {
               {activeHomeCategories.map((cat) => (
                 <button
                   key={cat.id}
+                  onClick={() => router.push(cat.id === "all" ? "/explore" : `/explore?categoryId=${cat.id}`)}
                   className={`flex items-center gap-2 px-4.5 py-2.5 rounded-full text-xs font-bold transition-all hover:scale-[1.02] cursor-pointer shrink-0 shadow-sm ${cat.color}`}
                 >
                   <span>{cat.icon}</span>
