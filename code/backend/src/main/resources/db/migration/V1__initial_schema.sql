@@ -2,11 +2,11 @@
 CREATE TYPE user_role AS ENUM ('ROLE_USER', 'ROLE_ADMIN');
 CREATE TYPE user_status AS ENUM ('PENDING', 'ACTIVE', 'BLOCKED');
 CREATE TYPE product_status AS ENUM ('PENDING', 'AVAILABLE', 'RENTED', 'UNAVAILABLE','BLOCKED');
-CREATE TYPE request_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
-CREATE TYPE rental_status AS ENUM ('WAITING_PAYMENT', 'ACTIVE', 'COMPLETED', 'CANCELLED');
+CREATE TYPE request_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'EXPIRED');
+CREATE TYPE rental_status AS ENUM ('WAITING_PAYMENT', 'ACTIVE', 'RETURN_PENDING', 'COMPLETED', 'CANCELLED');
 CREATE TYPE payment_method AS ENUM ('PAYOS', 'VNPAY');
 CREATE TYPE payment_type AS ENUM ('DEPOSIT', 'RENTAL_FEE', 'REFUND');
-CREATE TYPE payment_status AS ENUM ('PENDING', 'SUCCESS', 'FAILED', 'REFUNDED');
+CREATE TYPE payment_status AS ENUM ('PENDING', 'SUCCESS', 'FAILED');
 CREATE TYPE report_status AS ENUM ('PENDING', 'RESOLVED', 'REJECTED');
 CREATE TYPE message_type AS ENUM ('TEXT', 'PRODUCT', 'IMAGE');
 
@@ -81,6 +81,7 @@ CREATE TABLE rental_requests (
                                  requested_deposit DECIMAL(12,2) NOT NULL,
                                  start_date DATE NOT NULL,
                                  end_date DATE NOT NULL,
+                                 expired_at TIMESTAMP,
                                  message TEXT,
                                  status request_status DEFAULT 'PENDING',
                                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
