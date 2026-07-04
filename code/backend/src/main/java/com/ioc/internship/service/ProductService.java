@@ -17,7 +17,7 @@ public interface ProductService {
     Page<ProductSummaryResponse> getAvailableProducts(int page, int size, Long categoryId);
     com.ioc.internship.dto.response.PublicProductDetailResponse getPublicProductDetail(Long id);
     Page<com.ioc.internship.dto.response.PublicProductSummaryResponse> getPublicProducts(
-            int page, int size, String keyword, Long categoryId,
+            int page, int size, String keyword, java.util.List<Long> categoryIds,
             java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice,
             String address, java.math.BigDecimal latitude, java.math.BigDecimal longitude,
             Double radius, String sort);

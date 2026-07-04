@@ -249,7 +249,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Page<com.ioc.internship.dto.response.PublicProductSummaryResponse> getPublicProducts(
-            int page, int size, String keyword, Long categoryId,
+            int page, int size, String keyword, List<Long> categoryIds,
             BigDecimal minPrice, BigDecimal maxPrice,
             String address, BigDecimal latitude, BigDecimal longitude,
             Double radius, String sort) {
@@ -265,7 +265,7 @@ public class ProductServiceImpl implements ProductService {
         
         org.springframework.data.jpa.domain.Specification<Product> spec = 
                 com.ioc.internship.repository.specification.ProductSpecification.buildPublicFilters(
-                        keyword, categoryId, minPrice, maxPrice, address, latitude, longitude, radius);
+                        keyword, categoryIds, minPrice, maxPrice, address, latitude, longitude, radius);
                         
         return productRepository.findAll(spec, pageable)
                 .map(com.ioc.internship.dto.response.PublicProductSummaryResponse::fromEntity);

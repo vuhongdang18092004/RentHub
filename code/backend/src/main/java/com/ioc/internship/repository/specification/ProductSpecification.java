@@ -13,7 +13,7 @@ import java.util.List;
 public class ProductSpecification {
 
     public static Specification<Product> buildPublicFilters(
-            String keyword, Long categoryId, BigDecimal minPrice, BigDecimal maxPrice,
+            String keyword, List<Long> categoryIds, BigDecimal minPrice, BigDecimal maxPrice,
             String address, BigDecimal latitude, BigDecimal longitude, Double radius) {
         
         return (root, query, cb) -> {
@@ -39,8 +39,8 @@ public class ProductSpecification {
             }
 
             // Category filter
-            if (categoryId != null) {
-                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            if (categoryIds != null && !categoryIds.isEmpty()) {
+                predicates.add(root.get("category").get("id").in(categoryIds));
             }
 
             // Price filter

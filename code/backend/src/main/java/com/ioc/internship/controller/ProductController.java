@@ -64,7 +64,7 @@ public class ProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) java.util.List<Long> categoryIds,
             @RequestParam(required = false) java.math.BigDecimal minPrice,
             @RequestParam(required = false) java.math.BigDecimal maxPrice,
             @RequestParam(required = false) String address,
@@ -73,7 +73,7 @@ public class ProductController {
             @RequestParam(required = false) Double radius,
             @RequestParam(defaultValue = "newest") String sort) {
         return ResponseEntity.ok(productService.getPublicProducts(
-                page, size, keyword, categoryId, minPrice, maxPrice, address, latitude, longitude, radius, sort));
+                page, size, keyword, categoryIds, minPrice, maxPrice, address, latitude, longitude, radius, sort));
     }
 
     @GetMapping("/public/{id}")

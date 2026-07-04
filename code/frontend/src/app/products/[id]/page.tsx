@@ -37,7 +37,7 @@ export default function ProductDetailPage() {
           const simRes = await productService.getPublicProducts({
             page: 0,
             size: 4,
-            categoryId: data.category.id,
+            categoryIds: [data.category.id],
           });
           const mapped = (simRes.content || []).map((p) => ({
             id: p.id,

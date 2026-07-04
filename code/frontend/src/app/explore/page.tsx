@@ -66,14 +66,13 @@ function ExploreContent() {
     const fetchFilteredProducts = async () => {
       setLoading(true);
       try {
-        // Backend GET /api/products/public only accepts a single categoryId
-        const activeCatId = filters.categoryIds.length > 0 ? filters.categoryIds[0] : undefined;
+        const activeCategoryIds = filters.categoryIds.length > 0 ? filters.categoryIds : undefined;
 
         const res = await productService.getPublicProducts({
           page,
           size: 12,
           keyword: queryKeyword || undefined,
-          categoryId: activeCatId,
+          categoryIds: activeCategoryIds,
           minPrice: filters.priceRange[0],
           maxPrice: filters.priceRange[1],
           address: queryAddress || undefined,

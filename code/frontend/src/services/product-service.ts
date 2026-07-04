@@ -98,13 +98,18 @@ export const productService = {
     page?: number;
     size?: number;
     keyword?: string;
-    categoryId?: number;
+    categoryIds?: number[];
     minPrice?: number;
     maxPrice?: number;
     address?: string;
     sort?: "newest" | "price_asc" | "price_desc" | "relevant";
   }): Promise<{ content: PublicProductSummaryResponse[]; totalElements: number; totalPages: number }> => {
-    const res = await api.get("/products/public", { params });
+    const res = await api.get("/products/public", {
+      params,
+      paramsSerializer: {
+        indexes: null,
+      },
+    });
     return res.data;
   },
 
