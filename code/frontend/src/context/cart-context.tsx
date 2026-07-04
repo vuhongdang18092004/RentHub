@@ -10,15 +10,18 @@ export interface CartItem {
   product: ProductSummary;
   quantity: number;
   rentDays: number; // số ngày thuê dự kiến
+  startDate?: string; // "YYYY-MM-DD"
+  endDate?: string;   // "YYYY-MM-DD"
 }
 
 interface CartContextType {
   items: CartItem[];
   itemCount: number;
   totalPrice: number;
-  addItem: (product: ProductSummary, rentDays?: number) => void;
+  addItem: (product: ProductSummary, rentDays?: number, startDate?: string, endDate?: string) => void;
   removeItem: (productId: number) => void;
   updateRentDays: (productId: number, rentDays: number) => void;
+  updateDates: (productId: number, startDate: string, endDate: string, rentDays: number) => void;
   clearCart: () => void;
   isInCart: (productId: number) => boolean;
 }
@@ -59,18 +62,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
-  const addItem = useCallback((product: ProductSummary, rentDays = 1) => {
+  const addItem = useCallback((product: ProductSummary, rentDays = 1, startDate?: string, endDate?: string) => {
     setItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
         // Already in cart — just bump rentDays if provided
         return prev.map((item) =>
           item.product.id === product.id
-            ? { ...item, rentDays: Math.max(item.rentDays, rentDays) }
+            ? { 
+                ...item, 
+                rentDays: Math.max(item.rentDays, rentDays),
+                startDate: startDate || item.startDate,
+                endDate: endDate || item.endDate
+              }
             : item
         );
       }
-      return [...prev, { product, quantity: 1, rentDays }];
+      return [...prev, { product, quantity: 1, rentDays, startDate, endDate }];
     });
   }, []);
 
@@ -83,6 +91,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       prev.map((item) =>
         item.product.id === productId
           ? { ...item, rentDays: Math.max(1, rentDays) }
+          : item
+      )
+    );
+  }, []);
+
+  const updateDates = useCallback((productId: number, startDate: string, endDate: string, rentDays: number) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.product.id === productId
+          ? { ...item, startDate, endDate, rentDays }
           : item
       )
     );
@@ -114,6 +132,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addItem,
         removeItem,
         updateRentDays,
+        updateDates,
         clearCart,
         isInCart,
       }}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { useCart } from "@/context/cart-context";
@@ -9,6 +10,7 @@ import { useToast } from "@/context/ToastContext";
 export default function CartPage() {
   const { items, itemCount, totalPrice, removeItem, updateRentDays, clearCart } = useCart();
   const { triggerToast } = useToast();
+  const router = useRouter();
 
   const handleRemove = (productId: number, name: string) => {
     removeItem(productId);
@@ -171,7 +173,7 @@ export default function CartPage() {
 
                   <button
                     className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white text-sm font-extrabold rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer"
-                    onClick={() => triggerToast("Tính năng đặt thuê đang được phát triển! 🚀")}
+                    onClick={() => router.push("/checkout")}
                   >
                     Tiến hành đặt thuê →
                   </button>

@@ -65,6 +65,12 @@ export const rentalService = {
     return res.data;
   },
 
+  // GET /api/renter/requests/{id}
+  getMyRentalRequestDetail: async (id: number): Promise<RentalRequestDetailResponse> => {
+    const res = await api.get(`/renter/requests/${id}`);
+    return res.data;
+  },
+
   // PUT /api/renter/requests/{id}/cancel
   cancelRentalRequest: async (id: number): Promise<void> => {
     await api.put(`/renter/requests/${id}/cancel`);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { rentalService, RentalRequestSummaryResponse, RequestStatus } from "@/services/rental-service";
@@ -8,11 +9,19 @@ import { useToast } from "@/context/ToastContext";
 
 export default function RenterRentalsPage() {
   const { triggerToast } = useToast();
+  const router = useRouter();
   const [requests, setRequests] = useState<RentalRequestSummaryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<RequestStatus | "ALL">("ALL");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [paidRequests, setPaidRequests] = useState<number[]>([]);
+
+  // Load paid requests from local storage
+  useEffect(() => {
+    const paid = JSON.parse(localStorage.getItem("renthub_paid_requests") || "[]");
+    setPaidRequests(paid);
+  }, []);
 
   const fetchRequests = async () => {
     try {
@@ -45,7 +54,7 @@ export default function RenterRentalsPage() {
     }
   };
 
-  const getStatusBadge = (status: RequestStatus) => {
+  const getStatusBadge = (status: RequestStatus, id: number) => {
     switch (status) {
       case "PENDING":
         return (
@@ -54,9 +63,16 @@ export default function RenterRentalsPage() {
           </span>
         );
       case "APPROVED":
+        if (paidRequests.includes(id)) {
+          return (
+            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-green-50 text-green-700 border border-green-250 rounded-full">
+              Đã thanh toán
+            </span>
+          );
+        }
         return (
-          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-green-50 text-green-700 border border-green-250 rounded-full">
-            Đã duyệt
+          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-yellow-50 text-yellow-750 border border-yellow-250 rounded-full">
+            Chờ thanh toán
           </span>
         );
       case "REJECTED":
@@ -155,7 +171,7 @@ export default function RenterRentalsPage() {
                           <h3 className="font-extrabold text-sm text-zinc-800 truncate leading-snug">
                             {req.productName}
                           </h3>
-                          {getStatusBadge(req.status)}
+                          {getStatusBadge(req.status, req.id)}
                         </div>
                         <p className="text-[10px] text-zinc-400 font-bold uppercase">
                           CHỦ ĐỒ: <span className="text-zinc-650 font-black">{req.owner?.fullName}</span>
@@ -183,6 +199,15 @@ export default function RenterRentalsPage() {
                           className="px-3.5 py-2 border border-zinc-200 hover:border-red-200 hover:bg-red-50 text-zinc-600 hover:text-red-600 rounded-xl text-xs font-extrabold transition-all cursor-pointer"
                         >
                           Hủy yêu cầu
+                        </button>
+                      )}
+
+                      {req.status === "APPROVED" && !paidRequests.includes(req.id) && (
+                        <button
+                          onClick={() => router.push(`/checkout?requestId=${req.id}`)}
+                          className="px-3.5 py-2 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-extrabold shadow-sm hover:shadow hover:scale-[1.01] transition-all cursor-pointer"
+                        >
+                          Thanh toán ngay
                         </button>
                       )}
                     </div>
