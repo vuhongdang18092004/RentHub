@@ -16,8 +16,8 @@ import java.util.Optional;
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    // Lấy tin nhắn theo conversation, sắp xếp tăng dần (lịch sử chat)
-    Page<Message> findByConversationOrderByCreatedAtAsc(Conversation conversation, Pageable pageable);
+    // Lấy tin nhắn theo conversation, sắp xếp giảm dần (tin nhắn mới nhất trước)
+    Page<Message> findByConversationOrderByCreatedAtDesc(Conversation conversation, Pageable pageable);
 
     // Lấy tin nhắn cuối cùng của một conversation (để hiển thị preview)
     Optional<Message> findTopByConversationOrderByCreatedAtDesc(Conversation conversation);

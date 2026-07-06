@@ -143,7 +143,7 @@ public class ChatServiceImpl implements ChatService {
         Conversation conversation = findConversationById(conversationId);
         validateUserInConversation(currentUser, conversation);
 
-        return messageRepository.findByConversationOrderByCreatedAtAsc(conversation, pageable)
+        return messageRepository.findByConversationOrderByCreatedAtDesc(conversation, pageable)
                 .map(this::mapToMessageResponse);
     }
 

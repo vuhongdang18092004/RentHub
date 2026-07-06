@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { ProtectedRoute } from "@/components/auth/protected-route";
-import { useCart } from "@/context/cart-context";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import { rentalService } from "@/services/rental-service";
@@ -61,7 +60,11 @@ const BackIcon = () => (
 );
 
 function CheckoutContent() {
-  const { items, itemCount, totalPrice, clearCart, updateDates } = useCart();
+  const items: any[] = [];
+  const itemCount = 0;
+  const totalPrice = 0;
+  const clearCart = () => {};
+  const updateDates = () => {};
   const { user, isLoading, isAuthenticated } = useAuth();
   const { triggerToast } = useToast();
   const router = useRouter();

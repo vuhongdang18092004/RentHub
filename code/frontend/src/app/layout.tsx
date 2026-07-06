@@ -4,7 +4,6 @@ import { RouteProvider } from "@/providers/router-provider";
 import { Theme } from "@/providers/theme";
 import { ToastProvider } from "@/context/ToastContext";
 import { AuthProvider } from "@/context/AuthContext";
-import { CartProvider } from "@/context/cart-context";
 import { WishlistProvider } from "@/context/wishlist-context";
 import { ChatProvider } from "@/context/chat-context";
 import { ChatDrawer } from "@/components/features/chat/chat-drawer";
@@ -36,16 +35,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <RouteProvider>
                     <Theme>
                         <AuthProvider>
-                            <CartProvider>
-                                <ToastProvider>
-                                    <WishlistProvider>
-                                        <ChatProvider>
-                                            {children}
-                                            <ChatDrawer />
-                                        </ChatProvider>
-                                    </WishlistProvider>
-                                </ToastProvider>
-                            </CartProvider>
+                            <ToastProvider>
+                                <WishlistProvider>
+                                    <ChatProvider>
+                                        {children}
+                                        <ChatDrawer />
+                                    </ChatProvider>
+                                </WishlistProvider>
+                            </ToastProvider>
                         </AuthProvider>
                     </Theme>
                 </RouteProvider>

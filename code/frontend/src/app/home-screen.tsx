@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { useCart } from "@/context/cart-context";
 import { useWishlist } from "@/context/wishlist-context";
 import api from "@/lib/axios";
 import { Header } from "@/components/layout/header";
@@ -36,18 +35,8 @@ const CATEGORIES = [
 
 // Product card component reused across all sections
 function ProductCard({ prod }: { prod: ProductSummary }) {
-  const { addItem, isInCart } = useCart();
-  const { triggerToast } = useToast();
   const { isFavorited, toggleFavorite } = useWishlist();
-  const inCart = isInCart(prod.id);
   const favorited = isFavorited(prod.id);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addItem(prod, 1);
-    triggerToast("Đã thêm vào giỏ! 🛍");
-  };
 
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -62,29 +51,11 @@ function ProductCard({ prod }: { prod: ProductSummary }) {
       href={`/products/${prod.id}`}
       className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative block"
     >
-      {/* Cart add button */}
-      <button
-        onClick={handleAddToCart}
-        disabled={prod.status !== "AVAILABLE" || inCart}
-        title={inCart ? "Đã trong giỏ" : "Thêm vào giỏ"}
-        className={`absolute top-3 right-3 p-2 rounded-full shadow-sm transition-all z-10 cursor-pointer ${
-          inCart
-            ? "bg-green-50 text-green-600"
-            : "bg-white/80 hover:bg-white text-zinc-500 hover:text-violet-600"
-        }`}
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          {inCart
-            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />}
-        </svg>
-      </button>
-
       {/* Heart Toggle Button */}
       <button
         onClick={handleToggleFavorite}
         title={favorited ? "Bỏ yêu thích" : "Yêu thích"}
-        className={`absolute top-3 left-3 p-2 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
+        className={`absolute top-3 right-3 p-2 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
           favorited
             ? "bg-red-50/95 text-red-500"
             : "bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500"
@@ -126,18 +97,8 @@ function ProductCard({ prod }: { prod: ProductSummary }) {
 
 // Compact card for trending carousel
 function ProductCardCompact({ prod }: { prod: ProductSummary }) {
-  const { addItem, isInCart } = useCart();
-  const { triggerToast } = useToast();
   const { isFavorited, toggleFavorite } = useWishlist();
-  const inCart = isInCart(prod.id);
   const favorited = isFavorited(prod.id);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addItem(prod, 1);
-    triggerToast("Đã thêm vào giỏ! 🛍");
-  };
 
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -152,22 +113,11 @@ function ProductCardCompact({ prod }: { prod: ProductSummary }) {
       href={`/products/${prod.id}`}
       className="w-[190px] shrink-0 bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative block"
     >
-      <button onClick={handleAddToCart} disabled={prod.status !== "AVAILABLE" || inCart}
-        className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm z-10 cursor-pointer transition-all ${
-          inCart ? "bg-green-50 text-green-600" : "bg-white/80 hover:bg-white text-zinc-500 hover:text-violet-600"
-        }`}>
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          {inCart
-            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />}
-        </svg>
-      </button>
-
       {/* Heart Toggle Button */}
       <button
         onClick={handleToggleFavorite}
         title={favorited ? "Bỏ yêu thích" : "Yêu thích"}
-        className={`absolute top-2.5 left-2.5 p-1.5 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
+        className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
           favorited
             ? "bg-red-50/95 text-red-500"
             : "bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500"

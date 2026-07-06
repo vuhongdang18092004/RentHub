@@ -353,6 +353,53 @@ public class RentalRequestServiceImpl implements RentalRequestService {
         }
 
         rental.setStatus(RentalStatus.ACTIVE);
+        
+        // Cập nhật trạng thái sản phẩm sang RENTED (Đang thuê)
+        Product product = rental.getProduct();
+        product.setStatus(ProductStatus.RENTED);
+        productRepository.save(product);
+
         rentalRepository.save(rental);
+    }
+
+    @Override
+    @Transactional
+    public void requestReturn(String email, Long rentalId) {
+        UserEntity renter = getUserByEmail(email);
+        Rental rental = rentalRepository.findById(rentalId)
+                .orElseThrow(() -> new RuntimeException("Rental not found"));
+
+        if (!rental.getRenter().getId().equals(renter.getId())) {
+            throw new RuntimeException("403 Forbidden: Not your rental");
+        }
+        if (!rental.getStatus().equals(RentalStatus.ACTIVE)) {
+            throw new RuntimeException("400 Bad Request: Rental is not ACTIVE");
+        }
+
+        rental.setStatus(RentalStatus.RETURN_PENDING);
+        rentalRepository.save(rental);
+    }
+
+    @Override
+    @Transactional
+    public void confirmReturn(String email, Long rentalId) {
+        UserEntity owner = getUserByEmail(email);
+        Rental rental = rentalRepository.findById(rentalId)
+                .orElseThrow(() -> new RuntimeException("Rental not found"));
+
+        if (!rental.getOwner().getId().equals(owner.getId())) {
+            throw new RuntimeException("403 Forbidden: Not your product");
+        }
+        if (!rental.getStatus().equals(RentalStatus.RETURN_PENDING)) {
+            throw new RuntimeException("400 Bad Request: Rental is not pending return");
+        }
+
+        rental.setStatus(RentalStatus.COMPLETED);
+        rentalRepository.save(rental);
+
+        // Khôi phục trạng thái sản phẩm về AVAILABLE (Sẵn sàng)
+        Product product = rental.getProduct();
+        product.setStatus(ProductStatus.AVAILABLE);
+        productRepository.save(product);
     }
 }

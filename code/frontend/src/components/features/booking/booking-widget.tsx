@@ -29,6 +29,7 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [blockedRanges, setBlockedRanges] = useState<BlockedRange[]>([]);
+  const [activeMonthOffset, setActiveMonthOffset] = useState(0);
 
   useEffect(() => {
     const fetchBlockedDates = async () => {
@@ -50,16 +51,25 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth(); // 0-11
+  const getMonthAndYearWithOffset = (baseDate: Date, offset: number) => {
+    const d = new Date(baseDate.getFullYear(), baseDate.getMonth() + offset, 1);
+    return { year: d.getFullYear(), month: d.getMonth() };
+  };
 
   const months = [
-    { year: currentYear, month: currentMonth },
-    {
-      year: currentMonth === 11 ? currentYear + 1 : currentYear,
-      month: (currentMonth + 1) % 12,
-    },
+    getMonthAndYearWithOffset(today, activeMonthOffset),
+    getMonthAndYearWithOffset(today, activeMonthOffset + 1),
   ];
+
+  const handlePrevMonths = () => {
+    if (activeMonthOffset > 0) {
+      setActiveMonthOffset((prev) => prev - 1);
+    }
+  };
+
+  const handleNextMonths = () => {
+    setActiveMonthOffset((prev) => prev + 1);
+  };
 
   const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -167,9 +177,32 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
 
   return (
     <div className="bg-white border border-zinc-150 rounded-3xl p-6 shadow-sm space-y-6 sticky top-24">
-      {/* Calendar Header Title */}
-      <div className="text-center font-bold text-sm text-zinc-700 pb-2 border-b border-zinc-100">
-        {monthNames[months[0].month]} {months[0].year} — {monthNames[months[1].month]}
+      {/* Calendar Header Title with Nav Buttons */}
+      <div className="flex justify-between items-center pb-2 border-b border-zinc-100 select-none">
+        <button
+          type="button"
+          disabled={activeMonthOffset === 0}
+          onClick={handlePrevMonths}
+          className={`p-1.5 rounded-lg border border-zinc-200 bg-white transition-colors cursor-pointer ${
+            activeMonthOffset === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-zinc-50"
+          }`}
+        >
+          <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div className="font-extrabold text-xs text-zinc-700 uppercase tracking-wider">
+          {monthNames[months[0].month]} {months[0].year} — {monthNames[months[1].month]} {months[1].year}
+        </div>
+        <button
+          type="button"
+          onClick={handleNextMonths}
+          className="p-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors cursor-pointer"
+        >
+          <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
 
       {/* Side-by-side Months */}

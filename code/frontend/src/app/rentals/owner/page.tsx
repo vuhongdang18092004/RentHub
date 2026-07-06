@@ -79,7 +79,24 @@ export default function OwnerRentalsPage() {
     }
   };
 
-  const getStatusBadge = (status: RequestStatus) => {
+  const handleConfirmReturn = async (id?: number) => {
+    if (!id) {
+      triggerToast("Không tìm thấy mã đơn thuê! Vui lòng tải lại trang (F5). 🔄");
+      return;
+    }
+    if (!window.confirm("Bạn xác nhận đã nhận lại sản phẩm an toàn và hoàn tất giao dịch thuê này?")) return;
+    try {
+      await rentalService.confirmReturn(id);
+      triggerToast("Đã xác nhận nhận đồ và hoàn tất giao dịch! 🎉");
+      fetchStats();
+      fetchRequests();
+    } catch (err: any) {
+      console.error("Lỗi xác nhận nhận đồ:", err);
+      triggerToast(err.response?.data?.message || "Xác nhận nhận đồ thất bại!");
+    }
+  };
+
+  const getStatusBadge = (status: RequestStatus, rentalStatus?: string) => {
     switch (status) {
       case "PENDING":
         return (
@@ -88,6 +105,27 @@ export default function OwnerRentalsPage() {
           </span>
         );
       case "APPROVED":
+        if (rentalStatus === "ACTIVE") {
+          return (
+            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-violet-50 text-violet-750 border border-violet-250 rounded-full">
+              Đang thuê
+            </span>
+          );
+        }
+        if (rentalStatus === "RETURN_PENDING") {
+          return (
+            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-750 border border-blue-250 rounded-full animate-pulse">
+              Đang trả đồ
+            </span>
+          );
+        }
+        if (rentalStatus === "COMPLETED") {
+          return (
+            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-250 rounded-full">
+              Hoàn thành
+            </span>
+          );
+        }
         return (
           <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-green-50 text-green-700 border border-green-250 rounded-full">
             Đã duyệt
@@ -230,7 +268,7 @@ export default function OwnerRentalsPage() {
                             <h3 className="font-extrabold text-sm text-zinc-800 truncate leading-snug">
                               {req.productName}
                             </h3>
-                            {getStatusBadge(req.status)}
+                            {getStatusBadge(req.status, req.rentalStatus)}
                           </div>
                           
                           {/* Renter Details Info */}
@@ -276,6 +314,13 @@ export default function OwnerRentalsPage() {
                             Duyệt đơn
                           </button>
                         </div>
+                      ) : req.status === "APPROVED" && req.rentalStatus === "RETURN_PENDING" ? (
+                        <button
+                          onClick={() => handleConfirmReturn(req.rentalId!)}
+                          className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-xs hover:shadow active:scale-[0.99] animate-[pulse_2s_infinite]"
+                        >
+                          Xác nhận nhận đồ
+                        </button>
                       ) : (
                         <div className="text-[10px] text-zinc-400 font-bold select-none italic">
                           Hết hiệu lực xử lý

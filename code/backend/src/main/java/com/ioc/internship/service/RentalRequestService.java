@@ -36,4 +36,8 @@ public interface RentalRequestService {
     com.ioc.internship.dto.response.RentalPaymentInfoResponse getRentalPaymentInfo(String email, Long rentalId);
 
     void confirmRentalPayment(String email, Long rentalId);
+
+    void requestReturn(String email, Long rentalId);
+
+    void confirmReturn(String email, Long rentalId);
 }

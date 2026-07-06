@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -20,7 +20,7 @@ interface CategoryOption {
   name: string;
 }
 
-interface CreateProductFormInput {
+interface EditProductFormInput {
   name: string;
   description: string;
   pricePerDay: number;
@@ -29,19 +29,22 @@ interface CreateProductFormInput {
   categoryId: string;
   latitude?: number | null;
   longitude?: number | null;
+  status: string;
 }
 
-export default function CreateProductPage() {
+export default function EditProductPage() {
   const router = useRouter();
+  const params = useParams();
   const { triggerToast } = useToast();
   const { role, user } = useAuth();
   const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<{ imageUrl: string; isPrimary: boolean }[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<string>("AVAILABLE");
 
-  const hasBankInfo = !!(user?.bankAccountNumber && user?.bankCode);
+  const productId = Number(params.id);
 
   // Admin Route Restriction check
   useEffect(() => {
@@ -55,27 +58,71 @@ export default function CreateProductPage() {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
-  } = useForm<CreateProductFormInput>({
+  } = useForm<EditProductFormInput>({
     mode: "onSubmit",
   });
 
-  // Fetch categories on mount
+  // Fetch product details & categories on mount
   useEffect(() => {
-    const fetchCategories = async () => {
+    const initData = async () => {
       try {
-        setLoadingCategories(true);
-        const res = await api.get("/categories");
-        setCategories(res.data);
+        setLoading(true);
+        const [catsRes, productRes] = await Promise.all([
+          productService.getCategories(),
+          productService.getProductDetail(productId),
+        ]);
+        
+        setCategories(catsRes);
+
+        // Ownership Check
+        if (productRes.owner.id !== user?.id) {
+          triggerToast("Bạn không có quyền sửa sản phẩm này!");
+          router.replace("/products/my");
+          return;
+        }
+
+        // Rented Check (Backend throws error if edited while RENTED)
+        if (productRes.status === "RENTED") {
+          triggerToast("Không thể sửa sản phẩm đang thuê!");
+          router.replace("/products/my");
+          return;
+        }
+
+        // Prefill form
+        reset({
+          name: productRes.name,
+          description: productRes.description || "",
+          pricePerDay: productRes.pricePerDay,
+          depositAmount: productRes.depositAmount,
+          address: productRes.address,
+          categoryId: productRes.category.id.toString(),
+          latitude: productRes.latitude,
+          longitude: productRes.longitude,
+          status: productRes.status,
+        });
+
+        setUploadedImages(
+          productRes.images.map((img) => ({
+            imageUrl: img.imageUrl,
+            isPrimary: img.isPrimary,
+          }))
+        );
+        setCurrentStatus(productRes.status);
       } catch (error) {
-        console.error("Lỗi lấy danh mục:", error);
-        triggerToast("Không thể tải danh mục sản phẩm!");
+        console.error("Lỗi tải dữ liệu sản phẩm:", error);
+        triggerToast("Không thể tải thông tin sản phẩm!");
+        router.push("/products/my");
       } finally {
-        setLoadingCategories(false);
+        setLoading(false);
       }
     };
-    fetchCategories();
-  }, []);
+
+    if (productId && user?.id) {
+      initData();
+    }
+  }, [productId, user, reset, router, triggerToast]);
 
   // Helper to upload images to Cloudinary with browser-side signature computation
   const uploadToCloudinary = async (file: File): Promise<string> => {
@@ -169,7 +216,7 @@ export default function CreateProductPage() {
     });
   };
 
-  const onSubmit = async (data: CreateProductFormInput) => {
+  const onSubmit = async (data: EditProductFormInput) => {
     if (uploadedImages.length === 0) {
       triggerToast("Vui lòng tải lên ít nhất 1 ảnh!");
       return;
@@ -188,19 +235,39 @@ export default function CreateProductPage() {
         latitude: data.latitude || null,
         longitude: data.longitude || null,
         images: uploadedImages,
+        status: data.status,
       };
 
-      await productService.createProduct(productData);
-      triggerToast("Đăng tin sản phẩm thành công!");
+      await productService.updateProduct(productId, productData);
+      triggerToast("Cập nhật thông tin sản phẩm thành công! 🎉");
       router.push("/products/my");
     } catch (error: any) {
-      console.error("Lỗi đăng sản phẩm:", error);
-      const errMsg = error.response?.data?.message || "Đăng tin thất bại. Vui lòng kiểm tra lại!";
+      console.error("Lỗi cập nhật sản phẩm:", error);
+      const errMsg = error.response?.data?.message || "Cập nhật sản phẩm thất bại. Vui lòng thử lại!";
       triggerToast(errMsg);
     } finally {
       setSaving(false);
     }
   };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này? Việc này không thể hoàn tác!")) return;
+    
+    try {
+      setSaving(true);
+      await productService.deleteProduct(productId);
+      triggerToast("Xóa sản phẩm thành công! 🗑");
+      router.push("/products/my");
+    } catch (error: any) {
+      console.error("Lỗi xóa sản phẩm:", error);
+      const errMsg = error.response?.data?.message || "Xóa sản phẩm thất bại. Vui lòng thử lại!";
+      triggerToast(errMsg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isStatusEditable = currentStatus === "AVAILABLE" || currentStatus === "UNAVAILABLE";
 
   return (
     <ProtectedRoute>
@@ -208,30 +275,15 @@ export default function CreateProductPage() {
         <div className="max-w-2xl mx-auto space-y-6">
           
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-primary">Đăng sản phẩm mới</h1>
-            <p className="text-sm text-secondary">Đăng mặt hàng của bạn lên hệ thống để cho thuê</p>
+            <h1 className="text-2xl font-bold text-primary">Chỉnh sửa sản phẩm</h1>
+            <p className="text-sm text-secondary">Cập nhật thông tin mặt hàng cho thuê của bạn</p>
           </div>
 
-          {!hasBankInfo && (
-            <div className="p-4 rounded-3xl bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-start gap-3 shadow-sm">
-              <span className="text-lg">⚠️</span>
-              <div className="flex-1">
-                <p className="font-bold">Bạn chưa cập nhật tài khoản ngân hàng nhận tiền!</p>
-                <p className="text-xs text-amber-700 mt-1">
-                  Để duyệt yêu cầu thuê của khách hàng, vui lòng{" "}
-                  <a href="/profile" className="font-semibold underline text-amber-900 hover:text-amber-950">
-                    cập nhật tài khoản ngân hàng nhận tiền tại đây
-                  </a>.
-                </p>
-              </div>
-            </div>
-          )}
-
           <div className="bg-primary p-8 rounded-[24px] shadow-lg border border-secondary">
-            {loadingCategories ? (
+            {loading ? (
               <div className="py-12 flex flex-col items-center justify-center gap-4">
                 <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-sm text-secondary font-medium">Đang tải danh mục...</p>
+                <p className="text-sm text-secondary font-medium">Đang tải thông tin sản phẩm...</p>
               </div>
             ) : (
               <Form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -294,6 +346,36 @@ export default function CreateProductPage() {
                   isRequired
                   error={errors.depositAmount?.message}
                 />
+
+                {/* Status Dropdown */}
+                <div className="space-y-1.5 font-sans">
+                  <label className="text-xs font-semibold text-secondary flex items-center gap-1">
+                    Trạng thái hoạt động <span className="text-error-primary">*</span>
+                  </label>
+                  {isStatusEditable ? (
+                    <select
+                      {...register("status", { required: "Trạng thái là bắt buộc" })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-secondary bg-primary text-sm font-medium focus:outline-none focus:border-brand-500 transition-colors"
+                    >
+                      <option value="AVAILABLE">Sẵn sàng (Cho thuê)</option>
+                      <option value="UNAVAILABLE">Tạm ẩn (Không hiển thị)</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-3.5 py-2.5 rounded-xl border border-secondary bg-zinc-50 text-sm font-medium text-zinc-500 select-none">
+                      {currentStatus === "PENDING"
+                        ? "Chờ duyệt (Chỉ admin có thể duyệt hoạt động)"
+                        : currentStatus === "BLOCKED"
+                        ? "Bị khóa bởi quản trị viên (Không thể chỉnh sửa)"
+                        : currentStatus}
+                      <input type="hidden" {...register("status")} value={currentStatus} />
+                    </div>
+                  )}
+                  {errors.status && (
+                    <span className="text-xs font-semibold text-error-primary block mt-1">
+                      {errors.status.message}
+                    </span>
+                  )}
+                </div>
 
                 {/* Address */}
                 <div className="space-y-4">
@@ -399,8 +481,6 @@ export default function CreateProductPage() {
                   )}
                 </div>
 
-
-
                 {/* Description */}
                 <div className="space-y-1.5 font-sans">
                   <label className="text-xs font-semibold text-secondary">Mô tả chi tiết</label>
@@ -412,25 +492,37 @@ export default function CreateProductPage() {
                 </div>
 
                 {/* Submit Action */}
-                <div className="pt-4 flex justify-end gap-3">
-                  <Button
+                <div className="pt-4 flex justify-between items-center gap-3">
+                  <button
                     type="button"
-                    size="lg"
-                    color="secondary"
-                    onClick={() => router.back()}
-                    isDisabled={saving}
+                    onClick={handleDelete}
+                    disabled={saving}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-black bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-all cursor-pointer ${
+                      saving ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    Hủy bỏ
-                  </Button>
-                  <Button
-                    type="submit"
-                    size="lg"
-                    color="primary"
-                    isLoading={saving}
-                    isDisabled={saving}
-                  >
-                    Đăng tin cho thuê
-                  </Button>
+                    Xóa sản phẩm
+                  </button>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      size="lg"
+                      color="secondary"
+                      onClick={() => router.back()}
+                      isDisabled={saving}
+                    >
+                      Hủy bỏ
+                    </Button>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      color="primary"
+                      isLoading={saving}
+                      isDisabled={saving}
+                    >
+                      Lưu thay đổi
+                    </Button>
+                  </div>
                 </div>
 
               </Form>

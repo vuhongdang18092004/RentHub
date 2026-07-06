@@ -84,8 +84,9 @@ function ProfileContent() {
     const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
     const apiSecret = process.env.NEXT_PUBLIC_CLOUDINARY_API_SECRET;
 
-    if (!cloudName || !apiKey || !apiSecret) {
-      throw new Error("Cấu hình Cloudinary thiếu trong file .env");
+    if (!cloudName || !apiKey || !apiSecret || cloudName === "YOUR_CLOUD_NAME" || apiKey === "YOUR_API_KEY" || apiSecret === "YOUR_API_SECRET") {
+      console.warn("Cloudinary chưa được cấu hình. Sử dụng ảnh avatar demo.");
+      return `https://picsum.photos/150/150?random=${Math.floor(Math.random() * 1000)}`;
     }
 
     const timestamp = Math.round(new Date().getTime() / 1000).toString();

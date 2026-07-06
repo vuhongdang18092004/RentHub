@@ -23,4 +23,13 @@ public class OwnerRentalController {
         rentalRequestService.cancelRentalAsOwner(email, id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/confirm-return")
+    public ResponseEntity<Void> confirmReturn(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String email = authentication.getName();
+        rentalRequestService.confirmReturn(email, id);
+        return ResponseEntity.noContent().build();
+    }
 }

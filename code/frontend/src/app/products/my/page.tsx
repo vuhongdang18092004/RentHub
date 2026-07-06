@@ -162,6 +162,17 @@ export default function MyProductsPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-3">
+                            {product.status !== "RENTED" && (
+                              <Link
+                                href={`/products/${product.id}/edit`}
+                                className="p-2 text-secondary hover:bg-brand-50 hover:text-brand-600 rounded-lg transition-colors cursor-pointer"
+                                title="Sửa tin"
+                              >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </Link>
+                            )}
                             <button
                               onClick={() => handleDelete(product.id)}
                               className="p-2 text-error-primary hover:bg-red-50 rounded-lg transition-colors cursor-pointer"

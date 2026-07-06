@@ -21,6 +21,7 @@ export interface RentalRequestSummaryResponse {
   endDate: string;   // "YYYY-MM-DD"
   status: RequestStatus;
   rentalStatus?: string;
+  rentalId?: number;
   expiredAt: string;
   createdAt: string;
 }
@@ -124,5 +125,15 @@ export const rentalService = {
   // POST /api/renter/rentals/{id}/confirm-payment
   confirmRentalPayment: async (rentalId: number): Promise<void> => {
     await api.post(`/renter/rentals/${rentalId}/confirm-payment`);
+  },
+
+  // POST /api/renter/rentals/{id}/return
+  requestReturn: async (rentalId: number): Promise<void> => {
+    await api.post(`/renter/rentals/${rentalId}/return`);
+  },
+
+  // POST /api/owner/rentals/{id}/confirm-return
+  confirmReturn: async (rentalId: number): Promise<void> => {
+    await api.post(`/owner/rentals/${rentalId}/confirm-return`);
   },
 };

@@ -29,4 +29,11 @@ public class RenterRentalController {
         rentalRequestService.confirmRentalPayment(authentication.getName(), id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/return")
+    public ResponseEntity<Void> requestReturn(
+            @PathVariable Long id, Authentication authentication) {
+        rentalRequestService.requestReturn(authentication.getName(), id);
+        return ResponseEntity.noContent().build();
+    }
 }

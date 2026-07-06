@@ -25,6 +25,7 @@ public class RentalRequestSummaryResponse {
     private LocalDateTime expiredAt;
     private LocalDateTime createdAt;
     private String rentalStatus;
+    private Long rentalId;
 
     public static RentalRequestSummaryResponse fromEntity(RentalRequest entity) {
         String primaryImage = null;
@@ -33,7 +34,9 @@ public class RentalRequestSummaryResponse {
         }
 
         String rentalStatusVal = null;
+        Long rentalIdVal = null;
         if (entity.getRentals() != null && !entity.getRentals().isEmpty()) {
+            rentalIdVal = entity.getRentals().get(0).getId();
             rentalStatusVal = entity.getRentals().get(0).getStatus().name();
         }
 
@@ -51,6 +54,7 @@ public class RentalRequestSummaryResponse {
                 .expiredAt(entity.getExpiredAt())
                 .createdAt(entity.getCreatedAt())
                 .rentalStatus(rentalStatusVal)
+                .rentalId(rentalIdVal)
                 .build();
     }
 }
