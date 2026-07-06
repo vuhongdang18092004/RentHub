@@ -16,6 +16,7 @@ public interface ProductService {
     void updateMyProductStatus(Long id, com.ioc.internship.dto.request.UpdateMyProductStatusRequest request, String email);
     Page<ProductSummaryResponse> getAvailableProducts(int page, int size, Long categoryId);
     com.ioc.internship.dto.response.PublicProductDetailResponse getPublicProductDetail(Long id);
+    java.util.List<com.ioc.internship.dto.response.BlockedDateRangeResponse> getBlockedDates(Long id);
     Page<com.ioc.internship.dto.response.PublicProductSummaryResponse> getPublicProducts(
             int page, int size, String keyword, java.util.List<Long> categoryIds,
             java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice,

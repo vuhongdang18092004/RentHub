@@ -51,4 +51,7 @@ public class RentalRequest extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private RequestStatus status = RequestStatus.PENDING;
+
+    @OneToMany(mappedBy = "request", fetch = FetchType.LAZY)
+    private java.util.List<Rental> rentals;
 }

@@ -20,6 +20,22 @@ function ProfileContent() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [banksList, setBanksList] = useState<{ code: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchBanks = async () => {
+      try {
+        const res = await fetch("https://api.vietqr.io/v2/banks");
+        const json = await res.json();
+        if (json.code === "00" && Array.isArray(json.data)) {
+          setBanksList(json.data.map((b: any) => ({ code: b.code, name: `${b.code} - ${b.shortName || b.name}` })));
+        }
+      } catch (err) {
+        console.error("Lỗi lấy danh sách ngân hàng từ VietQR:", err);
+      }
+    };
+    fetchBanks();
+  }, []);
 
   const {
     register,
@@ -38,6 +54,9 @@ function ProfileContent() {
       setValue("phone", user.phone || "");
       setValue("address", user.address || "");
       setValue("avatarUrl", user.avatarUrl || "");
+      setValue("bankAccountNumber", user.bankAccountNumber || "");
+      setValue("bankCode", user.bankCode || "");
+      setValue("bankAccountHolderName", user.bankAccountHolderName || "");
       if (user.avatarUrl) {
         setAvatarPreview(user.avatarUrl);
       }
@@ -126,6 +145,9 @@ function ProfileContent() {
         phone: data.phone,
         address: data.address || "",
         avatarUrl: data.avatarUrl || "",
+        bankAccountNumber: data.bankAccountNumber || "",
+        bankCode: data.bankCode || "",
+        bankAccountHolderName: data.bankAccountHolderName || "",
       });
 
       await refreshProfile();
@@ -262,6 +284,48 @@ function ProfileContent() {
                     type="text"
                     error={errors.address?.message}
                   />
+
+                  <div className="pt-5 border-t border-zinc-100 space-y-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-zinc-900">🏦 Tài khoản ngân hàng nhận tiền cho thuê</h3>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Đây là tài khoản sẽ nhận tiền khi có người thuê đồ của bạn. Vui lòng nhập chính xác.</p>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 w-full">
+                      <label className="text-sm font-semibold text-zinc-700">Ngân hàng</label>
+                      <select
+                        {...register("bankCode")}
+                        className="w-full px-4 py-2.5 text-sm rounded-xl border border-zinc-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-600/20 focus:border-violet-600 disabled:bg-zinc-50 disabled:text-zinc-500"
+                      >
+                        <option value="">-- Chọn ngân hàng --</option>
+                        {banksList.map((bank) => (
+                          <option key={bank.code} value={bank.code}>
+                            {bank.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.bankCode && (
+                        <span className="text-xs text-red-650 font-semibold">{errors.bankCode.message}</span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        {...register("bankAccountNumber")}
+                        label="Số tài khoản ngân hàng"
+                        placeholder="Nhập số tài khoản"
+                        type="text"
+                        error={errors.bankAccountNumber?.message}
+                      />
+                      <Input
+                        {...register("bankAccountHolderName")}
+                        label="Tên chủ tài khoản"
+                        placeholder="Ví dụ: NGUYEN VAN A"
+                        type="text"
+                        error={errors.bankAccountHolderName?.message}
+                      />
+                    </div>
+                  </div>
 
                   {/* Hidden Input to store avatarUrl in Form State */}
                   <input type="hidden" {...register("avatarUrl")} />

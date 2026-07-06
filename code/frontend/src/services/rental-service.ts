@@ -20,6 +20,7 @@ export interface RentalRequestSummaryResponse {
   startDate: string; // "YYYY-MM-DD"
   endDate: string;   // "YYYY-MM-DD"
   status: RequestStatus;
+  rentalStatus?: string;
   expiredAt: string;
   createdAt: string;
 }
@@ -103,5 +104,25 @@ export const rentalService = {
   // PUT /api/owner/requests/{id}/reject
   rejectRentalRequest: async (id: number): Promise<void> => {
     await api.put(`/owner/requests/${id}/reject`);
+  },
+
+  // GET /api/renter/rentals/{id}/payment-info
+  getRentalPaymentInfo: async (rentalId: number): Promise<{
+    rentalId: number;
+    totalPrice: number;
+    depositAmount: number;
+    bankAccountNumber: string;
+    bankCode: string;
+    bankAccountHolderName: string;
+    paymentContent: string;
+    status: string;
+  }> => {
+    const res = await api.get(`/renter/rentals/${rentalId}/payment-info`);
+    return res.data;
+  },
+
+  // POST /api/renter/rentals/{id}/confirm-payment
+  confirmRentalPayment: async (rentalId: number): Promise<void> => {
+    await api.post(`/renter/rentals/${rentalId}/confirm-payment`);
   },
 };

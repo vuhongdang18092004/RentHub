@@ -22,7 +22,7 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
@@ -33,7 +33,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [hasMore, setHasMore] = useState(true);
 
   const refreshConversations = async () => {
-    if (!user) return;
+    if (isLoading || !isAuthenticated || !user) return;
     try {
       const data = await chatService.getMyConversations();
       setConversations(data || []);
@@ -44,7 +44,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // Poll conversations and active messages while drawer is open
   useEffect(() => {
-    if (!user) return;
+    if (isLoading || !isAuthenticated || !user) return;
     refreshConversations();
 
     // Set interval to poll conversations and active message list every 4 seconds
@@ -63,7 +63,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [user, isOpen, activeConversationId]);
+  }, [user, isLoading, isAuthenticated, isOpen, activeConversationId]);
 
   const selectConversation = async (id: number) => {
     setActiveConversationId(id);

@@ -40,8 +40,8 @@ public class RentalRequestServiceImpl implements RentalRequestService {
     @Override
     @Transactional
     public RentalRequestDetailResponse createRentalRequest(String email, CreateRentalRequest request) {
-        if (!request.getStartDate().isBefore(request.getEndDate())) {
-            throw new RuntimeException("400 Bad Request: Start date must be before end date");
+        if (request.getStartDate().isAfter(request.getEndDate())) {
+            throw new RuntimeException("400 Bad Request: Start date must be before or equal to end date");
         }
 
         UserEntity renter = getUserByEmail(email);
@@ -80,8 +80,8 @@ public class RentalRequestServiceImpl implements RentalRequestService {
     @Override
     @Transactional
     public RentalRequestDetailResponse updateRentalRequest(String email, Long requestId, UpdateRentalRequest request) {
-        if (!request.getStartDate().isBefore(request.getEndDate())) {
-            throw new RuntimeException("400 Bad Request: Start date must be before end date");
+        if (request.getStartDate().isAfter(request.getEndDate())) {
+            throw new RuntimeException("400 Bad Request: Start date must be before or equal to end date");
         }
 
         UserEntity renter = getUserByEmail(email);
@@ -215,6 +215,10 @@ public class RentalRequestServiceImpl implements RentalRequestService {
     @Transactional
     public void approveRentalRequest(String email, Long requestId) {
         UserEntity owner = getUserByEmail(email);
+
+        if (owner.getBankAccountNumber() == null || owner.getBankCode() == null || owner.getBankAccountHolderName() == null) {
+            throw new RuntimeException("400 Bad Request: Vui lòng cập nhật tài khoản ngân hàng trước khi duyệt yêu cầu thuê");
+        }
         
         RentalRequest rentalRequest = rentalRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Rental request not found"));
@@ -301,6 +305,54 @@ public class RentalRequestServiceImpl implements RentalRequestService {
         }
 
         rental.setStatus(RentalStatus.CANCELLED);
+        rentalRepository.save(rental);
+    }
+
+    @Override
+    public com.ioc.internship.dto.response.RentalPaymentInfoResponse getRentalPaymentInfo(String email, Long rentalId) {
+        UserEntity renter = getUserByEmail(email);
+        Rental rental = rentalRepository.findById(rentalId)
+                .orElseThrow(() -> new RuntimeException("Rental not found"));
+
+        if (!rental.getRenter().getId().equals(renter.getId())) {
+            throw new RuntimeException("403 Forbidden: Not your rental");
+        }
+        if (!rental.getStatus().equals(RentalStatus.WAITING_PAYMENT)) {
+            throw new RuntimeException("400 Bad Request: Rental is not waiting for payment");
+        }
+
+        UserEntity owner = rental.getOwner();
+        if (owner.getBankAccountNumber() == null || owner.getBankCode() == null || owner.getBankAccountHolderName() == null) {
+            throw new RuntimeException("400 Bad Request: Chủ đồ chưa cập nhật tài khoản ngân hàng nhận tiền");
+        }
+
+        return com.ioc.internship.dto.response.RentalPaymentInfoResponse.builder()
+                .rentalId(rental.getId())
+                .totalPrice(rental.getTotalPrice())
+                .depositAmount(rental.getDepositAmount())
+                .bankAccountNumber(owner.getBankAccountNumber())
+                .bankCode(owner.getBankCode())
+                .bankAccountHolderName(owner.getBankAccountHolderName())
+                .paymentContent("RH" + rental.getId())
+                .status(rental.getStatus())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void confirmRentalPayment(String email, Long rentalId) {
+        UserEntity renter = getUserByEmail(email);
+        Rental rental = rentalRepository.findById(rentalId)
+                .orElseThrow(() -> new RuntimeException("Rental not found"));
+
+        if (!rental.getRenter().getId().equals(renter.getId())) {
+            throw new RuntimeException("403 Forbidden: Not your rental");
+        }
+        if (!rental.getStatus().equals(RentalStatus.WAITING_PAYMENT)) {
+            throw new RuntimeException("400 Bad Request: Rental is not waiting for payment");
+        }
+
+        rental.setStatus(RentalStatus.ACTIVE);
         rentalRepository.save(rental);
     }
 }

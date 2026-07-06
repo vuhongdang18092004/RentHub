@@ -149,5 +149,7 @@ export interface RentalRequestDetailResponse {
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
   message?: string;
   createdAt: string;
+  rentalId?: number;
+  rentalStatus?: string;
 }
 

@@ -11,6 +11,9 @@ export interface UserResponse {
   longitude: number | null;
   role: string;
   status: string;
+  bankAccountNumber?: string;
+  bankCode?: string;
+  bankAccountHolderName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -22,6 +25,9 @@ export interface UserUpdateRequest {
   address?: string;
   latitude?: number | null;
   longitude?: number | null;
+  bankAccountNumber?: string;
+  bankCode?: string;
+  bankAccountHolderName?: string;
 }
 
 const PROFILE_API_URL = "/users/profile";

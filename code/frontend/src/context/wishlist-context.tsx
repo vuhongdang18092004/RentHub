@@ -17,14 +17,14 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const { triggerToast } = useToast();
   const router = useRouter();
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
 
   const refreshWishlist = async () => {
-    if (!user) {
+    if (isLoading || !isAuthenticated || !user) {
       setWishlistIds([]);
       return;
     }
@@ -38,7 +38,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refreshWishlist();
-  }, [user]);
+  }, [user, isLoading, isAuthenticated]);
 
   const isFavorited = (productId: number) => wishlistIds.includes(productId);
 

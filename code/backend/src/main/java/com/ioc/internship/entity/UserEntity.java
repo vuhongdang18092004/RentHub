@@ -50,6 +50,15 @@ public class UserEntity extends BaseEntity implements UserDetails {
     @Column(name = "status")
     private String status; // 'ACTIVE' / 'PENDING' / 'BLOCKED'
 
+    @Column(name = "bank_account_number")
+    private String bankAccountNumber;
+
+    @Column(name = "bank_code")
+    private String bankCode;
+
+    @Column(name = "bank_account_holder_name")
+    private String bankAccountHolderName;
+
     // CÁC HÀM BẮT BUỘC ĐỂ TRIỂN KHAI INTERFACE USERDETAILS (SPRING SECURITY)
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

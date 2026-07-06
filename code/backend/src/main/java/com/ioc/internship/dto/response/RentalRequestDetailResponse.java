@@ -24,8 +24,17 @@ public class RentalRequestDetailResponse {
     private LocalDateTime expiredAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long rentalId;
+    private String rentalStatus;
 
     public static RentalRequestDetailResponse fromEntity(RentalRequest entity) {
+        Long rentalIdVal = null;
+        String rentalStatusVal = null;
+        if (entity.getRentals() != null && !entity.getRentals().isEmpty()) {
+            rentalIdVal = entity.getRentals().get(0).getId();
+            rentalStatusVal = entity.getRentals().get(0).getStatus().name();
+        }
+
         return RentalRequestDetailResponse.builder()
                 .id(entity.getId())
                 .product(PublicProductSummaryResponse.fromEntity(entity.getProduct()))
@@ -39,6 +48,8 @@ public class RentalRequestDetailResponse {
                 .expiredAt(entity.getExpiredAt())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .rentalId(rentalIdVal)
+                .rentalStatus(rentalStatusVal)
                 .build();
     }
 }

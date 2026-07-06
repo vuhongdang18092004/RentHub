@@ -24,11 +24,17 @@ public class RentalRequestSummaryResponse {
     private RequestStatus status;
     private LocalDateTime expiredAt;
     private LocalDateTime createdAt;
+    private String rentalStatus;
 
     public static RentalRequestSummaryResponse fromEntity(RentalRequest entity) {
         String primaryImage = null;
         if (entity.getProduct().getImages() != null && !entity.getProduct().getImages().isEmpty()) {
             primaryImage = entity.getProduct().getImages().get(0).getImageUrl();
+        }
+
+        String rentalStatusVal = null;
+        if (entity.getRentals() != null && !entity.getRentals().isEmpty()) {
+            rentalStatusVal = entity.getRentals().get(0).getStatus().name();
         }
 
         return RentalRequestSummaryResponse.builder()
@@ -44,6 +50,7 @@ public class RentalRequestSummaryResponse {
                 .status(entity.getStatus())
                 .expiredAt(entity.getExpiredAt())
                 .createdAt(entity.getCreatedAt())
+                .rentalStatus(rentalStatusVal)
                 .build();
     }
 }

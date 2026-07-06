@@ -62,7 +62,7 @@ const BackIcon = () => (
 
 function CheckoutContent() {
   const { items, itemCount, totalPrice, clearCart, updateDates } = useCart();
-  const { user } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const { triggerToast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,6 +75,7 @@ function CheckoutContent() {
 
   // Flow State
   const [paymentRequest, setPaymentRequest] = useState<any | null>(null);
+  const [rentalPaymentInfo, setRentalPaymentInfo] = useState<any | null>(null);
   const [loadingRequest, setLoadingRequest] = useState(false);
 
   // Address tab state
@@ -108,17 +109,42 @@ function CheckoutContent() {
 
   // Load request details if paying for an approved request
   useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) return;
+
     if (requestIdParam) {
       const fetchRequestDetails = async () => {
         setLoadingRequest(true);
         try {
           const data = await rentalService.getMyRentalRequestDetail(parseInt(requestIdParam));
           setPaymentRequest(data);
-          setOrderCode("SHR" + data.id);
-          setStep(2); // Jump directly to Payment QR Step
-        } catch (err) {
+          
+          if (data.status !== "APPROVED") {
+            triggerToast("Yêu cầu thuê chưa được phê duyệt hoặc đã hết hạn!");
+            router.push("/rentals/renter");
+            return;
+          }
+
+          if (data.rentalStatus === "ACTIVE" || data.rentalStatus === "RETURN_PENDING" || data.rentalStatus === "COMPLETED") {
+            setStep(4);
+            setLoadingRequest(false);
+            return;
+          }
+
+          if (data.rentalId) {
+            // Fetch owner's bank and dynamic payment details!
+            const payInfo = await rentalService.getRentalPaymentInfo(data.rentalId);
+            setRentalPaymentInfo(payInfo);
+            setOrderCode(payInfo.paymentContent);
+            setStep(2); // Jump directly to Payment QR Step
+          } else {
+            triggerToast("Không tìm thấy thông tin đơn thuê tương ứng!");
+            router.push("/rentals/renter");
+          }
+        } catch (err: any) {
           console.error("Lỗi lấy chi tiết yêu cầu đặt thuê:", err);
-          triggerToast("Không thể tải thông tin yêu cầu đặt thuê.");
+          const errMsg = err.response?.data?.message || "Không thể tải thông tin yêu cầu đặt thuê.";
+          triggerToast(errMsg);
           router.push("/rentals/renter");
         } finally {
           setLoadingRequest(false);
@@ -126,7 +152,7 @@ function CheckoutContent() {
       };
       fetchRequestDetails();
     }
-  }, [requestIdParam, router, triggerToast]);
+  }, [requestIdParam, router, triggerToast, isLoading, isAuthenticated]);
 
   // Redirect if cart is empty on step 1 (only for initial checkout flow)
   useEffect(() => {
@@ -143,13 +169,6 @@ function CheckoutContent() {
     }, 1000);
     return () => clearInterval(interval);
   }, [step, paymentTab, timeLeft]);
-
-  // Fetch VietQR image
-  useEffect(() => {
-    if (step === 2 && paymentTab === "bank" && orderCode) {
-      fetchQrCode(orderCode);
-    }
-  }, [step, paymentTab, orderCode]);
 
   // Calculate pricing dynamically based on current flow
   let finalSubtotal = totalPrice;
@@ -169,17 +188,32 @@ function CheckoutContent() {
     finalItemsCount = 1;
   }
 
-  const serviceFee = Math.round(finalSubtotal * 0.1);
-  const finalTotal = finalSubtotal + serviceFee;
+  let serviceFee = Math.round(finalSubtotal * 0.1);
+  let finalTotal = finalSubtotal + serviceFee;
 
-  const fetchQrCode = async (code: string) => {
+  if (rentalPaymentInfo) {
+    finalTotal = rentalPaymentInfo.totalPrice;
+    finalDeposit = rentalPaymentInfo.depositAmount;
+    serviceFee = 0;
+  }
+
+  const fetchQrCode = async (code: string, customBankInfo?: any) => {
     setQrLoading(true);
     setQrError(false);
     try {
+      const body: any = {
+        amount: customBankInfo ? customBankInfo.totalPrice : finalTotal,
+        content: code,
+      };
+      if (customBankInfo) {
+        body.bankAccount = customBankInfo.bankAccountNumber;
+        body.bankCode = customBankInfo.bankCode;
+        body.userBankName = customBankInfo.bankAccountHolderName;
+      }
       const res = await fetch("/api/vietqr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: finalTotal, content: code }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const data = await res.json();
@@ -198,11 +232,26 @@ function CheckoutContent() {
     }
   };
 
+  // Fetch VietQR image
+  useEffect(() => {
+    if (step === 2 && paymentTab === "bank" && orderCode) {
+      if (rentalPaymentInfo) {
+        fetchQrCode(orderCode, rentalPaymentInfo);
+      } else {
+        fetchQrCode(orderCode);
+      }
+    }
+  }, [step, paymentTab, orderCode, rentalPaymentInfo]);
+
   const handleRecreateQr = () => {
     setTimeLeft(900);
-    const code = paymentRequest ? "SHR" + paymentRequest.id : "SHR" + Date.now().toString().slice(-8);
+    const code = paymentRequest ? "RH" + paymentRequest.rentalId : "SHR" + Date.now().toString().slice(-8);
     setOrderCode(code);
-    fetchQrCode(code);
+    if (rentalPaymentInfo) {
+      fetchQrCode(code, rentalPaymentInfo);
+    } else {
+      fetchQrCode(code);
+    }
   };
 
   const handleCopy = (text: string, label: string) => {
@@ -254,22 +303,21 @@ function CheckoutContent() {
   };
 
   // Confirm payment success (Post-Approval Payment flow)
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
     if (!isConfirmed || !paymentRequest) return;
     setIsSubmitting(true);
     try {
-      // Persist the paid status locally
-      const paidList = JSON.parse(localStorage.getItem("renthub_paid_requests") || "[]");
-      if (!paidList.includes(paymentRequest.id)) {
-        paidList.push(paymentRequest.id);
-        localStorage.setItem("renthub_paid_requests", JSON.stringify(paidList));
+      if (paymentRequest.rentalId) {
+        await rentalService.confirmRentalPayment(paymentRequest.rentalId);
+        triggerToast("Thanh toán thành công! Đơn thuê đã được kích hoạt 🎉");
+        router.push("/rentals/renter");
+      } else {
+        triggerToast("Không tìm thấy đơn thuê để xác nhận thanh toán!");
       }
-
-      triggerToast("Xác nhận đã chuyển khoản thành công! Đơn thuê đã được thanh toán. 🎉");
-      router.push("/rentals/renter");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      triggerToast("Có lỗi xảy ra khi xác nhận thanh toán.");
+      const errMsg = err.response?.data?.message || "Có lỗi xảy ra khi xác nhận thanh toán.";
+      triggerToast(errMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -378,7 +426,7 @@ function CheckoutContent() {
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
               step >= 3 ? "bg-violet-600 text-white" : "bg-zinc-200 text-zinc-500"
             }`}>
-              3
+              {step > 3 ? <CheckIcon /> : "3"}
             </div>
             <span className={`text-[10px] font-black mt-2 tracking-wider uppercase ${
               step >= 3 ? "text-zinc-800 font-bold" : "text-zinc-400"
@@ -821,6 +869,52 @@ function CheckoutContent() {
                   </button>
                 </div>
               </>
+            )}
+
+            {/* Step 4 Content - Payment Successful Confirmation */}
+            {step === 4 && (
+              <div className="bg-white rounded-3xl border border-zinc-150 p-8 shadow-xs text-center space-y-6 flex flex-col items-center py-12">
+                <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center text-green-500 border border-green-200">
+                  <svg className="w-8 h-8 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                
+                <div className="space-y-2">
+                  <h2 className="text-xl font-black text-zinc-900">Thanh toán thành công!</h2>
+                  <p className="text-sm text-zinc-550 max-w-md mx-auto">
+                    Đơn đặt thuê của bạn đã được kích hoạt thành công. Chủ đồ đã nhận được thông tin thanh toán của bạn.
+                  </p>
+                </div>
+
+                <div className="border border-zinc-100 rounded-2xl p-4 w-full text-left space-y-3 bg-zinc-50/50">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-zinc-400 font-bold">Mã đơn thuê:</span>
+                    <span className="text-zinc-700 font-black">RH{paymentRequest?.rentalId}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-zinc-400 font-bold">Sản phẩm:</span>
+                    <span className="text-zinc-700 font-extrabold truncate max-w-[200px]">{paymentRequest?.productName}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-zinc-400 font-bold">Số tiền đã trả:</span>
+                    <span className="text-violet-700 font-black">{finalTotal.toLocaleString("vi-VN")}đ</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-zinc-400 font-bold">Trạng thái:</span>
+                    <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-green-50 text-green-700 border border-green-200 rounded-full">
+                      Đã thanh toán
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => router.push("/rentals/renter")}
+                  className="w-full py-3.5 bg-violet-600 hover:bg-violet-750 text-white rounded-2xl text-xs font-black tracking-wider uppercase shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer"
+                >
+                  Quay lại đơn thuê của tôi
+                </button>
+              </div>
             )}
           </div>
 

@@ -32,4 +32,8 @@ public interface RentalRequestService {
     void rejectRentalRequest(String email, Long requestId);
 
     void cancelRentalAsOwner(String email, Long rentalId);
+
+    com.ioc.internship.dto.response.RentalPaymentInfoResponse getRentalPaymentInfo(String email, Long rentalId);
+
+    void confirmRentalPayment(String email, Long rentalId);
 }

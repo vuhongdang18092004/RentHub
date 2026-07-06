@@ -19,6 +19,9 @@ public class UserResponse {
     private BigDecimal longitude;
     private String role;
     private String status;
+    private String bankAccountNumber;
+    private String bankCode;
+    private String bankAccountHolderName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

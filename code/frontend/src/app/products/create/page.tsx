@@ -34,12 +34,14 @@ interface CreateProductFormInput {
 export default function CreateProductPage() {
   const router = useRouter();
   const { triggerToast } = useToast();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<{ imageUrl: string; isPrimary: boolean }[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  const hasBankInfo = !!(user?.bankAccountNumber && user?.bankCode);
 
   // Admin Route Restriction check
   useEffect(() => {
@@ -208,6 +210,21 @@ export default function CreateProductPage() {
             <h1 className="text-2xl font-bold text-primary">Đăng sản phẩm mới</h1>
             <p className="text-sm text-secondary">Đăng mặt hàng của bạn lên hệ thống để cho thuê</p>
           </div>
+
+          {!hasBankInfo && (
+            <div className="p-4 rounded-3xl bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-start gap-3 shadow-sm">
+              <span className="text-lg">⚠️</span>
+              <div className="flex-1">
+                <p className="font-bold">Bạn chưa cập nhật tài khoản ngân hàng nhận tiền!</p>
+                <p className="text-xs text-amber-700 mt-1">
+                  Để duyệt yêu cầu thuê của khách hàng, vui lòng{" "}
+                  <a href="/profile" className="font-semibold underline text-amber-900 hover:text-amber-950">
+                    cập nhật tài khoản ngân hàng nhận tiền tại đây
+                  </a>.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="bg-primary p-8 rounded-[24px] shadow-lg border border-secondary">
             {loadingCategories ? (

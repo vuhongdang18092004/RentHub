@@ -56,6 +56,9 @@ public class UserServiceImpl implements UserService {
         user.setAddress(request.getAddress());
         user.setLatitude(request.getLatitude());
         user.setLongitude(request.getLongitude());
+        user.setBankAccountNumber(request.getBankAccountNumber());
+        user.setBankCode(request.getBankCode());
+        user.setBankAccountHolderName(request.getBankAccountHolderName());
         user.setUpdatedAt(LocalDateTime.now());
 
         user = userRepository.save(user);
@@ -121,6 +124,9 @@ public class UserServiceImpl implements UserService {
                 .longitude(entity.getLongitude())
                 .role(entity.getRole())
                 .status(entity.getStatus())
+                .bankAccountNumber(entity.getBankAccountNumber())
+                .bankCode(entity.getBankCode())
+                .bankAccountHolderName(entity.getBankAccountHolderName())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

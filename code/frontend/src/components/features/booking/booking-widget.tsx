@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { useRouter } from "next/navigation";
 import { rentalService } from "@/services/rental-service";
 import { ProductDetail } from "@/services/product-service";
+import api from "@/lib/axios";
 
 interface BookingWidgetProps {
   product: ProductDetail;
   isOwner: boolean;
   onMessageClick: () => void;
+}
+
+export interface BlockedRange {
+  startDate: string;
+  endDate: string;
 }
 
 export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidgetProps) {
@@ -22,6 +28,23 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [blockedRanges, setBlockedRanges] = useState<BlockedRange[]>([]);
+
+  useEffect(() => {
+    const fetchBlockedDates = async () => {
+      try {
+        const res = await api.get(`/products/${product.id}/blocked-dates`);
+        if (Array.isArray(res.data)) {
+          setBlockedRanges(res.data);
+        }
+      } catch (err) {
+        console.error("Lỗi lấy danh sách ngày khóa của sản phẩm:", err);
+      }
+    };
+    if (product.id) {
+      fetchBlockedDates();
+    }
+  }, [product.id]);
 
   // Generate current and next month calendars
   const today = new Date();
@@ -53,8 +76,13 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
     return `${y}-${m}-${d}`;
   };
 
+  const isBlocked = (dayDate: Date) => {
+    const d = formatDateToString(dayDate);
+    return blockedRanges.some((r) => d >= r.startDate && d <= r.endDate);
+  };
+
   const handleDayClick = (dayDate: Date) => {
-    if (dayDate < today) return; // Disabled past days
+    if (dayDate < today || isBlocked(dayDate)) return; // Disabled past and blocked days
 
     if (!startDate || (startDate && endDate)) {
       setStartDate(dayDate);
@@ -63,6 +91,16 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
       if (dayDate < startDate) {
         setStartDate(dayDate);
       } else {
+        // Prevent selecting a range that overlaps with blocked dates!
+        const hasBlockedInRange = blockedRanges.some((r) => {
+          const startStr = formatDateToString(startDate);
+          const endStr = formatDateToString(dayDate);
+          return (r.startDate >= startStr && r.startDate <= endStr) || (r.endDate >= startStr && r.endDate <= endStr);
+        });
+        if (hasBlockedInRange) {
+          triggerToast("Khoảng ngày bạn chọn chứa những ngày đã bị đặt!");
+          return;
+        }
         setEndDate(dayDate);
       }
     }
@@ -156,6 +194,7 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
                 ))}
                 {days.map((dayDate) => {
                   const isPast = dayDate < today;
+                  const blocked = isBlocked(dayDate);
                   const selected = isSelected(dayDate);
                   const inRange = isInRange(dayDate);
                   const isStart = startDate && dayDate.getTime() === startDate.getTime();
@@ -164,11 +203,13 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
                   return (
                     <button
                       key={dayDate.getDate()}
-                      disabled={isPast}
+                      disabled={isPast || blocked}
                       onClick={() => handleDayClick(dayDate)}
                       className={`h-7 w-7 mx-auto rounded-full text-[10px] font-bold transition-all relative flex items-center justify-center select-none ${
                         isPast
                           ? "text-zinc-300 cursor-not-allowed"
+                          : blocked
+                          ? "bg-zinc-200 text-zinc-400 cursor-not-allowed line-through"
                           : selected
                           ? "bg-violet-600 text-white"
                           : inRange
@@ -200,7 +241,7 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
           <span>Trong khoảng</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-2 h-2 text-violet-600 font-black">✓</span>
+          <span className="w-4 h-4 rounded bg-zinc-200 border border-zinc-300 inline-flex items-center justify-center text-[8px] text-zinc-400 font-black line-through">✓</span>
           <span>Đã đặt</span>
         </div>
         <div className="flex items-center gap-1">

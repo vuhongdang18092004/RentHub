@@ -19,4 +19,8 @@ public class UserUpdateRequest {
     private String address;
     private BigDecimal latitude;
     private BigDecimal longitude;
+
+    private String bankAccountNumber;
+    private String bankCode;
+    private String bankAccountHolderName;
 }

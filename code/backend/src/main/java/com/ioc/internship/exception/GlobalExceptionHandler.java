@@ -45,8 +45,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
         Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
-        error.put("message", ex.getMessage());
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        String message = ex.getMessage();
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        if (message != null) {
+            if (message.startsWith("400 Bad Request:")) {
+                status = HttpStatus.BAD_REQUEST;
+                message = message.substring("400 Bad Request:".length()).trim();
+            } else if (message.startsWith("403 Forbidden:")) {
+                status = HttpStatus.FORBIDDEN;
+                message = message.substring("403 Forbidden:".length()).trim();
+            } else if (message.startsWith("404 Not Found:")) {
+                status = HttpStatus.NOT_FOUND;
+                message = message.substring("404 Not Found:".length()).trim();
+            }
+        }
+
+        error.put("error", message);
+        error.put("message", message);
+        return new ResponseEntity<>(error, status);
     }
 }

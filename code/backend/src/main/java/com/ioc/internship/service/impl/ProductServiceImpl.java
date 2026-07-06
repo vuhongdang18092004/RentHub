@@ -34,6 +34,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductImageRepository productImageRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final com.ioc.internship.repository.RentalRepository rentalRepository;
 
     @Override
     @Transactional
@@ -245,6 +246,17 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findByIdAndStatus(id, ProductStatus.AVAILABLE)
                 .orElseThrow(() -> new RuntimeException("404 Not Found: Product not found or not available"));
         return com.ioc.internship.dto.response.PublicProductDetailResponse.fromEntity(product);
+    }
+
+    @Override
+    public List<com.ioc.internship.dto.response.BlockedDateRangeResponse> getBlockedDates(Long id) {
+        List<com.ioc.internship.entity.Rental> blockingRentals = rentalRepository.findBlockingRentalsByProductId(id);
+        return blockingRentals.stream()
+                .map(r -> com.ioc.internship.dto.response.BlockedDateRangeResponse.builder()
+                        .startDate(r.getStartDate())
+                        .endDate(r.getEndDate())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Override

@@ -3,11 +3,18 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { amount, content } = body;
+    const { amount, content, bankAccount: reqBankAccount, bankCode: reqBankCode, userBankName: reqBankOwner } = body;
 
-    const bankAccount = process.env.BANK_ACCOUNT || "1234567890";
-    const bankCode = (process.env.BANK_CODE || "VCB").toLowerCase();
-    const bankOwner = process.env.BANK_OWNER || "CONG TY CP RENTHUB";
+    const bankAccount = reqBankAccount || process.env.BANK_ACCOUNT || "1234567890";
+    const bankCode = (reqBankCode || process.env.BANK_CODE || "VCB").toLowerCase();
+    const bankOwner = reqBankOwner || process.env.BANK_OWNER || "CONG TY CP RENTHUB";
+
+    if (!bankAccount || !bankCode) {
+      return NextResponse.json(
+        { error: "Thiếu thông tin tài khoản ngân hàng người nhận" },
+        { status: 400 }
+      );
+    }
 
     // Construct the public, free, and robust img.vietqr.io Quick Link URL
     const qrDataURL = `https://img.vietqr.io/image/${bankCode}-${bankAccount}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(bankOwner)}`;

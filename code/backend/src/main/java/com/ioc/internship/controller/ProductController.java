@@ -82,6 +82,12 @@ public class ProductController {
         return ResponseEntity.ok(productService.getPublicProductDetail(id));
     }
 
+    @GetMapping("/{id}/blocked-dates")
+    public ResponseEntity<java.util.List<com.ioc.internship.dto.response.BlockedDateRangeResponse>> getBlockedDates(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(productService.getBlockedDates(id));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<ProductDetailResponse> updateProduct(
