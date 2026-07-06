@@ -486,7 +486,13 @@ export default function ProductDetailPage() {
                   } else {
                     // Custom global dispatch for opening chat
                     const event = new CustomEvent("open-chat-drawer", {
-                      detail: { recipientId: product.owner.id },
+                      detail: { 
+                        recipientId: product.owner.id,
+                        productId: product.id,
+                        productName: product.name,
+                        productPrice: product.pricePerDay,
+                        productImage: product.primaryImage
+                      },
                     });
                     window.dispatchEvent(event);
                   }

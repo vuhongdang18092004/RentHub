@@ -17,6 +17,8 @@ interface ChatContextType {
   unreadTotal: number;
   refreshConversations: () => Promise<void>;
   loadMoreMessages: () => Promise<void>;
+  activeReferencedProduct: any | null;
+  setActiveReferencedProduct: (product: any | null) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -31,6 +33,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [activeReferencedProduct, setActiveReferencedProduct] = useState<any | null>(null);
 
   const refreshConversations = async () => {
     if (isLoading || !isAuthenticated || !user) return;
@@ -133,6 +136,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const closeChat = () => {
     setIsOpen(false);
+    setActiveReferencedProduct(null); // Clear active product context on close
   };
 
   const sendMessage = async (content: string, type: MessageType = "TEXT", referencedProductId?: number) => {
@@ -156,6 +160,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const handleOpenChatEvent = (e: Event) => {
       const customEvent = e as CustomEvent;
       const recipientId = customEvent.detail?.recipientId;
+      const productInfo = customEvent.detail?.productId ? {
+        id: customEvent.detail.productId,
+        name: customEvent.detail.productName,
+        pricePerDay: customEvent.detail.productPrice,
+        primaryImage: customEvent.detail.productImage,
+      } : null;
+
+      setActiveReferencedProduct(productInfo);
       openChat(recipientId);
     };
 
@@ -182,6 +194,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         unreadTotal,
         refreshConversations,
         loadMoreMessages,
+        activeReferencedProduct,
+        setActiveReferencedProduct,
       }}
     >
       {children}

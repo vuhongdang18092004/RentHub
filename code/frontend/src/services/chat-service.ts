@@ -19,8 +19,7 @@ export interface ReferencedProduct {
   id: number;
   name: string;
   pricePerDay: number;
-  depositAmount: number;
-  primaryImageUrl: string | null;
+  primaryImage: string | null;
 }
 
 export interface MessageResponse {

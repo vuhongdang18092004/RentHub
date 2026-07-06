@@ -18,6 +18,8 @@ export function ChatDrawer() {
     messages,
     loadingMessages,
     loadMoreMessages,
+    activeReferencedProduct,
+    setActiveReferencedProduct,
   } = useChat();
 
   const [searchText, setSearchText] = useState("");
@@ -25,6 +27,9 @@ export function ChatDrawer() {
   const messageEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [prevScrollHeight, setPrevScrollHeight] = useState(0);
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -66,6 +71,74 @@ export function ChatDrawer() {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  // Cloudinary signature-based upload helper
+  const uploadImageToCloudinary = async (file: File): Promise<string> => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
+    const apiSecret = process.env.NEXT_PUBLIC_CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      throw new Error("Cấu hình Cloudinary thiếu trong file .env");
+    }
+
+    const timestamp = Math.round(new Date().getTime() / 1000).toString();
+    const stringToSign = `timestamp=${timestamp}${apiSecret}`;
+    const buffer = new TextEncoder().encode(stringToSign);
+    const hash = await crypto.subtle.digest("SHA-1", buffer);
+    const signature = Array.from(new Uint8Array(hash))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", timestamp);
+    formData.append("signature", signature);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error?.message || "Tải ảnh thất bại");
+    }
+
+    const resData = await response.json();
+    return resData.secure_url;
+  };
+
+  const handleAttachImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !activeConversationId) return;
+
+    try {
+      setUploadingImage(true);
+      const url = await uploadImageToCloudinary(files[0]);
+      await sendMessage(url, "IMAGE");
+    } catch (err: any) {
+      console.error("Lỗi đính kèm hình ảnh:", err);
+      alert(err.message || "Không thể tải lên hình ảnh");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSendProduct = async () => {
+    if (!activeReferencedProduct || !activeConversationId) return;
+    await sendMessage(
+      `Tôi quan tâm đến sản phẩm này: ${activeReferencedProduct.name}`,
+      "PRODUCT",
+      activeReferencedProduct.id
+    );
+    setActiveReferencedProduct(null);
   };
 
   if (!isOpen || !user) return null;
@@ -231,21 +304,25 @@ export function ChatDrawer() {
                           {msg.messageType === "PRODUCT" && msg.referencedProduct && (
                             <Link
                               href={`/products/${msg.referencedProduct.id}`}
-                              className="block p-2 bg-white/10 rounded-xl hover:bg-white/15 transition-all text-left mb-2 text-white border border-white/10"
+                              className={`block p-2 rounded-xl transition-all text-left mb-2 border ${
+                                isMe
+                                  ? "bg-white/15 hover:bg-white/20 text-white border-white/10"
+                                  : "bg-white hover:bg-zinc-50 text-zinc-800 border-zinc-200"
+                              }`}
                             >
                               <div className="flex gap-2 items-center">
-                                <div className="w-10 h-10 rounded overflow-hidden shrink-0 bg-white/20">
-                                  {msg.referencedProduct.primaryImageUrl ? (
-                                    <img src={msg.referencedProduct.primaryImageUrl} alt="" className="w-full h-full object-cover" />
+                                <div className="w-10 h-10 rounded overflow-hidden shrink-0 bg-zinc-100 border border-zinc-200/50">
+                                  {msg.referencedProduct.primaryImage ? (
+                                    <img src={msg.referencedProduct.primaryImage} alt="" className="w-full h-full object-cover" />
                                   ) : (
-                                    <span className="w-full h-full flex items-center justify-center text-sm">📦</span>
+                                    <span className="w-full h-full flex items-center justify-center text-xs">📦</span>
                                   )}
                                 </div>
-                                <div className="min-w-0">
-                                  <h4 className="font-extrabold text-[11px] truncate leading-tight">
+                                <div className="min-w-0 flex-1">
+                                  <h4 className={`font-extrabold text-[10px] truncate leading-tight ${isMe ? "text-white" : "text-zinc-800"}`}>
                                     {msg.referencedProduct.name}
                                   </h4>
-                                  <span className="text-[10px] font-black opacity-90 mt-0.5 block">
+                                  <span className={`text-[9px] font-black mt-0.5 block ${isMe ? "text-white/90" : "text-violet-600"}`}>
                                     {msg.referencedProduct.pricePerDay.toLocaleString("vi-VN")}đ/ngày
                                   </span>
                                 </div>
@@ -253,7 +330,19 @@ export function ChatDrawer() {
                             </Link>
                           )}
                           
-                          <p className="whitespace-pre-line break-words">{msg.content}</p>
+                          {/* If IMAGE message type */}
+                          {msg.messageType === "IMAGE" ? (
+                            <div className="max-w-[200px] rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-all border border-zinc-200/30">
+                              <img
+                                src={msg.content}
+                                alt="Ảnh đính kèm"
+                                className="w-full h-auto object-cover max-h-[160px]"
+                                onClick={() => window.open(msg.content, "_blank")}
+                              />
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-line break-words">{msg.content}</p>
+                          )}
                         </div>
                         
                         {/* Time label */}
@@ -270,9 +359,70 @@ export function ChatDrawer() {
                 <div ref={messageEndRef} />
               </div>
 
+              {/* Product Reference Bar */}
+              {activeReferencedProduct && (
+                <div className="px-4 py-2 border-t border-zinc-150 bg-zinc-50 flex items-center justify-between gap-3 animate-fade-in select-none">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-zinc-200">
+                      {activeReferencedProduct.primaryImage ? (
+                        <img src={activeReferencedProduct.primaryImage} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-sm bg-zinc-100">📦</div>
+                      )}
+                    </div>
+                    <div className="min-w-0 text-xs">
+                      <p className="text-zinc-500 text-[9px] font-bold">Bạn đang hỏi về sản phẩm:</p>
+                      <h4 className="font-extrabold text-zinc-800 truncate max-w-[280px]">{activeReferencedProduct.name}</h4>
+                      <p className="text-violet-600 font-bold text-[9px]">{activeReferencedProduct.pricePerDay.toLocaleString("vi-VN")}đ/ngày</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleSendProduct}
+                      className="px-3 py-1.5 bg-violet-600 hover:bg-violet-750 text-white text-[10px] font-extrabold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Gửi link sản phẩm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveReferencedProduct(null)}
+                      className="p-1.5 rounded-lg hover:bg-zinc-200 text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Chat Input form */}
               <form onSubmit={handleSend} className="p-3.5 border-t border-zinc-150 bg-white">
                 <div className="flex gap-2 items-end">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleAttachImage}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="p-2.5 rounded-xl hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition-all cursor-pointer border border-zinc-200"
+                    title="Đính kèm hình ảnh"
+                  >
+                    {uploadingImage ? (
+                      <div className="w-4 h-4 border-2 border-zinc-450 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+
                   <textarea
                     rows={1}
                     value={typedMessage}
@@ -283,9 +433,9 @@ export function ChatDrawer() {
                   />
                   <button
                     type="submit"
-                    disabled={!typedMessage.trim()}
+                    disabled={!typedMessage.trim() || uploadingImage}
                     className={`p-2.5 rounded-xl transition-all cursor-pointer ${
-                      typedMessage.trim()
+                      typedMessage.trim() && !uploadingImage
                         ? "bg-violet-600 hover:bg-violet-700 text-white shadow-sm"
                         : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
                     }`}
