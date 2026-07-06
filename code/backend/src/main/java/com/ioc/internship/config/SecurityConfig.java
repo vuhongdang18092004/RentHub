@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products/public", "/api/products/public/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products/*/blocked-dates").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/users/*/public", "/api/users/*/public/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/admin/users", "/api/admin/users/**", "/api/admin/products", "/api/admin/products/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/users/profile", "/api/users/profile/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         .requestMatchers("/api/favorites", "/api/favorites/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
