@@ -122,18 +122,39 @@ export const rentalService = {
     return res.data;
   },
 
-  // POST /api/renter/rentals/{id}/confirm-payment
-  confirmRentalPayment: async (rentalId: number): Promise<void> => {
-    await api.post(`/renter/rentals/${rentalId}/confirm-payment`);
+  // GET /api/rentals/{id}
+  getRentalDetail: async (id: number): Promise<import("@/types/backend").RentalDetailResponse> => {
+    const res = await api.get(`/rentals/${id}`);
+    return res.data;
   },
 
-  // POST /api/renter/rentals/{id}/return
-  requestReturn: async (rentalId: number): Promise<void> => {
-    await api.post(`/renter/rentals/${rentalId}/return`);
+  // PUT /api/rentals/{id}/handover
+  handoverRental: async (id: number): Promise<import("@/types/backend").RentalLifecycleResponse> => {
+    const res = await api.put(`/rentals/${id}/handover`);
+    return res.data;
   },
 
-  // POST /api/owner/rentals/{id}/confirm-return
-  confirmReturn: async (rentalId: number): Promise<void> => {
-    await api.post(`/owner/rentals/${rentalId}/confirm-return`);
+  // PUT /api/rentals/{id}/receive
+  receiveRental: async (id: number): Promise<import("@/types/backend").RentalLifecycleResponse> => {
+    const res = await api.put(`/rentals/${id}/receive`);
+    return res.data;
+  },
+
+  // PUT /api/rentals/{id}/reject
+  rejectRental: async (id: number): Promise<import("@/types/backend").RentalLifecycleResponse> => {
+    const res = await api.put(`/rentals/${id}/reject`);
+    return res.data;
+  },
+
+  // PUT /api/rentals/{id}/return
+  returnRental: async (id: number): Promise<import("@/types/backend").RentalLifecycleResponse> => {
+    const res = await api.put(`/rentals/${id}/return`);
+    return res.data;
+  },
+
+  // PUT /api/rentals/{id}/complete
+  completeRental: async (id: number): Promise<import("@/types/backend").RentalLifecycleResponse> => {
+    const res = await api.put(`/rentals/${id}/complete`);
+    return res.data;
   },
 };

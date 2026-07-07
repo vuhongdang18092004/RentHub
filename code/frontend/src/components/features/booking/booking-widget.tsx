@@ -158,6 +158,7 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
       triggerToast("Đã gửi yêu cầu thuê! ✅");
       setStartDate(null);
       setEndDate(null);
+      setTimeout(() => router.push("/rentals/renter"), 1000);
     } catch (err: any) {
       console.error("Lỗi đặt lịch:", err);
       triggerToast(err.response?.data?.message || "Đặt lịch thất bại. Vui lòng thử lại!");

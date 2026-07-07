@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import { rentalService } from "@/services/rental-service";
+import { paymentService } from "@/services/payment-service";
 
 // Importing react-aria-components for the DateRangePicker as requested
 import { 
@@ -311,8 +312,31 @@ function CheckoutContent() {
     setIsSubmitting(true);
     try {
       if (paymentRequest.rentalId) {
-        await rentalService.confirmRentalPayment(paymentRequest.rentalId);
-        triggerToast("Thanh toán thành công! Đơn thuê đã được kích hoạt 🎉");
+        await paymentService.recordPayment({
+          rentalId: paymentRequest.rentalId,
+          paymentType: "RENTAL_FEE",
+          amount: finalTotal,
+          transactionCode: orderCode,
+          paymentMethod: paymentTab === "bank" ? "PAYOS" : "VNPAY",
+          status: "SUCCESS"
+        });
+        
+        if (finalDeposit > 0) {
+          try {
+            await paymentService.recordPayment({
+              rentalId: paymentRequest.rentalId,
+              paymentType: "DEPOSIT",
+              amount: finalDeposit,
+              transactionCode: orderCode + "_DEP",
+              paymentMethod: paymentTab === "bank" ? "PAYOS" : "VNPAY",
+              status: "SUCCESS"
+            });
+          } catch (e) {
+            console.warn("Deposit already recorded or failed", e);
+          }
+        }
+
+        triggerToast("Thanh toán thành công! 🎉");
         router.push("/rentals/renter");
       } else {
         triggerToast("Không tìm thấy đơn thuê để xác nhận thanh toán!");

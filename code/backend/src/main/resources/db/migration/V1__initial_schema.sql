@@ -5,9 +5,10 @@ CREATE TYPE product_status AS ENUM ('PENDING', 'AVAILABLE', 'RENTED', 'UNAVAILAB
 CREATE TYPE request_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'EXPIRED');
 CREATE TYPE rental_status AS ENUM ('WAITING_PAYMENT', 'ACTIVE', 'RETURN_PENDING', 'COMPLETED', 'CANCELLED');
 CREATE TYPE payment_method AS ENUM ('PAYOS', 'VNPAY');
-CREATE TYPE payment_type AS ENUM ('DEPOSIT', 'RENTAL_FEE', 'REFUND');
+CREATE TYPE payment_type AS ENUM ('DEPOSIT', 'RENTAL_FEE', 'REFUND_DEPOSIT' , 'REFUND_CANCEL');
 CREATE TYPE payment_status AS ENUM ('PENDING', 'SUCCESS', 'FAILED');
-CREATE TYPE report_status AS ENUM ('PENDING', 'RESOLVED', 'REJECTED');
+CREATE TYPE report_reason AS ENUM ('PRODUCT_NOT_AS_DESCRIBED','DAMAGED_PRODUCT','LATE_RETURN','NO_SHOW','PAYMENT_DISPUTE','OTHER');
+CREATE TYPE report_status AS ENUM ('PENDING', 'UNDER_REVIEW', 'RESOLVED', 'REJECTED');
 CREATE TYPE message_type AS ENUM ('TEXT', 'PRODUCT', 'IMAGE');
 
 -- 2. CÁC BẢNG (TABLES)
@@ -132,27 +133,27 @@ CREATE TABLE payments (
 );
 
 -- Bảng 8: tracking
-CREATE TABLE tracking (
-                          id BIGSERIAL PRIMARY KEY,
-                          rental_id BIGINT NOT NULL,
-                          owner_pickup_confirm BOOLEAN DEFAULT FALSE,
-                          renter_pickup_confirm BOOLEAN DEFAULT FALSE,
-                          owner_return_confirm BOOLEAN DEFAULT FALSE,
-                          renter_return_confirm BOOLEAN DEFAULT FALSE,
-                          owner_pickup_at TIMESTAMP,
-                          renter_pickup_at TIMESTAMP,
-                          owner_return_at TIMESTAMP,
-                          renter_return_at TIMESTAMP,
-                          owner_pickup_image VARCHAR(255),
-                          renter_pickup_image VARCHAR(255),
-                          owner_return_image VARCHAR(255),
-                          renter_return_image VARCHAR(255),
-                          note TEXT,
-                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-                          CONSTRAINT fk_tracking_rental FOREIGN KEY (rental_id) REFERENCES rentals(id) ON DELETE RESTRICT
-);
+-- CREATE TABLE tracking (
+--                           id BIGSERIAL PRIMARY KEY,
+--                           rental_id BIGINT NOT NULL,
+--                           owner_pickup_confirm BOOLEAN DEFAULT FALSE,
+--                           renter_pickup_confirm BOOLEAN DEFAULT FALSE,
+--                           owner_return_confirm BOOLEAN DEFAULT FALSE,
+--                           renter_return_confirm BOOLEAN DEFAULT FALSE,
+--                           owner_pickup_at TIMESTAMP,
+--                           renter_pickup_at TIMESTAMP,
+--                           owner_return_at TIMESTAMP,
+--                           renter_return_at TIMESTAMP,
+--                           owner_pickup_image VARCHAR(255),
+--                           renter_pickup_image VARCHAR(255),
+--                           owner_return_image VARCHAR(255),
+--                           renter_return_image VARCHAR(255),
+--                           note TEXT,
+--                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--                           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--                           CONSTRAINT fk_tracking_rental FOREIGN KEY (rental_id) REFERENCES rentals(id) ON DELETE RESTRICT
+-- );
 
 -- Bảng 9: reviews
 CREATE TABLE reviews (
@@ -172,19 +173,46 @@ CREATE TABLE reviews (
 -- Bảng 10: reports
 CREATE TABLE reports (
                          id BIGSERIAL PRIMARY KEY,
+
                          reporter_id BIGINT NOT NULL,
                          reported_user_id BIGINT NOT NULL,
-                         rental_id BIGINT,
-                         product_id BIGINT,
+
+                         rental_id BIGINT NOT NULL,
+                         product_id BIGINT NOT NULL,
+
                          reason VARCHAR(255) NOT NULL,
                          description TEXT,
-                         status report_status DEFAULT 'PENDING',
-                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-                         CONSTRAINT fk_report_reporter FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE RESTRICT,
-                         CONSTRAINT fk_report_reported_user FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE RESTRICT,
-                         CONSTRAINT fk_report_rental FOREIGN KEY (rental_id) REFERENCES rentals(id) ON DELETE RESTRICT,
-                         CONSTRAINT fk_report_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+                         status report_status DEFAULT 'PENDING',
+
+                         admin_note TEXT,
+
+                         evidence_image_url VARCHAR(255),
+
+                         resolved_at TIMESTAMP,
+
+                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                         CONSTRAINT fk_report_reporter
+                             FOREIGN KEY (reporter_id)
+                                 REFERENCES users(id)
+                                 ON DELETE RESTRICT,
+
+                         CONSTRAINT fk_report_reported_user
+                             FOREIGN KEY (reported_user_id)
+                                 REFERENCES users(id)
+                                 ON DELETE RESTRICT,
+
+                         CONSTRAINT fk_report_rental
+                             FOREIGN KEY (rental_id)
+                                 REFERENCES rentals(id)
+                                 ON DELETE RESTRICT,
+
+                         CONSTRAINT fk_report_product
+                             FOREIGN KEY (product_id)
+                                 REFERENCES products(id)
+                                 ON DELETE RESTRICT
 );
 
 -- Bảng 11: conversations

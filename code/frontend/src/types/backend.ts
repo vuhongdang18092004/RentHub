@@ -153,3 +153,86 @@ export interface RentalRequestDetailResponse {
   rentalStatus?: string;
 }
 
+
+export type RentalStatus = 'WAITING_PAYMENT' | 'HANDOVER_PENDING' | 'ACTIVE' | 'RETURN_PENDING' | 'COMPLETED' | 'CANCELLED';
+
+export type PaymentType = 'DEPOSIT' | 'RENTAL_FEE' | 'REFUND_CANCEL' | 'REFUND_DEPOSIT';
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
+export type PaymentMethod = 'PAYOS' | 'VNPAY';
+
+export type ReportStatus = 'PENDING' | 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED';
+export type ReportReason = 'PRODUCT_NOT_AS_DESCRIBED' | 'DAMAGED_PRODUCT' | 'LATE_RETURN' | 'PAYMENT_DISPUTE' | 'NO_SHOW' | 'OTHER';
+export type ResolutionAction = 'NO_ACTION' | 'REFUND_FULL' | 'REFUND_PARTIAL' | 'PENALTY_FEE';
+
+export interface RentalLifecycleResponse {
+  rentalId: number;
+  status: RentalStatus;
+  message: string;
+}
+
+export interface PaymentRecordRequest {
+  rentalId: number;
+  paymentType: PaymentType;
+  paymentMethod: PaymentMethod;
+  amount: number;
+  transactionCode?: string;
+  status: PaymentStatus;
+}
+
+export interface RefundRequest {
+  rentalId: number;
+  paymentType: PaymentType;
+  amount: number;
+  transactionCode: string;
+}
+
+export interface PaymentResponse {
+  id: number;
+  rentalId: number;
+  payerId: number;
+  paymentType: PaymentType;
+  paymentMethod: PaymentMethod;
+  amount: number;
+  transactionCode?: string;
+  status: PaymentStatus;
+  paidAt: string;
+}
+
+export interface ReportCreateRequest {
+  rentalId: number;
+  reason: ReportReason;
+  description: string;
+  evidenceImageUrl?: string;
+}
+
+export interface ReportResponse {
+  id: number;
+  reporterId: number;
+  reportedUserId: number;
+  rentalId: number;
+  productId: number;
+  reason: ReportReason;
+  description: string;
+  status: ReportStatus;
+  adminNote?: string;
+  evidenceImageUrl?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RentalDetailResponse {
+  id: number;
+  product: ProductSummaryResponse;
+  owner: UserSummaryResponse;
+  renter: UserSummaryResponse;
+  startDate: string;
+  endDate: string;
+  rentalDays: number;
+  pricePerDay: number;
+  depositAmount: number;
+  totalPrice: number;
+  status: RentalStatus;
+  createdAt: string;
+  updatedAt: string;
+}

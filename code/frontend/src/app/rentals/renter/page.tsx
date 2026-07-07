@@ -47,21 +47,7 @@ export default function RenterRentalsPage() {
     }
   };
 
-  const handleRequestReturn = async (id?: number) => {
-    if (!id) {
-      triggerToast("Không tìm thấy mã đơn thuê! Vui lòng tải lại trang (F5). 🔄");
-      return;
-    }
-    if (!window.confirm("Bạn có chắc chắn đã sử dụng xong và muốn yêu cầu TRẢ ĐỒ cho sản phẩm này?")) return;
-    try {
-      await rentalService.requestReturn(id);
-      triggerToast("Yêu cầu trả đồ thành công! Chờ chủ đồ xác nhận. 📤");
-      fetchRequests();
-    } catch (err: any) {
-      console.error("Lỗi yêu cầu trả đồ:", err);
-      triggerToast(err.response?.data?.message || "Yêu cầu trả đồ thất bại!");
-    }
-  };
+
 
   const getStatusBadge = (status: RequestStatus, rentalStatus?: string) => {
     switch (status) {
@@ -225,21 +211,12 @@ export default function RenterRentalsPage() {
                         </button>
                       )}
 
-                      {req.status === "APPROVED" && req.rentalStatus === "WAITING_PAYMENT" && (
+                      {req.status === "APPROVED" && req.rentalId && (
                         <button
-                          onClick={() => router.push(`/checkout?requestId=${req.id}`)}
+                          onClick={() => router.push(`/rentals/${req.rentalId}`)}
                           className="px-3.5 py-2 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-extrabold shadow-sm hover:shadow hover:scale-[1.01] transition-all cursor-pointer"
                         >
-                          Thanh toán ngay
-                        </button>
-                      )}
-
-                      {req.status === "APPROVED" && req.rentalStatus === "ACTIVE" && (
-                        <button
-                          onClick={() => handleRequestReturn(req.rentalId!)}
-                          className="px-3.5 py-2 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-extrabold shadow-sm hover:shadow hover:scale-[1.01] transition-all cursor-pointer animate-[pulse_2s_infinite]"
-                        >
-                          Trả đồ
+                          Chi tiết thuê đồ
                         </button>
                       )}
                     </div>

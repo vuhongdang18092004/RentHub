@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { rentalService, RentalRequestSummaryResponse, RentalRequestStatisticsResponse, RequestStatus } from "@/services/rental-service";
 import { useToast } from "@/context/ToastContext";
 
 export default function OwnerRentalsPage() {
+  const router = useRouter();
   const { triggerToast } = useToast();
   const [requests, setRequests] = useState<RentalRequestSummaryResponse[]>([]);
   const [stats, setStats] = useState<RentalRequestStatisticsResponse | null>(null);
@@ -344,13 +346,23 @@ export default function OwnerRentalsPage() {
                             Duyệt đơn
                           </button>
                         </div>
-                      ) : req.status === "APPROVED" && req.rentalStatus === "RETURN_PENDING" ? (
-                        <button
-                          onClick={() => handleConfirmReturn(req.rentalId!)}
-                          className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-xs hover:shadow active:scale-[0.99] animate-[pulse_2s_infinite]"
-                        >
-                          Xác nhận nhận đồ
-                        </button>
+                      ) : req.status === "APPROVED" && req.rentalId ? (
+                        <div className="flex gap-2">
+                          {req.rentalStatus === "RETURN_PENDING" && (
+                            <button
+                              onClick={() => handleConfirmReturn(req.rentalId!)}
+                              className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-xs hover:shadow active:scale-[0.99] animate-[pulse_2s_infinite]"
+                            >
+                              Xác nhận nhận đồ
+                            </button>
+                          )}
+                          <button
+                            onClick={() => router.push(`/rentals/${req.rentalId}`)}
+                            className="px-3.5 py-2 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-extrabold shadow-sm hover:shadow hover:scale-[1.01] transition-all cursor-pointer"
+                          >
+                            Chi tiết thuê đồ
+                          </button>
+                        </div>
                       ) : (
                         <div className="text-[10px] text-zinc-400 font-bold select-none italic">
                           Hết hiệu lực xử lý

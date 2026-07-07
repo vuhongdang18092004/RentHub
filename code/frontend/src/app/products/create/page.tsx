@@ -40,6 +40,7 @@ export default function CreateProductPage() {
   const [saving, setSaving] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<{ imageUrl: string; isPrimary: boolean }[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [imageUrlInput, setImageUrlInput] = useState("");
 
   const hasBankInfo = !!(user?.bankAccountNumber && user?.bankCode);
 
@@ -148,6 +149,16 @@ export default function CreateProductPage() {
       triggerToast(`Đã tải lên thành công ${newUrls.length} ảnh! 📸`);
     }
     setUploading(false);
+  };
+
+  const handleAddImageUrl = () => {
+    if (!imageUrlInput.trim()) return;
+    setUploadedImages((prev) => {
+      const isPrimary = prev.length === 0;
+      return [...prev, { imageUrl: imageUrlInput.trim(), isPrimary }];
+    });
+    setImageUrlInput("");
+    triggerToast("Đã thêm ảnh từ URL thành công! 📸");
   };
 
   const setPrimaryImage = (index: number) => {
@@ -397,6 +408,31 @@ export default function CreateProductPage() {
                   {uploadedImages.length === 0 && (
                     <p className="text-[11px] text-red-500 font-semibold mt-1">Vui lòng tải lên ít nhất 1 ảnh sản phẩm</p>
                   )}
+
+                  {/* Add URL input */}
+                  <div className="flex items-center gap-2 mt-3">
+                    <input
+                      type="text"
+                      placeholder="Hoặc dán đường dẫn (URL) hình ảnh vào đây..."
+                      value={imageUrlInput}
+                      onChange={(e) => setImageUrlInput(e.target.value)}
+                      className="flex-1 px-3 py-2 text-sm rounded-xl border border-zinc-200 focus:outline-none focus:border-violet-500 transition-colors"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddImageUrl();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddImageUrl}
+                      disabled={!imageUrlInput.trim()}
+                      className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-sm font-bold rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      Thêm URL
+                    </button>
+                  </div>
                 </div>
 
 

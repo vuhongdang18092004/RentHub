@@ -15,9 +15,13 @@ public class ProductSummaryResponse {
     private Long id;
     private String name;
     private BigDecimal pricePerDay;
+    private BigDecimal depositAmount;
+    private String address;
     private ProductStatus status;
     private CategoryResponse category;
-    private String primaryImage;
+    private String categoryName;
+    private String ownerName;
+    private String primaryImageUrl;
     private LocalDateTime createdAt;
 
     public static ProductSummaryResponse fromEntity(Product product) {
@@ -31,9 +35,13 @@ public class ProductSummaryResponse {
                 .id(product.getId())
                 .name(product.getName())
                 .pricePerDay(product.getPricePerDay())
+                .depositAmount(product.getDepositAmount())
+                .address(product.getAddress())
                 .status(product.getStatus())
                 .category(CategoryResponse.fromEntity(product.getCategory()))
-                .primaryImage(primaryImageUrl)
+                .categoryName(product.getCategory().getName())
+                .ownerName(product.getOwner().getFullName())
+                .primaryImageUrl(primaryImageUrl)
                 .createdAt(product.getCreatedAt())
                 .build();
     }
