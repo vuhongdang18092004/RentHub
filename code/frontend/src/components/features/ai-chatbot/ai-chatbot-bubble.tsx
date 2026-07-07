@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { productService } from "@/services/product-service";
 import { useWishlist } from "@/context/wishlist-context";
 import { useToast } from "@/context/ToastContext";
@@ -277,6 +278,7 @@ interface ChatMessage {
 }
 
 export function AiChatbotBubble() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -562,6 +564,35 @@ export function AiChatbotBubble() {
     }
   };
 
+  // Check if message has viewing/rental intent for a specific product
+  const detectProductIntent = (text: string, products: UnifiedProduct[]) => {
+    const cleanText = removeAccents(text).toLowerCase();
+    
+    // Intent trigger keywords
+    const intentKeywords = ["thue", "xem", "chi tiet", "muon thue", "muon xem", "tim hieu", "thong tin", "mua", "dat", "book", "khao sat"];
+    const hasIntent = intentKeywords.some(kw => cleanText.includes(kw));
+    
+    if (!hasIntent) return null;
+    
+    // Search for a product name match in the user input
+    for (const prod of products) {
+      const cleanProdName = removeAccents(prod.name).toLowerCase();
+      const tokens = tokenize(prod.name);
+      
+      const hasExactMatch = cleanText.includes(cleanProdName);
+      const isUniqueMatch = tokens.some(token => {
+        if (["o", "to", "may", "anh", "da", "ngoai", "cam", "trai", "cho", "thue"].includes(token)) return false;
+        return token.length >= 3 && cleanText.includes(token);
+      });
+      
+      if (hasExactMatch || isUniqueMatch) {
+        return prod;
+      }
+    }
+    
+    return null;
+  };
+
   // Send message
   const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputValue.trim();
@@ -588,6 +619,45 @@ export function AiChatbotBubble() {
     } catch (err) {
       console.log("Backend offline or error. Fallback to mock catalog:", err);
       backendLogs.push("❌ Lỗi kết nối backend API. Chuyển sang dùng Mock catalog.");
+    }
+
+    const catalogToUse = backendProducts.length > 0 ? backendProducts : availableProducts;
+    const matchedProduct = detectProductIntent(text, catalogToUse);
+
+    if (matchedProduct) {
+      setTimeout(() => {
+        setIsTyping(false);
+        let intro = "";
+        const lowerName = matchedProduct.name.toLowerCase();
+        if (lowerName.includes("vf7")) {
+          intro = "Đây là **VF7** - mẫu xe điện mới ra mắt với thiết kế khí động học thể thao đột phá, động cơ mạnh mẽ và công nghệ an toàn ADAS thông minh vượt trội cho năm 2026. Phù hợp cho những chuyến đi trải nghiệm đẳng cấp!";
+        } else if (lowerName.includes("vf8")) {
+          intro = "Đây là **VF8** - dòng xe SUV điện phân khúc D đẳng cấp, sở hữu khoang lái rộng rãi sang trọng, công nghệ tự lái tiên tiến và khả năng tăng tốc ấn tượng. Trải nghiệm tuyệt vời cho gia đình!";
+        } else if (lowerName.includes("vf6")) {
+          intro = "Đây là **VF6** - mẫu SUV đô thị trẻ trung, năng động, tối ưu hóa không gian nội thất, vận hành thông minh và cực kỳ tiết kiệm nhiên liệu điện. Rất thích hợp để vi vu trong phố!";
+        } else if (lowerName.includes("leu")) {
+          intro = "Đây là chiếc **Lều cắm trại** dã ngoại chất lượng cao, có khả năng chống thấm mưa tốt, bộ khung hợp kim chắc chắn, thông thoáng tốt và không gian rộng rãi để mang lại giấc ngủ ngon giữa thiên nhiên.";
+        } else if (lowerName.includes("sony") || lowerName.includes("may anh")) {
+          intro = "Đây là dòng **Máy ảnh Sony** chuyên nghiệp độ phân giải cao, hỗ trợ lấy nét tự động mắt thời gian thực và chống rung tốt giúp ghi lại mọi khoảnh khắc sắc nét đỉnh cao.";
+        } else {
+          intro = `Đây là **${matchedProduct.name}** - sản phẩm chất lượng cao thuộc danh mục **${matchedProduct.categoryName}**, được thiết kế thông minh và tiện dụng nhằm đem lại trải nghiệm thuê tốt nhất cho bạn.`;
+        }
+
+        const botReply = `### 🚗 ${matchedProduct.name}\n${intro}\n\n*Tôi đang chuyển bạn đến trang chi tiết của sản phẩm để tiến hành đặt thuê ngay...* [PRODUCT:${matchedProduct.id}]`;
+        
+        setMessages((prev) => [...prev, { 
+          sender: "assistant", 
+          text: botReply, 
+          reasoningLogs: ["🎯 Phát hiện ý định xem/thuê sản phẩm cụ thể...", `📍 Trùng khớp sản phẩm: "${matchedProduct.name}" (ID: ${matchedProduct.id})`, "🚀 Đang kích hoạt chuyển trang tự động..."] 
+        }]);
+
+        // Redirect after 1.8 seconds
+        setTimeout(() => {
+          router.push(`/products/${matchedProduct.id}`);
+        }, 1800);
+      }, 950);
+      
+      return;
     }
 
     const accountId = localStorage.getItem("cf_account_id");

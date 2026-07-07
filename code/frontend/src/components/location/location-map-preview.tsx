@@ -5,12 +5,14 @@ import { useEffect, useRef } from "react";
 interface MapPreviewProps {
   latitude: number;
   longitude: number;
+  radius?: number;
 }
 
-export function LocationMapPreview({ latitude, longitude }: MapPreviewProps) {
+export function LocationMapPreview({ latitude, longitude, radius }: MapPreviewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletInstance = useRef<any>(null);
   const markerInstance = useRef<any>(null);
+  const circleInstance = useRef<any>(null);
 
   useEffect(() => {
     // Load Leaflet CSS dynamically if not present
@@ -27,7 +29,7 @@ export function LocationMapPreview({ latitude, longitude }: MapPreviewProps) {
       if (!L || !mapRef.current) return;
 
       if (!leafletInstance.current) {
-        leafletInstance.current = L.map(mapRef.current).setView([latitude, longitude], 15);
+        leafletInstance.current = L.map(mapRef.current).setView([latitude, longitude], 13);
         
         const apiKey = process.env.NEXT_PUBLIC_VIETMAP_TILE_KEY || "8b403eff827848616069d47a7002481863b34e24dd34964d";
         
@@ -67,10 +69,42 @@ export function LocationMapPreview({ latitude, longitude }: MapPreviewProps) {
         });
 
         markerInstance.current = L.marker([latitude, longitude], { icon: defaultIcon }).addTo(leafletInstance.current);
+
+        if (radius) {
+          circleInstance.current = L.circle([latitude, longitude], {
+            color: "#8B5CF6",
+            fillColor: "#C4B5FD",
+            fillOpacity: 0.2,
+            weight: 1.5,
+            radius: radius * 1000
+          }).addTo(leafletInstance.current);
+          leafletInstance.current.fitBounds(circleInstance.current.getBounds(), { padding: [10, 10] });
+        }
       } else {
-        leafletInstance.current.setView([latitude, longitude], 15);
+        leafletInstance.current.setView([latitude, longitude]);
         if (markerInstance.current) {
           markerInstance.current.setLatLng([latitude, longitude]);
+        }
+        
+        if (radius) {
+          if (!circleInstance.current) {
+            circleInstance.current = L.circle([latitude, longitude], {
+              color: "#8B5CF6",
+              fillColor: "#C4B5FD",
+              fillOpacity: 0.2,
+              weight: 1.5,
+              radius: radius * 1000
+            }).addTo(leafletInstance.current);
+          } else {
+            circleInstance.current.setLatLng([latitude, longitude]);
+            circleInstance.current.setRadius(radius * 1000);
+          }
+          leafletInstance.current.fitBounds(circleInstance.current.getBounds(), { padding: [10, 10] });
+        } else {
+          if (circleInstance.current) {
+            circleInstance.current.remove();
+            circleInstance.current = null;
+          }
         }
       }
     };
@@ -91,9 +125,10 @@ export function LocationMapPreview({ latitude, longitude }: MapPreviewProps) {
         leafletInstance.current.remove();
         leafletInstance.current = null;
         markerInstance.current = null;
+        circleInstance.current = null;
       }
     };
-  }, [latitude, longitude]);
+  }, [latitude, longitude, radius]);
 
   return (
     <div className="w-full rounded-2xl overflow-hidden border border-zinc-200 shadow-sm relative z-0">

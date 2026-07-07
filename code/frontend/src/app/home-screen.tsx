@@ -1795,7 +1795,7 @@ export function HomeScreen() {
 
                 {/* Map Preview */}
                 <div className="w-full h-[220px] rounded-3xl overflow-hidden relative z-0 border border-zinc-100 shadow-inner">
-                  <LocationMapPreview latitude={modalCoords.lat} longitude={modalCoords.lng} />
+                  <LocationMapPreview latitude={modalCoords.lat} longitude={modalCoords.lng} radius={modalRadius} />
                 </div>
 
                 {/* Selected Location Indicator */}
