@@ -78,6 +78,9 @@ export function Header() {
           <Link href="/products/create" className="text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition-colors">
             Cho thuê
           </Link>
+          <Link href="/cloudflare-ai" className="text-sm font-bold text-violet-600 hover:text-violet-800 transition-colors">
+            Cloudflare AI
+          </Link>
 
           {/* Chat icon — messaging with badge */}
           {isAuthenticated && (
