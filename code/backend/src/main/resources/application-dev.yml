@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5433/renthub
+    username: postgres
+    password: "123456"
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -32,5 +32,5 @@ spring:
 
 app:
   jwt:
-    secret-key: ${JWT_SECRET_KEY}
+    secret-key: NDM1YTBlYmY2ZjhjZTYwM2M0NmE5Y2Y4YTBlN2M5ZDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6
     expiration: 86400000

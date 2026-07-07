@@ -9,6 +9,7 @@ import { useWishlist } from "@/context/wishlist-context";
 import api from "@/lib/axios";
 import { Header } from "@/components/layout/header";
 import { productService, ProductSummary } from "@/services/product-service";
+import { LocationMapPreview } from "@/components/location/location-map-preview";
 
 const THUMBNAILS = [
   "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=300&auto=format&fit=crop&q=60", // bicycle
@@ -49,13 +50,14 @@ function ProductCard({ prod }: { prod: ProductSummary }) {
   return (
     <Link
       href={`/products/${prod.id}`}
-      className="bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative block"
+      className="bg-white border border-zinc-150 rounded-2xl overflow-hidden group relative block premium-product-card magnetic-item"
+      data-magnetic-strength="0.08"
     >
       {/* Heart Toggle Button */}
       <button
         onClick={handleToggleFavorite}
         title={favorited ? "Bỏ yêu thích" : "Yêu thích"}
-        className={`absolute top-3 right-3 p-2 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
+        className={`absolute top-3 right-3 p-2 rounded-full shadow-sm transition-all duration-205 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
           favorited
             ? "bg-red-50/95 text-red-500"
             : "bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500"
@@ -71,19 +73,20 @@ function ProductCard({ prod }: { prod: ProductSummary }) {
       </button>
 
       {/* Image */}
-      <div className="h-[200px] w-full overflow-hidden relative">
+      <div className="h-[200px] w-full card-image-wrapper relative">
         {prod.primaryImage ? (
-          <img src={prod.primaryImage} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
+          <img src={prod.primaryImage} alt={prod.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-3xl">📦</div>
         )}
+        <div className="card-image-overlay" />
         <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-xs font-black shadow-sm text-zinc-800">
           {priceLabel} <span className="text-[9px] font-bold text-zinc-500">/ ngày</span>
         </span>
       </div>
       {/* Info */}
       <div className="p-4 space-y-1.5">
-        <h3 className="font-extrabold text-sm text-zinc-800 line-clamp-1 group-hover:text-violet-700 transition-colors">{prod.name}</h3>
+        <h3 className="font-extrabold text-sm text-zinc-800 line-clamp-1 group-hover:text-violet-750 transition-colors">{prod.name}</h3>
         <div className="flex items-center justify-between text-xs font-semibold text-zinc-500">
           <span className="bg-zinc-100 px-2 py-0.5 rounded-md text-[10px]">{prod.category?.name}</span>
           {prod.status !== "AVAILABLE" && (
@@ -111,13 +114,14 @@ function ProductCardCompact({ prod }: { prod: ProductSummary }) {
   return (
     <Link
       href={`/products/${prod.id}`}
-      className="w-[190px] shrink-0 bg-white border border-zinc-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative block"
+      className="w-[190px] shrink-0 bg-white border border-zinc-150 rounded-2xl overflow-hidden group relative block premium-product-card magnetic-item"
+      data-magnetic-strength="0.08"
     >
       {/* Heart Toggle Button */}
       <button
         onClick={handleToggleFavorite}
         title={favorited ? "Bỏ yêu thích" : "Yêu thích"}
-        className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
+        className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm transition-all duration-205 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
           favorited
             ? "bg-red-50/95 text-red-500"
             : "bg-white/80 hover:bg-white text-zinc-500 hover:text-red-500"
@@ -132,16 +136,17 @@ function ProductCardCompact({ prod }: { prod: ProductSummary }) {
         </svg>
       </button>
 
-      <div className="h-[145px] w-full overflow-hidden relative">
+      <div className="h-[145px] w-full card-image-wrapper relative">
         {prod.primaryImage
-          ? <img src={prod.primaryImage} alt={prod.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300" />
+          ? <img src={prod.primaryImage} alt={prod.name} className="w-full h-full object-cover" />
           : <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-2xl">📦</div>}
+        <div className="card-image-overlay" />
         <span className="absolute bottom-2.5 left-2.5 bg-white/95 px-2.5 py-0.5 rounded-md text-[10px] font-black shadow-sm text-zinc-800">
           {priceLabel} <span className="text-[8px] font-bold text-zinc-500">/ ngày</span>
         </span>
       </div>
       <div className="p-3 space-y-1">
-        <h3 className="font-extrabold text-xs text-zinc-800 line-clamp-1 group-hover:text-violet-700 transition-colors">{prod.name}</h3>
+        <h3 className="font-extrabold text-xs text-zinc-800 line-clamp-1 group-hover:text-violet-750 transition-colors">{prod.name}</h3>
         <span className="text-[10px] text-zinc-400">{prod.category?.name}</span>
       </div>
     </Link>
@@ -160,6 +165,126 @@ export function HomeScreen() {
   // Real products from API
   const [availableProducts, setAvailableProducts] = useState<ProductSummary[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+
+  // Home search states
+  const [searchAddress, setSearchAddress] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [searchLat, setSearchLat] = useState<number | null>(null);
+  const [searchLng, setSearchLng] = useState<number | null>(null);
+  const [searchRadius, setSearchRadius] = useState<number | null>(null);
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchAddress.trim()) {
+      params.set("address", searchAddress.trim());
+    }
+    if (searchKeyword.trim()) {
+      params.set("keyword", searchKeyword.trim());
+    }
+    if (searchLat !== null) {
+      params.set("latitude", searchLat.toString());
+    }
+    if (searchLng !== null) {
+      params.set("longitude", searchLng.toString());
+    }
+    if (searchRadius !== null) {
+      params.set("radius", searchRadius.toString());
+    }
+    router.push(`/explore?${params.toString()}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  // Location Selector Modal states
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [modalSearchQuery, setModalSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [modalCoords, setModalCoords] = useState<{ lat: number; lng: number }>({
+    lat: 20.9625,
+    lng: 105.7486,
+  });
+  const [modalAddress, setModalAddress] = useState("Đại học Phenikaa");
+  const [modalRadius, setModalRadius] = useState(3);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+
+  // Query VietMap Autocomplete API
+  const handleQueryChange = async (val: string) => {
+    setModalSearchQuery(val);
+    if (!val.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      setSuggestionsLoading(true);
+      const url = `/api/vietmap?action=autocomplete&text=${encodeURIComponent(val)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        let list: any[] = [];
+        if (Array.isArray(data)) list = data;
+        else if (data && Array.isArray(data.data)) list = data.data;
+        else if (data && Array.isArray(data.results)) list = data.results;
+        setSuggestions(list);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  // Select a location suggestion
+  const handleSelectSuggestion = async (sugg: any) => {
+    const addressName = sugg.name || sugg.description || sugg.display_name || "";
+    setModalAddress(addressName);
+    setModalSearchQuery(addressName);
+    setSuggestions([]);
+    
+    // Fetch place details for coordinates
+    const refId = sugg.refid || sugg.ref_id || sugg.place_id || "";
+    if (refId) {
+      try {
+        const url = `/api/vietmap?action=place&refid=${refId}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          const detail = data.data || data.result || data;
+          if (detail && detail.lat !== undefined && detail.lng !== undefined) {
+            setModalCoords({ lat: Number(detail.lat), lng: Number(detail.lng) });
+          } else if (detail && detail.location) {
+            setModalCoords({ lat: Number(detail.location.lat), lng: Number(detail.location.lng) });
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi lấy tọa độ Vietmap:", err);
+      }
+    }
+  };
+
+  // GPS Locate device coordinates
+  const handleGPSLocate = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setModalCoords({ lat, lng });
+          setModalAddress("Vị trí hiện tại của bạn");
+          setModalSearchQuery("Vị trí hiện tại của bạn");
+        },
+        (error) => {
+          console.error(error);
+          triggerToast("Không thể truy cập vị trí GPS của bạn.");
+        }
+      );
+    } else {
+      triggerToast("Trình duyệt không hỗ trợ Geolocation.");
+    }
+  };
 
   // Active Admin Tab
   const [adminTab, setAdminTab] = useState<"users" | "categories" | "products">("users");
@@ -291,6 +416,83 @@ export function HomeScreen() {
     }
   }, [showAdminPanel, adminTab]);
 
+  // Premium Shario effects (spotlight, magnetic hover, text gradient shift)
+  useEffect(() => {
+    const hero = document.getElementById("hero-section");
+    const heading = document.getElementById("hero-heading");
+
+    const handleHeroMouseMove = (e: MouseEvent) => {
+      if (!hero) return;
+      const rect = hero.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      hero.style.setProperty("--mouse-x", `${x}px`);
+      hero.style.setProperty("--mouse-y", `${y}px`);
+
+      if (heading) {
+        const headingRect = heading.getBoundingClientRect();
+        const hx = ((e.clientX - headingRect.left) / headingRect.width) * 100;
+        const hy = ((e.clientY - headingRect.top) / headingRect.height) * 100;
+        heading.style.setProperty("--gradient-pos-x", `${hx}%`);
+        heading.style.setProperty("--gradient-pos-y", `${hy}%`);
+      }
+    };
+
+    if (hero) {
+      hero.addEventListener("mousemove", handleHeroMouseMove);
+    }
+
+    const handleMagneticMove = (e: MouseEvent) => {
+      const el = e.currentTarget as HTMLElement;
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      
+      const strengthAttr = el.getAttribute("data-magnetic-strength");
+      const strength = strengthAttr ? parseFloat(strengthAttr) : 0.2;
+      const moveX = x * strength;
+      const moveY = y * strength;
+
+      // Update cursor coordinates inside element for Effect 9
+      const px = ((e.clientX - rect.left) / rect.width) * 100;
+      const py = ((e.clientY - rect.top) / rect.height) * 100;
+      el.style.setProperty("--pill-x", `${px}%`);
+      el.style.setProperty("--pill-y", `${py}%`);
+
+      el.style.transform = `translate3d(${moveX}px, ${moveY}px, 0) scale(1.015)`;
+    };
+
+    const handleMagneticLeave = (e: MouseEvent) => {
+      const el = e.currentTarget as HTMLElement;
+      el.style.transform = "translate3d(0, 0, 0) scale(1)";
+    };
+
+    // Setup function for dynamic items
+    const setupMagneticItems = () => {
+      const items = document.querySelectorAll(".magnetic-item");
+      items.forEach((item) => {
+        item.addEventListener("mousemove", handleMagneticMove as any);
+        item.addEventListener("mouseleave", handleMagneticLeave as any);
+      });
+    };
+
+    // Run setup and schedule a fallback in case lists take a moment to render
+    setupMagneticItems();
+    const interval = setInterval(setupMagneticItems, 1000);
+
+    return () => {
+      if (hero) {
+        hero.removeEventListener("mousemove", handleHeroMouseMove);
+      }
+      clearInterval(interval);
+      const items = document.querySelectorAll(".magnetic-item");
+      items.forEach((item) => {
+        item.removeEventListener("mousemove", handleMagneticMove as any);
+        item.removeEventListener("mouseleave", handleMagneticLeave as any);
+      });
+    };
+  }, [availableProducts, categoriesList]);
+
   // Toggle user active status
   const toggleUserStatus = async (id: number, currentStatus: string, email: string) => {
     if (email === currentAdmin?.email) {
@@ -371,7 +573,187 @@ export function HomeScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-primary text-primary flex flex-col font-sans select-none overflow-x-hidden">
+    <div className="min-h-screen bg-primary text-primary flex flex-col font-sans select-none overflow-x-hidden home-smooth-bg">
+      {/* Premium Interactive UI CSS Stylesheet */}
+      <style>{`
+        .home-smooth-bg {
+          background: radial-gradient(circle at top left, #F5EFFF, transparent 40%),
+                      radial-gradient(circle at top right, #EAF6FF, transparent 40%),
+                      #FFFFFF !important;
+        }
+
+        .interactive-gradient-text {
+          background: linear-gradient(135deg, #8B5CF6 0%, #60A5FA 50%, #38BDF8 100%) !important;
+          background-size: 200% 200% !important;
+          background-position: var(--gradient-pos-x, 50%) var(--gradient-pos-y, 50%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+          transition: background-position 0.15s cubic-bezier(0.22, 1, 0.36, 1) !important;
+        }
+
+        #hero-section::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: radial-gradient(
+            500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+            rgba(255, 255, 255, 0.35),
+            transparent 60%
+          );
+          z-index: 1;
+          transition: opacity 0.3s ease;
+          opacity: 0;
+        }
+        #hero-section:hover::before {
+          opacity: 1;
+        }
+
+        .glass-hero-card {
+          background: rgba(255, 255, 255, 0.55) !important;
+          backdrop-filter: blur(24px) !important;
+          -webkit-backdrop-filter: blur(24px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.35) !important;
+          box-shadow: 0 20px 80px rgba(0, 0, 0, 0.08) !important;
+          border-radius: 1.9rem !important;
+        }
+
+        .search-box-glow {
+          transform: translateY(-4px) !important;
+          transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), 
+                      box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1), 
+                      border-color 300ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+          border: 1px solid rgba(228, 228, 231, 0.8) !important;
+        }
+        .search-box-glow:hover {
+          transform: translateY(-10px) !important;
+          border-color: rgba(196, 181, 253, 0.95) !important;
+          box-shadow: 0 15px 45px -5px rgba(196, 181, 253, 0.45),
+                      0 0 25px rgba(196, 181, 253, 0.3),
+                      0 0 50px rgba(230, 230, 250, 0.2) !important;
+        }
+
+        .search-input:focus ~ .custom-placeholder,
+        .search-input:not(:placeholder-shown) ~ .custom-placeholder {
+          display: none !important;
+        }
+
+        .cta-banner-interactive {
+          transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+                      border-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+                      box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+        }
+        .cta-banner-interactive:hover {
+          transform: translateY(-8px) scale(1.005) !important;
+          border-color: rgba(168, 85, 247, 0.5) !important;
+          box-shadow: 0 20px 40px -10px rgba(139, 92, 246, 0.15),
+                      0 0 25px rgba(168, 85, 247, 0.18) !important;
+        }
+
+        .category-pill-glow {
+          position: relative;
+          overflow: hidden;
+          transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+                      box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1),
+                      border-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+                      background-color 300ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+        }
+        .category-pill-glow::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          opacity: 0;
+          background: radial-gradient(
+            80px circle at var(--pill-x, 50%) var(--pill-y, 50%),
+            rgba(255, 255, 255, 0.8),
+            transparent 60%
+          );
+          transition: opacity 0.3s ease;
+          z-index: 5;
+        }
+        .category-pill-glow:hover::before {
+          opacity: 1;
+        }
+        .category-pill-glow:hover {
+          filter: brightness(1.05);
+          border-color: currentColor !important;
+        }
+        .category-pill-glow[data-cat="all"]:hover {
+          box-shadow: 0 0 20px rgba(139, 92, 246, 0.18) !important;
+        }
+        .category-pill-glow[data-cat="electronic"]:hover {
+          box-shadow: 0 0 20px rgba(168, 85, 247, 0.18) !important;
+        }
+        .category-pill-glow[data-cat="sport"]:hover {
+          box-shadow: 0 0 20px rgba(249, 115, 22, 0.18) !important;
+        }
+        .category-pill-glow[data-cat="outdoor"]:hover {
+          box-shadow: 0 0 20px rgba(34, 197, 94, 0.18) !important;
+        }
+        .category-pill-glow[data-cat="music"]:hover {
+          box-shadow: 0 0 20px rgba(236, 72, 153, 0.18) !important;
+        }
+        .category-pill-glow[data-cat="vehicle"]:hover {
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.18) !important;
+        }
+        .category-pill-glow[data-cat="appliance"]:hover {
+          box-shadow: 0 0 20px rgba(245, 158, 11, 0.18) !important;
+        }
+
+        .premium-product-card {
+          transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+                      border-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+                      box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+          border: 1px solid rgba(228, 228, 231, 0.8) !important;
+        }
+        .premium-product-card:hover {
+          transform: translateY(-6px) scale(1.015) !important;
+          border-color: rgba(139, 92, 246, 0.35) !important;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12),
+                      0 0 25px rgba(139, 92, 246, 0.22) !important;
+        }
+        .premium-product-card .card-image-wrapper {
+          overflow: hidden;
+          position: relative;
+        }
+        .premium-product-card img {
+          transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+        }
+        .premium-product-card:hover img {
+          transform: scale(1.08) !important;
+        }
+        .premium-product-card .card-image-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to top, rgba(0, 0, 0, 0.15), transparent 60%);
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+        }
+
+        .magnetic-item {
+          will-change: transform;
+        }
+
+        .hover-cta-button {
+          transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), color 300ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+        }
+        .hover-cta-button:hover {
+          transform: scale(1.05) !important;
+        }
+
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
+
       {/* Header */}
       <Header />
 
@@ -412,7 +794,8 @@ export function HomeScreen() {
 
         {/* Glowing Hero Section — forced light-mode with premium pastel gradient */}
         <div 
-          className="light-mode w-full flex items-center justify-center py-20 min-h-[600px]" 
+          id="hero-section"
+          className="light-mode w-full flex items-center justify-center py-20 min-h-[600px] relative overflow-hidden" 
           style={{ background: "linear-gradient(90deg, #F4ECFF 0%, #FFFFFF 50%, #EAF8FF 100%)" }}
         >
           <div className="w-[95%] max-w-[1000px] mx-auto">
@@ -433,7 +816,7 @@ export function HomeScreen() {
             </div>
 
             {/* Floating Glassmorphism Hero Card with Shario layers */}
-            <div className="w-full max-w-[1000px] mx-auto relative rounded-[1.9rem] overflow-hidden group">
+            <div className="w-full max-w-[1000px] mx-auto relative rounded-[1.9rem] overflow-hidden group glass-hero-card">
               {/* Shario absolute layers for premium glassmorphism effect */}
               <div 
                 className="absolute inset-0 pointer-events-none" 
@@ -447,49 +830,21 @@ export function HomeScreen() {
                 className="absolute inset-[1px] rounded-[calc(1.9rem-1px)] pointer-events-none" 
                 style={{ border: "0.5px solid rgba(255,255,255,0.3)" }}
               />
-              <div 
-                className="absolute inset-0 rounded-[1.9rem] pointer-events-none" 
-                style={{ 
-                  boxShadow: "0 6px 24px -6px rgba(0,0,0,0.07), 0 3px 12px -3px rgba(0,0,0,0.03), 0 0 0 0.5px rgba(255,255,255,0.18)",
-                  background: "rgba(255, 255, 255, 0.45)"
-                }}
-              />
-              {/* Glow shadow layer - lights up on hover */}
-              <div 
-                className="absolute inset-0 rounded-[1.9rem] pointer-events-none transition-opacity duration-300 opacity-80 group-hover:opacity-100" 
-                style={{ 
-                  boxShadow: "rgba(139, 92, 246, 0.12) 0px 16px 48px -8px, rgba(59, 130, 246, 0.08) 0px 8px 24px -8px, rgba(255, 255, 255, 0.25) 0px 0px 0.5px"
-                }}
-              />
 
               {/* Inner wrapper for card contents */}
               <div className="relative z-10 px-5 py-12 md:px-16 md:py-16 flex flex-col items-center justify-center text-center">
                 
                 {/* Headline using Shario text structures */}
-                <div className="relative select-none flex flex-col items-center">
+                <div id="hero-heading" className="relative select-none flex flex-col items-center">
                   <div 
                     role="presentation" 
                     className="text-center font-extrabold leading-[1.08] tracking-tight"
                     style={{ fontSize: "clamp(2rem, 6.5vw, 5rem)" }}
                   >
-                    <span 
-                      className="block select-none"
-                      style={{
-                        background: "linear-gradient(90deg, #8B5CF6, #A855F7)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent"
-                      }}
-                    >
+                    <span className="block select-none interactive-gradient-text">
                       RentHub
                     </span>
-                    <span 
-                      className="block mt-1 md:mt-2"
-                      style={{
-                        background: "linear-gradient(90deg, #38BDF8, #6366F1)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent"
-                      }}
-                    >
+                    <span className="block mt-1 md:mt-2 interactive-gradient-text">
                       Thuê Đồ Gần Bạn
                     </span>
                   </div>
@@ -508,42 +863,64 @@ export function HomeScreen() {
 
                 {/* Detailed Search Panel */}
                 <div 
-                  className="w-full mt-8 flex flex-col sm:flex-row gap-0 divide-y sm:divide-y-0 sm:divide-x divide-zinc-200 items-stretch"
+                  className="w-full mt-8 flex flex-col sm:flex-row gap-0 divide-y sm:divide-y-0 sm:divide-x divide-zinc-200 items-stretch search-box-glow magnetic-item"
+                  data-magnetic-strength="0.1"
                   style={{
                     background: "white",
                     borderRadius: "24px",
-                    boxShadow: "0 8px 30px rgba(0,0,0,0.05)",
                     padding: "8px",
                     maxWidth: "800px"
                   }}
                 >
-                  <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
-                    <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Ở đâu?</span>
+                  <div 
+                    onClick={() => setIsLocationModalOpen(true)}
+                    className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center cursor-pointer hover:bg-zinc-50/50 rounded-l-2xl transition-colors"
+                  >
+                    <span className="text-[10px] font-bold text-[#475569] tracking-wider">Ở ĐÂU?</span>
                     <input
                       type="text"
                       placeholder="Hai Bà Trưng, HN"
-                      className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
+                      aria-label="Địa điểm thuê"
+                      value={searchAddress}
+                      onChange={(e) => setSearchAddress(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      readOnly
+                      className="text-sm font-semibold text-[#1E293B] bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5 cursor-pointer pointer-events-none"
                     />
                   </div>
                   <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
-                    <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Khi nào?</span>
+                    <span className="text-[10px] font-bold text-[#475569] tracking-wider">KHI NÀO?</span>
                     <input
                       type="text"
                       placeholder="Không giới hạn"
-                      className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
+                      aria-label="Thời gian thuê"
+                      onKeyDown={handleKeyDown}
+                      className="text-sm font-semibold text-[#1E293B] bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
                     />
                   </div>
                   <div className="flex-1 flex items-center justify-between pl-4 pr-2 py-2.5 gap-2">
                     <div className="flex flex-col text-left w-full">
-                      <span className="text-[10px] font-bold text-zinc-400 tracking-wider">Bạn cần gì?</span>
-                      <input
-                        type="text"
-                        placeholder="Thử &quot;flycam&quot;"
-                        className="text-sm font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
-                      />
+                      <span className="text-[10px] font-bold text-[#475569] tracking-wider">BẠN CẦN GÌ?</span>
+                      <div className="relative w-full">
+                        <input
+                          type="text"
+                          placeholder=" "
+                          aria-label="Tên đồ dùng cần thuê"
+                          value={searchKeyword}
+                          onChange={(e) => setSearchKeyword(e.target.value)}
+                          onKeyDown={handleKeyDown}
+                          className="search-input text-sm font-semibold text-[#1E293B] bg-transparent border-none outline-none w-full p-0 mt-0.5"
+                        />
+                        <div className="custom-placeholder absolute inset-0 pointer-events-none text-sm font-semibold text-zinc-400 mt-0.5">
+                          Thử <span className="text-[#8B5CF6] font-bold">"lều trại"</span>
+                        </div>
+                      </div>
                     </div>
                     {/* Ghost search icon — no filled circle */}
-                    <button className="p-2 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-full transition-all cursor-pointer shrink-0">
+                    <button 
+                      onClick={handleSearch}
+                      className="p-2 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-full transition-all cursor-pointer shrink-0"
+                    >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
@@ -614,8 +991,10 @@ export function HomeScreen() {
               {activeHomeCategories.map((cat) => (
                 <button
                   key={cat.id}
+                  data-cat={cat.id}
                   onClick={() => router.push(cat.id === "all" ? "/explore" : `/explore?categoryId=${cat.id}`)}
-                  className={`flex items-center gap-2 px-4.5 py-2.5 rounded-full text-xs font-bold transition-all hover:scale-[1.02] cursor-pointer shrink-0 shadow-sm ${cat.color}`}
+                  className={`flex items-center gap-2 px-4.5 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 shadow-sm category-pill-glow magnetic-item ${cat.color}`}
+                  data-magnetic-strength="0.15"
                 >
                   <span>{cat.icon}</span>
                   <span>{cat.name}</span>
@@ -1022,15 +1401,16 @@ export function HomeScreen() {
             <p className="text-sm font-semibold text-zinc-500 leading-relaxed max-w-[320px]">
               Cắm trại, chụp ảnh, tiệc tùng hay cuối tuần thư giãn — tìm ngay đồ thuê phù hợp.
             </p>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline transition-all mt-2"
-            >
-              <span>Xem tất cả</span>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
+             <Link
+               href="/"
+               className="inline-flex items-center gap-2 text-sm font-bold text-brand-700 hover:text-brand-800 transition-all mt-2 magnetic-item hover-cta-button"
+               data-magnetic-strength="0.1"
+             >
+               <span>Xem tất cả</span>
+               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+               </svg>
+             </Link>
           </div>
 
           {/* Right Bento Grid Grid */}
@@ -1249,7 +1629,8 @@ export function HomeScreen() {
               <h2 className="text-2xl font-extrabold text-zinc-900 md:hidden">Xu hướng</h2>
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 text-sm font-bold text-zinc-700 hover:text-brand-700 transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-bold text-zinc-700 hover:text-brand-700 transition-all magnetic-item hover-cta-button"
+                data-magnetic-strength="0.1"
               >
                 <span>Khám phá thêm</span>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1258,22 +1639,215 @@ export function HomeScreen() {
               </Link>
             </div>
 
-            {/* Horizontal Carousel Scrolling Container */}
-            <div className="flex gap-5 overflow-x-auto scrollbar-hide py-2 px-1 justify-start">
-              {productsLoading
-                ? Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="w-[190px] shrink-0 bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
-                      <div className="h-[145px] bg-zinc-200" />
-                      <div className="p-3"><div className="h-3 bg-zinc-200 rounded w-2/3" /></div>
-                    </div>
-                  ))
-                : availableProducts.map((prod) => (
-                    <ProductCardCompact key={prod.id} prod={prod} />
-                  ))}
+            {/* Horizontal Carousel Scrolling Container (Marquee Loop) */}
+            <div className="w-full overflow-hidden py-2 px-1">
+              <div className="flex gap-5 animate-marquee hover:[animation-play-state:paused] motion-reduce:animate-none w-max">
+                {productsLoading
+                  ? Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="w-[190px] shrink-0 bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                        <div className="h-[145px] bg-zinc-200" />
+                        <div className="p-3"><div className="h-3 bg-zinc-200 rounded w-2/3" /></div>
+                      </div>
+                    ))
+                  : (
+                      <>
+                        {/* Set 1 */}
+                        {availableProducts.map((prod) => (
+                          <ProductCardCompact key={`set1-${prod.id}`} prod={prod} />
+                        ))}
+                        {/* Set 2 (Seamless loop duplication) */}
+                        {availableProducts.map((prod) => (
+                          <ProductCardCompact key={`set2-${prod.id}`} prod={prod} />
+                        ))}
+                      </>
+                    )}
+              </div>
             </div>
 
           </div>
         </div>
+
+        {/* --- Section 6: Premium Call to Action Banner (RentHub styled) --- */}
+        <div className="max-w-[1280px] w-full px-6 md:px-8 py-10 relative">
+          <div className="w-full relative rounded-[2rem] overflow-hidden bg-gradient-to-r from-violet-100/70 via-indigo-50/50 to-purple-100/70 border border-purple-200/50 p-8 md:p-14 flex flex-col md:flex-row justify-between items-center gap-8 shadow-sm cta-banner-interactive magnetic-item" data-magnetic-strength="0.05">
+            {/* Faint line-art package outline in the background */}
+            <div className="absolute inset-0 opacity-5 pointer-events-none flex items-center justify-center">
+              <svg className="w-[300px] h-[300px] text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+
+            {/* Left side content */}
+            <div className="flex-1 space-y-4 text-center md:text-left z-10 max-w-xl">
+              <span className="text-[10px] font-black tracking-widest text-[#8B5CF6] uppercase">BẮT ĐẦU CHO THUÊ</span>
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 leading-tight">
+                Đồ không dùng?<br />
+                <span className="text-[#8B5CF6]">Cho thuê kiếm tiền.</span>
+              </h2>
+              <p className="text-sm font-semibold text-zinc-500 leading-relaxed">
+                Chỉ mất vài phút để đăng. RentHub lo phần còn lại — từ thanh toán đến bảo hiểm.
+              </p>
+            </div>
+
+            {/* Right side actions */}
+            <div className="flex flex-col sm:flex-row gap-4 shrink-0 z-10 w-full sm:w-auto">
+              <Link 
+                href="/products/create"
+                className="px-8 py-4 bg-[#2E1065] hover:bg-[#3B0764] text-white text-sm font-extrabold rounded-2xl shadow-md transition-all active:scale-[0.98] text-center"
+              >
+                Cho thuê ngay
+              </Link>
+              <Link 
+                href="/explore"
+                className="px-8 py-4 border border-zinc-200 hover:border-purple-300 bg-white/60 hover:bg-white text-zinc-700 hover:text-purple-700 text-sm font-extrabold rounded-2xl shadow-sm transition-all active:scale-[0.98] text-center"
+              >
+                Tìm hiểu thêm
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* --- Section 7: Modern Footer (RentHub styled) --- */}
+        <footer className="w-full border-t border-zinc-100 mt-16 py-14 flex flex-col items-center justify-center gap-6 font-sans">
+          {/* Logo with double loop / infinity loop shape */}
+          <div className="flex items-center gap-2 select-none">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-purple-600 flex items-center justify-center shadow-md">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </div>
+            <span className="text-xl font-extrabold text-zinc-900 tracking-tight">RentHub</span>
+          </div>
+
+          {/* Subtitle */}
+          <p className="text-sm font-semibold text-zinc-500">Có RentHub, thuê đồ liền tay.</p>
+
+          {/* Links list */}
+          <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 mt-2 text-xs font-bold text-zinc-400">
+            <Link href="/explore" className="hover:text-[#8B5CF6] transition-colors">Khám phá</Link>
+            <Link href="/products/create" className="hover:text-[#8B5CF6] transition-colors">Cho thuê</Link>
+            <Link href="/" className="hover:text-[#8B5CF6] transition-colors">Giới thiệu</Link>
+            <Link href="/" className="hover:text-[#8B5CF6] transition-colors">Trợ giúp</Link>
+            <Link href="/" className="hover:text-[#8B5CF6] transition-colors">Điều khoản</Link>
+            <Link href="/" className="hover:text-[#8B5CF6] transition-colors">Bảo mật</Link>
+          </div>
+        </footer>
+
+        {/* Location Selector Modal */}
+        {isLocationModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2rem] w-full max-w-[480px] overflow-hidden shadow-2xl border border-zinc-100 flex flex-col font-sans relative animate-in fade-in zoom-in-95 duration-200">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 pt-6 pb-4">
+                <h3 className="text-base font-extrabold text-zinc-900">Chọn địa điểm</h3>
+                <button 
+                  onClick={() => setIsLocationModalOpen(false)}
+                  className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-full transition-colors cursor-pointer"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Content body */}
+              <div className="px-6 pb-6 space-y-5 flex-1 flex flex-col overflow-y-auto max-h-[85vh]">
+                {/* Input block */}
+                <div className="relative">
+                  <div className="flex items-center gap-2 border border-zinc-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 rounded-2xl px-4 py-3 bg-zinc-50/55 transition-all">
+                    <svg className="w-4 h-4 text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Nhập địa chỉ..."
+                      value={modalSearchQuery}
+                      onChange={(e) => handleQueryChange(e.target.value)}
+                      className="w-full bg-transparent border-none outline-none text-sm font-semibold text-zinc-800 placeholder-zinc-400 p-0"
+                    />
+                    <button 
+                      onClick={handleGPSLocate}
+                      title="Định vị hiện tại"
+                      className="p-1 text-zinc-400 hover:text-violet-600 transition-colors shrink-0 cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm-9 4h2m14 0h2m-9-9v2m0 14v2" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Suggestions Dropdown */}
+                  {suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-100 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[200px] overflow-y-auto">
+                      {suggestions.map((sugg, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleSelectSuggestion(sugg)}
+                          className="w-full text-left px-4 py-3 hover:bg-violet-50 text-xs font-semibold text-zinc-700 transition-colors border-b border-zinc-50 last:border-b-0 flex items-start gap-2 cursor-pointer"
+                        >
+                          <span className="mt-0.5 text-zinc-400 shrink-0">📍</span>
+                          <span>{sugg.name || sugg.description || sugg.display_name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Map Preview */}
+                <div className="w-full h-[220px] rounded-3xl overflow-hidden relative z-0 border border-zinc-100 shadow-inner">
+                  <LocationMapPreview latitude={modalCoords.lat} longitude={modalCoords.lng} />
+                </div>
+
+                {/* Selected Location Indicator */}
+                <div className="flex items-center gap-2 text-xs font-extrabold text-zinc-800 bg-zinc-50 p-3 rounded-2xl border border-zinc-100">
+                  <span className="text-violet-500">📍</span>
+                  <span className="truncate">{modalAddress}</span>
+                </div>
+
+                {/* Radius select */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-extrabold text-zinc-500">
+                    <span className="tracking-wider uppercase">Chỉnh bán kính</span>
+                    <span className="text-violet-600 text-sm font-black">{modalRadius} km</span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="1"
+                    max="50"
+                    value={modalRadius}
+                    onChange={(e) => setModalRadius(Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-violet-600 focus:outline-none"
+                    style={{
+                      background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${(modalRadius - 1) * 2}%, #E4E4E7 ${(modalRadius - 1) * 2}%, #E4E4E7 100%)`
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-100 bg-zinc-50/50">
+                <button 
+                  onClick={() => setIsLocationModalOpen(false)}
+                  className="px-5 py-2.5 hover:bg-zinc-100 text-zinc-600 text-xs font-extrabold rounded-xl transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  Huỷ
+                </button>
+                <button 
+                  onClick={() => {
+                    setSearchAddress(modalAddress);
+                    setSearchLat(modalCoords.lat);
+                    setSearchLng(modalCoords.lng);
+                    setSearchRadius(modalRadius);
+                    setIsLocationModalOpen(false);
+                  }}
+                  className="px-6 py-2.5 bg-[#2E1065] hover:bg-[#3B0764] text-white text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  Áp dụng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

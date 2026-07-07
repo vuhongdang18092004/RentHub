@@ -44,7 +44,7 @@ export default function EditProductPage() {
   const [uploading, setUploading] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("AVAILABLE");
 
-  const productId = Number(params.id);
+  const productId = params ? Number(params.id) : 0;
 
   // Admin Route Restriction check
   useEffect(() => {

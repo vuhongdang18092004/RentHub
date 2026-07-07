@@ -102,6 +102,9 @@ export const productService = {
     minPrice?: number;
     maxPrice?: number;
     address?: string;
+    latitude?: number;
+    longitude?: number;
+    radius?: number;
     sort?: "newest" | "price_asc" | "price_desc" | "relevant";
   }): Promise<{ content: PublicProductSummaryResponse[]; totalElements: number; totalPages: number }> => {
     const res = await api.get("/products/public", {

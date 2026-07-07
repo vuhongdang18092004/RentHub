@@ -20,6 +20,9 @@ function ExploreContent() {
   const queryKeyword = searchParams?.get("keyword") || "";
   const queryCategoryId = searchParams?.get("categoryId") || "";
   const queryAddress = searchParams?.get("address") || "";
+  const queryLatitude = searchParams?.get("latitude") || "";
+  const queryLongitude = searchParams?.get("longitude") || "";
+  const queryRadius = searchParams?.get("radius") || "";
 
   // Component States
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
@@ -32,7 +35,7 @@ function ExploreContent() {
   // Filters State
   const [filters, setFilters] = useState<ProductFilters>({
     categoryIds: queryCategoryId ? [Number(queryCategoryId)] : [],
-    priceRange: [0, 5000000],
+    priceRange: [0, 50000000],
     minRating: undefined,
     sort: "newest",
   });
@@ -76,6 +79,9 @@ function ExploreContent() {
           minPrice: filters.priceRange[0],
           maxPrice: filters.priceRange[1],
           address: queryAddress || undefined,
+          latitude: queryLatitude ? Number(queryLatitude) : undefined,
+          longitude: queryLongitude ? Number(queryLongitude) : undefined,
+          radius: queryRadius ? Number(queryRadius) : undefined,
           sort: filters.sort,
         });
 
@@ -101,7 +107,7 @@ function ExploreContent() {
     };
 
     fetchFilteredProducts();
-  }, [filters, page, queryKeyword, queryAddress]);
+  }, [filters, page, queryKeyword, queryAddress, queryLatitude, queryLongitude, queryRadius]);
 
   const handleFilterChange = (newFilters: ProductFilters) => {
     setFilters(newFilters);

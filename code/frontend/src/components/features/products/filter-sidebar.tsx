@@ -52,12 +52,12 @@ export function FilterSidebar({ categories, filters, onChange }: FilterSidebarPr
     return `${val}`;
   };
 
-  const presetPrices = [200000, 500000, 1000000, 2000000, 5000000];
+  const presetPrices = [500000, 2000000, 5000000, 10000000, 20000000, 50000000];
 
   const handleClearFilters = () => {
     onChange({
       categoryIds: [],
-      priceRange: [0, 5000000],
+      priceRange: [0, 50000000],
       minRating: undefined,
       sort: "newest",
     });
@@ -140,8 +140,8 @@ export function FilterSidebar({ categories, filters, onChange }: FilterSidebarPr
               value={filters.priceRange}
               onChange={(val) => onChange({ ...filters, priceRange: val as [number, number] })}
               min={0}
-              max={5000000}
-              step={5000}
+              max={50000000}
+              step={50000}
             />
 
             {/* Preset Buttons */}

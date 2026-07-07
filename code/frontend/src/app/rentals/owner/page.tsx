@@ -15,6 +15,7 @@ export default function OwnerRentalsPage() {
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
 
   const fetchStats = async () => {
     try {
@@ -62,7 +63,8 @@ export default function OwnerRentalsPage() {
       fetchRequests();
     } catch (err: any) {
       console.error("Lỗi duyệt yêu cầu:", err);
-      triggerToast(err.response?.data?.message || "Duyệt yêu cầu thất bại!");
+      const msg = err.response?.data?.message || "Duyệt yêu cầu thất bại!";
+      setErrorModal(msg);
     }
   };
 
@@ -75,7 +77,8 @@ export default function OwnerRentalsPage() {
       fetchRequests();
     } catch (err: any) {
       console.error("Lỗi từ chối yêu cầu:", err);
-      triggerToast(err.response?.data?.message || "Từ chối yêu cầu thất bại!");
+      const msg = err.response?.data?.message || "Từ chối yêu cầu thất bại!";
+      setErrorModal(msg);
     }
   };
 
@@ -92,7 +95,8 @@ export default function OwnerRentalsPage() {
       fetchRequests();
     } catch (err: any) {
       console.error("Lỗi xác nhận nhận đồ:", err);
-      triggerToast(err.response?.data?.message || "Xác nhận nhận đồ thất bại!");
+      const msg = err.response?.data?.message || "Xác nhận nhận đồ thất bại!";
+      setErrorModal(msg);
     }
   };
 
@@ -152,6 +156,32 @@ export default function OwnerRentalsPage() {
     <ProtectedRoute>
       <DashboardLayout>
         <div className="space-y-6 font-sans">
+
+          {/* Error Modal Popup */}
+          {errorModal && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+              <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 flex flex-col items-center gap-5 animate-[fadeInScale_0.2s_ease-out]">
+                {/* Icon */}
+                <div className="w-16 h-16 bg-red-50 border-2 border-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                </div>
+                {/* Title */}
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-black text-zinc-800">Không thể thực hiện thao tác</h3>
+                  <p className="text-sm text-zinc-500 font-semibold leading-relaxed">{errorModal}</p>
+                </div>
+                {/* Close Button */}
+                <button
+                  onClick={() => setErrorModal(null)}
+                  className="w-full py-3 bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-black rounded-2xl transition-all active:scale-[0.98]"
+                >
+                  Đã hiểu
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* Header */}
           <div className="space-y-1">

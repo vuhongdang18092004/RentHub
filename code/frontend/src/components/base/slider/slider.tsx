@@ -19,7 +19,7 @@ export function Slider({
   value,
   onChange,
   min = 0,
-  max = 5000000,
+  max = 50000000,
   step = 50000,
   size = "md",
   isDisabled = false,

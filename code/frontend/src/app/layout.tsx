@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { RouteProvider } from "@/providers/router-provider";
 import { Theme } from "@/providers/theme";
 import { ToastProvider } from "@/context/ToastContext";
@@ -13,10 +13,10 @@ import { cx } from "@/utils/cx";
  
 // TODO: Root layout structure injecting fonts, theme, router provider, and global styles as per docs
  
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
     subsets: ["latin"],
     display: "swap",
-    variable: "--font-inter",
+    variable: "--font-plus-jakarta-sans",
 });
  
 export const metadata: Metadata = {
@@ -32,7 +32,7 @@ export const viewport: Viewport = {
   export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
       return (
           <html lang="en" suppressHydrationWarning>
-              <body className={cx(inter.variable, "bg-primary antialiased")}>
+              <body className={cx(plusJakartaSans.variable, "bg-primary antialiased")}>
                   <RouteProvider>
                       <Theme>
                           <AuthProvider>

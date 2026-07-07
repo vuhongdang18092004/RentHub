@@ -64,7 +64,7 @@ function CheckoutContent() {
   const itemCount = 0;
   const totalPrice = 0;
   const clearCart = () => {};
-  const updateDates = () => {};
+  const updateDates = (productId: number, start: string, end: string, days: number) => {};
   const { user, isLoading, isAuthenticated } = useAuth();
   const { triggerToast } = useToast();
   const router = useRouter();
@@ -1028,6 +1028,7 @@ function AriaDateRangePicker({ onChange }: { onChange: (start: string, end: stri
   return (
     <div className="react-aria-DateRangePicker">
       <DateRangePicker 
+        aria-label="Chọn ngày thuê"
         minValue={t}
         onChange={(value) => {
           if (value && value.start && value.end) {

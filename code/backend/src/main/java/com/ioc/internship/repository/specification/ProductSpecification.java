@@ -52,8 +52,8 @@ public class ProductSpecification {
                 predicates.add(cb.lessThanOrEqualTo(root.get("pricePerDay"), maxPrice));
             }
 
-            // Address filter (gần đúng)
-            if (address != null && !address.trim().isEmpty()) {
+            // Address filter (gần đúng) - bỏ qua nếu tìm kiếm theo tọa độ vĩ độ/kinh độ
+            if (address != null && !address.trim().isEmpty() && (latitude == null || longitude == null)) {
                 String addrPattern = "%" + address.trim().toLowerCase() + "%";
                 predicates.add(cb.like(cb.lower(root.get("address")), addrPattern));
             }

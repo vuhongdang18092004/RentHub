@@ -1,8 +1,8 @@
 /* TODO: Theme.css contains design tokens: font, custom font sizes, border radius, shadows, brand colors, semantic tokens (light/dark mode), utility colors, and breakpoints */
 
 @theme {
-    --font-body: var(--font-inter, "Inter"), -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    --font-display: var(--font-inter, "Inter"), -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-body: var(--font-plus-jakarta-sans, "Plus Jakarta Sans"), -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-display: var(--font-plus-jakarta-sans, "Plus Jakarta Sans"), -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
     --font-mono: ui-monospace, "Roboto Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
     --text-xs: calc(var(--spacing) * 3);       /* 12px */
