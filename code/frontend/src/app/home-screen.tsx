@@ -346,13 +346,37 @@ export function HomeScreen() {
     }
   };
 
+  // Real product load helper
+  const loadProducts = async () => {
+    try {
+      setProductsLoading(true);
+      const res = await productService.getPublicProducts({ page: 0, size: 100 });
+      const mapped = (res.content || []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        pricePerDay: p.pricePerDay,
+        status: p.status,
+        category: {
+          id: 0,
+          name: p.categoryName,
+          slug: "",
+        },
+        primaryImage: p.primaryImageUrl,
+        createdAt: p.createdAt,
+      }));
+      setAvailableProducts(mapped);
+    } catch (err) {
+      console.error("Lỗi lấy sản phẩm:", err);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
   const handleApproveProduct = async (id: number, name: string) => {
     try {
       await api.patch(`/admin/products/${id}/status`, { status: "AVAILABLE" });
       triggerToast(`Đã duyệt sản phẩm "${name}"! ✅`);
-      // Update available products list in home screen as well, so it updates without F5
-      const prodRes = await productService.getAvailableProducts(0, 24);
-      setAvailableProducts(prodRes.content || []);
+      loadProducts();
       fetchPendingProducts();
     } catch (err) {
       console.error("Lỗi duyệt sản phẩm:", err);
@@ -374,31 +398,6 @@ export function HomeScreen() {
   // Initial mount load for category tags AND real products
   useEffect(() => {
     fetchCategories();
-    // Fetch real AVAILABLE products from public endpoint
-    const loadProducts = async () => {
-      try {
-        setProductsLoading(true);
-        const res = await productService.getPublicProducts({ page: 0, size: 24 });
-        const mapped = (res.content || []).map((p) => ({
-          id: p.id,
-          name: p.name,
-          pricePerDay: p.pricePerDay,
-          status: p.status,
-          category: {
-            id: 0,
-            name: p.categoryName,
-            slug: "",
-          },
-          primaryImage: p.primaryImageUrl,
-          createdAt: p.createdAt,
-        }));
-        setAvailableProducts(mapped);
-      } catch (err) {
-        console.error("Lỗi lấy sản phẩm:", err);
-      } finally {
-        setProductsLoading(false);
-      }
-    };
     loadProducts();
   }, []);
 
@@ -571,6 +570,25 @@ export function HomeScreen() {
   const closeAdminPanel = () => {
     router.push("/");
   };
+
+  // Categorized product lists
+  const sportsFiltered = availableProducts.filter((p) => {
+    const catName = p.category?.name?.toLowerCase() || "";
+    return catName.includes("thể thao") || catName.includes("sport") || catName.includes("phương tiện") || catName.includes("xe");
+  });
+  const sportsList = sportsFiltered.length > 0 ? sportsFiltered.slice(0, 4) : availableProducts.slice(0, 4);
+
+  const outdoorFiltered = availableProducts.filter((p) => {
+    const catName = p.category?.name?.toLowerCase() || "";
+    return catName.includes("dã ngoại") || catName.includes("outdoor") || catName.includes("lều") || catName.includes("camping") || catName.includes("cắm trại");
+  });
+  const outdoorList = outdoorFiltered.length > 0 ? outdoorFiltered.slice(0, 4) : availableProducts.slice(4, 8);
+
+  const electronicsFiltered = availableProducts.filter((p) => {
+    const catName = p.category?.name?.toLowerCase() || "";
+    return catName.includes("điện tử") || catName.includes("electronics") || catName.includes("máy ảnh") || catName.includes("loa") || catName.includes("camera") || catName.includes("phụ kiện");
+  });
+  const electronicsList = electronicsFiltered.length > 0 ? electronicsFiltered.slice(0, 5) : availableProducts.slice(0, 5);
 
   return (
     <div className="min-h-screen bg-primary text-primary flex flex-col font-sans select-none overflow-x-hidden home-smooth-bg">
@@ -1535,7 +1553,7 @@ export function HomeScreen() {
                       </div>
                     </div>
                   ))
-                : availableProducts.slice(0, 4).map((prod) => (
+                : sportsList.map((prod) => (
                     <ProductCard key={prod.id} prod={prod} />
                   ))}
             </div>
@@ -1566,7 +1584,7 @@ export function HomeScreen() {
                       </div>
                     </div>
                   ))
-                : availableProducts.slice(4, 8).map((prod) => (
+                : outdoorList.map((prod) => (
                     <ProductCard key={prod.id} prod={prod} />
                   ))}
             </div>
@@ -1606,7 +1624,7 @@ export function HomeScreen() {
                       </div>
                     </div>
                   ))
-                : availableProducts.slice(8, 13).map((prod) => (
+                : electronicsList.map((prod) => (
                     <ProductCard key={prod.id} prod={prod} />
                   ))}
             </div>

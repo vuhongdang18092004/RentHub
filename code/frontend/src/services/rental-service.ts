@@ -157,4 +157,9 @@ export const rentalService = {
     const res = await api.put(`/rentals/${id}/complete`);
     return res.data;
   },
+
+  confirmReturn: async (id: number): Promise<import("@/types/backend").RentalLifecycleResponse> => {
+    const res = await api.put(`/rentals/${id}/complete`);
+    return res.data;
+  },
 };

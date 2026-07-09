@@ -10,7 +10,7 @@ import { useToast } from "@/context/ToastContext";
 
 export default function ReportDetailPage() {
   const params = useParams();
-  const reportId = Number(params.id);
+  const reportId = Number(params?.id || 0);
   const router = useRouter();
   const { triggerToast } = useToast();
 

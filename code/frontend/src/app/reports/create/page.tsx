@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -18,7 +18,7 @@ const REASONS: { value: ReportReason; label: string }[] = [
   { value: "OTHER", label: "Lý do khác" },
 ];
 
-export default function CreateReportPage() {
+function CreateReportContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rentalId = searchParams ? searchParams.get("rentalId") : null;
@@ -160,5 +160,21 @@ export default function CreateReportPage() {
         </div>
       </DashboardLayout>
     </ProtectedRoute>
+  );
+}
+
+export default function CreateReportPage() {
+  return (
+    <Suspense fallback={
+      <ProtectedRoute>
+        <DashboardLayout>
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 animate-pulse text-zinc-500 font-bold text-center text-sm py-20">
+            Đang tải biểu mẫu khiếu nại...
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
+    }>
+      <CreateReportContent />
+    </Suspense>
   );
 }

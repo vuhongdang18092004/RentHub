@@ -660,87 +660,72 @@ export function AiChatbotBubble() {
       return;
     }
 
-    const accountId = localStorage.getItem("cf_account_id");
-    const token = localStorage.getItem("cf_api_token");
-    const proxy = localStorage.getItem("cf_cors_proxy");
+    const clientOverrideKey = localStorage.getItem("gemini_api_key") || "";
+    callGeminiAI(text, backendProducts, backendLogs, clientOverrideKey);
+  };
 
-    if (accountId && token) {
-      callLiveAI(text, backendProducts, backendLogs, accountId, token, proxy);
-    } else {
-      // Simulated response incorporating backend products dynamically
-      setTimeout(() => {
-        setIsTyping(false);
-        const catalogToUse = backendProducts.length > 0 ? backendProducts : MOCK_PRODUCTS.map(mapToUnifiedProduct);
-        const ranked = rankProductsForQuery(text, catalogToUse, 3);
-        
-        let logs: string[] = [...backendLogs];
-        logs.push("🧠 Khởi động thuật toán so khớp Cosine Similarity tại local...");
-        logs.push(`🧮 Tính khoảng cách góc Vector trên ${catalogToUse.length} sản phẩm...`);
+  const runSimulatorFallback = (prompt: string, catalogToUse: UnifiedProduct[], logs: string[]) => {
+    setIsTyping(false);
+    const ranked = rankProductsForQuery(prompt, catalogToUse, 3);
+    
+    let localLogs = [...logs];
+    localLogs.push("🧠 Khởi động thuật toán so khớp Cosine Similarity tại local...");
+    localLogs.push(`🧮 Tính khoảng cách góc Vector trên ${catalogToUse.length} sản phẩm...`);
 
-        let reply = "";
-        if (ranked.length > 0) {
-          logs.push(`⚡ Tìm thấy ${ranked.length} sản phẩm khớp có Cosine Score > 0.05.`);
-          
-          const itemsList = ranked
-            .map((p, idx) => `${idx + 1}. **${p.name}** [PRODUCT:${p.id}]`)
-            .join("\n");
-          
-          let botBtnTags = "";
-          if (text.toLowerCase().includes("máy ảnh") || text.toLowerCase().includes("camera")) {
-            botBtnTags = " [BUTTON:🚁 Xem thêm Flycam|Tôi muốn thuê flycam] [BUTTON:⚙️ Tripod chân quay|Tôi muốn thuê tripod]";
-          } else if (text.toLowerCase().includes("cắm trại") || text.toLowerCase().includes("lều")) {
-            botBtnTags = " [BUTTON:🪑 Thuê bàn ghế xếp|Tôi muốn thuê bộ bàn ghế dã ngoại] [BUTTON:🔦 Đèn pin dã ngoại|Tôi muốn thuê đèn pin cắm trại]";
-          } else {
-            botBtnTags = " [BUTTON:🚴 Thuê xe đạp Giant|Tôi muốn thuê xe đạp Giant] [BUTTON:🔊 Thuê loa nghe nhạc|Tôi muốn thuê loa kéo]";
-          }
+    let reply = "";
+    if (ranked.length > 0) {
+      localLogs.push(`⚡ Tìm thấy ${ranked.length} sản phẩm khớp có Cosine Score > 0.05.`);
+      
+      const itemsList = ranked
+        .map((p, idx) => `${idx + 1}. **${p.name}** [PRODUCT:${p.id}]`)
+        .join("\n");
+      
+      let botBtnTags = "";
+      if (prompt.toLowerCase().includes("máy ảnh") || prompt.toLowerCase().includes("camera")) {
+        botBtnTags = " [BUTTON:🚁 Xem thêm Flycam|Tôi muốn thuê flycam] [BUTTON:⚙️ Tripod chân quay|Tôi muốn thuê tripod]";
+      } else if (prompt.toLowerCase().includes("cắm trại") || prompt.toLowerCase().includes("lều")) {
+        botBtnTags = " [BUTTON:🪑 Thuê bàn ghế xếp|Tôi muốn thuê bộ bàn ghế dã ngoại] [BUTTON:🔦 Đèn pin dã ngoại|Tôi muốn thuê đèn pin cắm trại]";
+      } else {
+        botBtnTags = " [BUTTON:🚴 Thuê xe đạp Giant|Tôi muốn thuê xe đạp Giant] [BUTTON:🔊 Thuê loa nghe nhạc|Tôi muốn thuê loa kéo]";
+      }
 
-          reply = `### 💡 Đề xuất sản phẩm từ RentHub dành cho bạn:
+      reply = `### 💡 Đề xuất sản phẩm từ RentHub dành cho bạn:
 Dưới đây là các sản phẩm phù hợp nhất tôi vừa tìm thấy trong cơ sở dữ liệu:
 
 ${itemsList}
 
 Bạn có thể chỉnh ngày nhận và ngày trả đồ ở mục **📅 Bộ tính giá thuê** để hệ thống tự động cộng dồn tiền nhé! ${botBtnTags}`;
-        } else {
-          logs.push("⚠️ Không có sản phẩm khớp Cosine. Chuyển sang quét Keyword định cấu hình trước.");
-          const cleanVal = text.toLowerCase();
-          let matchedKeyword = false;
-          for (const item of LOCAL_QA) {
-            for (const kw of item.keywords) {
-              if (cleanVal.includes(kw)) {
-                logs.push(`✓ Khớp từ khóa: "${kw}". Lấy câu trả lời định sẵn.`);
-                reply = item.reply;
-                matchedKeyword = true;
-                break;
-              }
-            }
-            if (matchedKeyword) break;
-          }
-          if (!matchedKeyword) {
-            logs.push("❌ Không tìm thấy từ khóa khớp. Trả về câu trả lời mặc định.");
-            reply = DEFAULT_AI_RESPONSE;
+    } else {
+      localLogs.push("⚠️ Không có sản phẩm khớp Cosine. Chuyển sang quét Keyword định cấu hình trước.");
+      const cleanVal = prompt.toLowerCase();
+      let matchedKeyword = false;
+      for (const item of LOCAL_QA) {
+        for (const kw of item.keywords) {
+          if (cleanVal.includes(kw)) {
+            localLogs.push(`✓ Khớp từ khóa: "${kw}". Lấy câu trả lời định sẵn.`);
+            reply = item.reply;
+            matchedKeyword = true;
+            break;
           }
         }
-
-        setMessages((prev) => [...prev, { sender: "assistant", text: reply, reasoningLogs: logs }]);
-      }, 950);
+        if (matchedKeyword) break;
+      }
+      if (!matchedKeyword) {
+        localLogs.push("❌ Không tìm thấy từ khóa khớp. Trả về câu trả lời mặc định.");
+        reply = DEFAULT_AI_RESPONSE;
+      }
     }
+
+    setMessages((prev) => [...prev, { sender: "assistant", text: reply, reasoningLogs: localLogs }]);
   };
 
-  const callLiveAI = async (
+  const callGeminiAI = async (
     prompt: string,
     backendProducts: UnifiedProduct[],
     backendLogs: string[],
-    accId: string,
-    token: string,
-    proxy: string | null
+    apiKey: string
   ) => {
-    let endpoint = `https://api.cloudflare.com/client/v4/accounts/${accId}/ai/run/@cf/meta/llama-3-8b-instruct`;
-    if (proxy) {
-      const base = proxy.endsWith("/") ? proxy : proxy + "/";
-      endpoint = `${base}client/v4/accounts/${accId}/ai/run/@cf/meta/llama-3-8b-instruct`;
-    }
-
-    const catalogToUse = backendProducts.length > 0 ? backendProducts : MOCK_PRODUCTS.map(mapToUnifiedProduct);
+    const catalogToUse = backendProducts.length > 0 ? backendProducts : availableProducts;
     const relevantProducts = rankProductsForQuery(prompt, catalogToUse, 5);
     const contextCatalog = relevantProducts.length > 0 ? relevantProducts : catalogToUse.slice(0, 5);
 
@@ -748,69 +733,74 @@ Bạn có thể chỉnh ngày nhận và ngày trả đồ ở mục **📅 Bộ
       .map((p) => `- ID ${p.id}: ${p.name} (Giá: ${Number(p.pricePerDay).toLocaleString("vi-VN")}đ/ngày, Danh mục: ${p.categoryName})`)
       .join("\n");
 
-    const systemPrompt = `Bạn là Trợ lý Mua sắm & Thuê đồ thông minh RentHub AI, hoạt động song song phối hợp cùng với backend của dự án.
+    const systemPrompt = `Bạn là Trợ lý Mua sắm & Thuê đồ thông minh RentHub AI.
 Nhiệm vụ của bạn là tư vấn nhiệt tình và gợi ý sản phẩm cho thuê phù hợp với nhu cầu của khách hàng.
 
 Dưới đây là danh sách sản phẩm hiện đang có sẵn trên hệ thống RentHub phù hợp nhất được truy vấn từ backend:
 ${catalogSummary}
 
 LƯU Ý QUAN TRỌNG: Khi đề xuất một mặt hàng cụ thể từ danh sách trên, bạn BẮT BUỘC phải chèn thẻ [PRODUCT:id] (với id là số ID của sản phẩm) ở vị trí phù hợp trong đoạn văn để hệ thống hiển thị thẻ sản phẩm trực quan.
-Ví dụ: "Bạn có thể tham khảo thuê máy ảnh Sony Alpha A7 III [PRODUCT:1] để chụp ảnh."
+Ví dụ: "Bạn có thể tham khảo thuê máy ảnh Sony Alpha A7 III [PRODUCT:2] để chụp ảnh."
 
 Ngoài ra, bạn cũng có thể chèn các nút gợi ý phản hồi nhanh ở cuối câu trả lời bằng cú pháp [BUTTON:Tên nút|Câu lệnh gửi đi].
 Ví dụ: "Bạn có muốn xem thêm flycam chụp từ trên cao không? [BUTTON:🚁 Xem thêm Flycam|Tôi muốn thuê flycam] [BUTTON:⚙️ Chân máy ảnh|Tôi muốn thuê tripod]"
 
-Hãy phản hồi bằng tiếng Việt thân thiện, tự nhiên. Không tự chế sản phẩm không có trong danh sách trên.`;
+Hãy phản hồi bằng tiếng Việt thân thiện, tự nhiên. Không tự bịa sản phẩm không có trong danh sách trên.`;
+
+    const endpoint = "/api/gemini";
+
+    const history = messages.map(msg => ({
+      role: msg.sender === "user" ? "user" : "model",
+      parts: [{ text: cleanMessageText(msg.text) }]
+    }));
+
+    const payload = {
+      contents: [
+        ...history,
+        {
+          role: "user",
+          parts: [{ text: prompt }]
+        }
+      ],
+      systemInstruction: {
+        parts: [{ text: systemPrompt }]
+      }
+    };
 
     try {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "x-gemini-key": apiKey
         },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt }
-          ]
-        })
+        body: JSON.stringify(payload)
       });
 
-      setIsTyping(false);
-
       if (!response.ok) {
-        const errBody = await response.text();
-        throw new Error(`HTTP ${response.status} - ${errBody}`);
+        throw new Error(`Gemini API returned status ${response.status}`);
       }
 
       const data = await response.json();
-      if (data.success && data.result && data.result.response) {
-        const logs = [
-          ...backendLogs,
-          `📊 Đóng gói ${contextCatalog.length} sản phẩm từ backend gửi lên prompt.`,
-          "🚀 Chạy phân tích suy luận Llama 3 qua Cloudflare Workers AI...",
-          "🤖 Trả về câu trả lời tự nhiên chứa structured ID."
-        ];
-        setMessages((prev) => [
-          ...prev,
-          { sender: "assistant", text: data.result.response, reasoningLogs: logs }
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { sender: "assistant", text: `API Cloudflare trả về kết quả lỗi: ${JSON.stringify(data)}` }
-        ]);
-      }
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Tôi chưa nhận được phản hồi từ Gemini.";
+      
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "assistant",
+          text: reply,
+          reasoningLogs: [
+            ...backendLogs,
+            "🌐 Gọi qua Next.js Gemini API Proxy...",
+            "⚡ Trả về câu trả lời thông minh từ Gemini thành công!"
+          ]
+        }
+      ]);
     } catch (err: any) {
+      console.warn("Gemini call failed, triggering local fallback:", err);
+      runSimulatorFallback(prompt, catalogToUse, backendLogs);
+    } finally {
       setIsTyping(false);
-      const errTxt = `### ⚠️ Lỗi kết nối Live Cloudflare Workers AI API
-Chi tiết: \`${err.message}\`
-
-#### 💡 Cách khắc phục:
-1. **CORS Block**: Trình duyệt chặn trực tiếp request đến Cloudflare API vì lý do an toàn. Hãy bật **CORS Proxy** trong tab Cấu hình (click nút Bánh răng ⚙️ ở đầu khung chat).
-2. **Offline Simulator**: chatbot đã tự động chuyển sang chế độ Simulator. Bạn vẫn có thể hỏi các câu hỏi thông dụng để bot trỏ sản phẩm từ danh mục!`;
-      setMessages((prev) => [...prev, { sender: "assistant", text: errTxt }]);
     }
   };
 
@@ -896,13 +886,6 @@ Chi tiết: \`${err.message}\`
 
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setConfigOpen(!configOpen)}
-                className="p-1.5 hover:bg-white/10 rounded-lg text-white transition-colors text-xs cursor-pointer"
-                title="Cấu hình Cloudflare AI"
-              >
-                ⚙️
-              </button>
-              <button
                 onClick={() => setIsOpen(false)}
                 className="p-1.5 hover:bg-white/10 rounded-lg text-white transition-colors text-xs cursor-pointer"
               >
@@ -910,69 +893,6 @@ Chi tiết: \`${err.message}\`
               </button>
             </div>
           </div>
-
-          {/* Configuration Overlay */}
-          {configOpen && (
-            <div className="bg-white dark:bg-zinc-900 border-b border-zinc-150 dark:border-zinc-800 p-3 space-y-3 shadow-md z-20 shrink-0 text-[10px]">
-              <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-850 pb-1.5">
-                <span className="font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider">
-                  Cấu hình Cloudflare Credentials
-                </span>
-                <button onClick={() => setConfigOpen(false)} className="text-zinc-400 hover:text-zinc-700 font-bold cursor-pointer">
-                  Đóng
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-0.5">
-                  <label className="font-bold text-zinc-500">Account ID</label>
-                  <input
-                    type="password"
-                    value={cfConfig.accountId}
-                    onChange={(e) => setCfConfig((p) => ({ ...p, accountId: e.target.value }))}
-                    placeholder="Account ID"
-                    className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-[10px]"
-                  />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <label className="font-bold text-zinc-500">API Token</label>
-                  <input
-                    type="password"
-                    value={cfConfig.token}
-                    onChange={(e) => setCfConfig((p) => ({ ...p, token: e.target.value }))}
-                    placeholder="API Token"
-                    className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-[10px]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-0.5">
-                <label className="font-bold text-zinc-500">Worker CORS Proxy URL</label>
-                <input
-                  type="text"
-                  value={cfConfig.proxy}
-                  onChange={(e) => setCfConfig((p) => ({ ...p, proxy: e.target.value }))}
-                  placeholder="https://my-cors-proxy.workers.dev"
-                  className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-[10px]"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSaveConfig}
-                  className="flex-1 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded font-bold transition-colors cursor-pointer"
-                >
-                  Lưu cấu hình
-                </button>
-                <button
-                  onClick={handleClearConfig}
-                  className="py-1 px-3 border border-zinc-200 dark:border-zinc-750 text-zinc-500 rounded font-bold transition-colors cursor-pointer"
-                >
-                  Xóa
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Message Stream */}
           <div ref={chatContainerRef} className="flex-1 bg-white dark:bg-zinc-950 p-3 overflow-y-auto space-y-3 shadow-inner">

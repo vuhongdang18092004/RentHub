@@ -20,7 +20,7 @@ import { ReportHistoryCard } from "@/components/features/rentals/ReportHistoryCa
 
 export default function RentalDetailPage() {
   const params = useParams();
-  const rentalId = Number(params.id);
+  const rentalId = Number(params?.id || 0);
   const router = useRouter();
   const { user } = useAuth();
   const { triggerToast } = useToast();
