@@ -14,14 +14,16 @@ spring:
       hibernate.physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
   mail:
-    host: localhost
-    port: 1025
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
-          auth: false
+          auth: true
           starttls:
-            enable: false
+            enable: true
 
   devtools:
     restart:
@@ -34,3 +36,10 @@ app:
   jwt:
     secret-key: NDM1YTBlYmY2ZjhjZTYwM2M0NmE5Y2Y4YTBlN2M5ZDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6
     expiration: 86400000
+
+  ai:
+    enabled: true
+    gemini:
+      api-key: ${GEMINI_API_KEY}
+      model: gemini-2.5-flash
+      timeout-ms: 15000

@@ -24,6 +24,13 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.recordPayment(request));
     }
 
+    @PostMapping("/refunds")
+    public ResponseEntity<PaymentResponse> recordRefund(
+            @RequestBody com.ioc.internship.dto.request.RefundRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        return ResponseEntity.ok(paymentService.recordRefund(authentication.getName(), request));
+    }
+
     @GetMapping
     public ResponseEntity<Page<PaymentResponse>> getAllPayments(Pageable pageable) {
         return ResponseEntity.ok(paymentService.getAllPayments(pageable));

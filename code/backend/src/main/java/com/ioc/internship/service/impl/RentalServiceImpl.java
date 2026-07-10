@@ -7,13 +7,18 @@ import com.ioc.internship.repository.ProductRepository;
 import com.ioc.internship.repository.RentalRepository;
 import com.ioc.internship.repository.ReportRepository;
 import com.ioc.internship.repository.UserRepository;
+import com.ioc.internship.repository.ReviewRepository;
 import com.ioc.internship.service.RentalService;
+import com.ioc.internship.service.NotificationService;
+import com.ioc.internship.dto.request.NotificationCreateCommand;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RentalServiceImpl implements RentalService {
@@ -23,6 +28,8 @@ public class RentalServiceImpl implements RentalService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final ReportRepository reportRepository;
+    private final ReviewRepository reviewRepository;
+    private final NotificationService notificationService;
 
     private UserEntity getUserByEmail(String email) {
         return userRepository.findByEmail(email)
@@ -63,6 +70,18 @@ public class RentalServiceImpl implements RentalService {
         rental.setStatus(RentalStatus.HANDOVER_PENDING);
         rentalRepository.save(rental);
 
+        try {
+            notificationService.create(NotificationCreateCommand.builder()
+                    .user(rental.getRenter())
+                    .title("Chủ đồ đã bàn giao")
+                    .message("Chủ đồ đã xác nhận bàn giao " + rental.getProduct().getName() + ". Vui lòng kiểm tra và xác nhận nhận đồ.")
+                    .type(NotificationType.RENTAL_HANDOVER_PENDING)
+                    .actionUrl("/rentals/renter")
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to send notification for rental handover", e);
+        }
+
         return RentalLifecycleResponse.builder()
                 .rentalId(rental.getId())
                 .status(rental.getStatus())
@@ -89,6 +108,18 @@ public class RentalServiceImpl implements RentalService {
 
         rental.setStatus(RentalStatus.ACTIVE);
         rentalRepository.save(rental);
+
+        try {
+            notificationService.create(NotificationCreateCommand.builder()
+                    .user(rental.getOwner())
+                    .title("Khách đã nhận đồ")
+                    .message("Khách thuê đã xác nhận nhận " + rental.getProduct().getName())
+                    .type(NotificationType.RENTAL_RECEIVED)
+                    .actionUrl("/rentals/owner")
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to send notification for rental received", e);
+        }
 
         return RentalLifecycleResponse.builder()
                 .rentalId(rental.getId())
@@ -154,6 +185,18 @@ public class RentalServiceImpl implements RentalService {
         rental.setStatus(RentalStatus.RETURN_PENDING);
         rentalRepository.save(rental);
 
+        try {
+            notificationService.create(NotificationCreateCommand.builder()
+                    .user(rental.getOwner())
+                    .title("Yêu cầu trả đồ")
+                    .message("Khách thuê đã gửi yêu cầu trả " + rental.getProduct().getName())
+                    .type(NotificationType.RENTAL_RETURN_PENDING)
+                    .actionUrl("/rentals/owner")
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to send notification for rental return pending", e);
+        }
+
         return RentalLifecycleResponse.builder()
                 .rentalId(rental.getId())
                 .status(rental.getStatus())
@@ -184,6 +227,18 @@ public class RentalServiceImpl implements RentalService {
         Product product = rental.getProduct();
         product.setStatus(ProductStatus.AVAILABLE);
         productRepository.save(product);
+
+        try {
+            notificationService.create(NotificationCreateCommand.builder()
+                    .user(rental.getRenter())
+                    .title("Thuê đồ hoàn tất")
+                    .message("Chủ đồ đã xác nhận nhận lại " + rental.getProduct().getName() + ". Đơn thuê đã hoàn tất.")
+                    .type(NotificationType.RENTAL_COMPLETED)
+                    .actionUrl("/rentals/renter")
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to send notification for rental completion", e);
+        }
 
         return RentalLifecycleResponse.builder()
                 .rentalId(rental.getId())
@@ -228,6 +283,11 @@ public class RentalServiceImpl implements RentalService {
             throw new RuntimeException("403 Forbidden: You are not a participant in this rental");
         }
 
+        boolean reviewed = reviewRepository.existsByRentalId(rental.getId());
+        boolean canReview = rental.getStatus() == RentalStatus.COMPLETED 
+                && !reviewed 
+                && rental.getRenter().getId().equals(user.getId());
+
         return com.ioc.internship.dto.response.RentalDetailResponse.builder()
                 .id(rental.getId())
                 .product(com.ioc.internship.dto.response.ProductSummaryResponse.fromEntity(rental.getProduct()))
@@ -242,6 +302,8 @@ public class RentalServiceImpl implements RentalService {
                 .status(rental.getStatus())
                 .createdAt(rental.getCreatedAt())
                 .updatedAt(rental.getUpdatedAt())
+                .reviewed(reviewed)
+                .canReview(canReview)
                 .build();
     }
 }

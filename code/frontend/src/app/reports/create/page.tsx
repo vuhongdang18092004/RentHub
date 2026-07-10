@@ -8,6 +8,7 @@ import { useToast } from "@/context/ToastContext";
 import { reportService } from "@/services/report-service";
 import { rentalService } from "@/services/rental-service";
 import { ReportReason } from "@/types/backend";
+import { ArrowLeft, Loader2, Send } from "lucide-react";
 
 const REASONS: { value: ReportReason; label: string }[] = [
   { value: "PRODUCT_NOT_AS_DESCRIBED", label: "Sản phẩm không đúng mô tả" },
@@ -41,7 +42,7 @@ function CreateReportContent() {
           triggerToast("Không thể tải thông tin đơn thuê!");
         });
     }
-  }, [rentalId]);
+  }, [rentalId, triggerToast]);
 
   const availableReasons = REASONS.filter((r) => {
     if (r.value === "PRODUCT_NOT_AS_DESCRIBED") return rentalStatus === "HANDOVER_PENDING";
@@ -75,7 +76,7 @@ function CreateReportContent() {
         description,
         evidenceImageUrl: evidenceUrl || undefined,
       });
-      triggerToast("Đã tạo khiếu nại thành công! Quản trị viên sẽ sớm xem xét. ⚖️");
+      triggerToast("Đã tạo khiếu nại thành công! Quản trị viên sẽ sớm xem xét.");
       router.push(`/reports/${res.id}`);
     } catch (err: any) {
       console.error(err);
@@ -89,29 +90,27 @@ function CreateReportContent() {
     <ProtectedRoute>
       <DashboardLayout>
         <div className="max-w-2xl mx-auto space-y-6">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <button
               onClick={() => router.back()}
-              className="text-xs font-bold text-zinc-400 hover:text-violet-600 transition-colors flex items-center gap-1 mb-2"
+              className="text-sm font-semibold text-secondary hover:text-primary transition-colors flex items-center gap-2 mb-4"
             >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ArrowLeft className="w-4 h-4" />
               Quay lại
             </button>
-            <h1 className="text-2xl font-black text-red-700 tracking-tight">Tạo khiếu nại</h1>
-            <p className="text-sm font-semibold text-zinc-500">
+            <h1 className="text-2xl font-bold text-red-600 dark:text-red-500">Tạo khiếu nại</h1>
+            <p className="text-sm font-medium text-secondary">
               Hãy mô tả chi tiết vấn đề của bạn để Ban Quản Trị có thể xử lý thỏa đáng nhất.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-sm space-y-6">
+          <form onSubmit={handleSubmit} className="bg-primary border border-secondary rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
             <div className="space-y-2">
-              <label className="text-xs font-extrabold text-zinc-700 uppercase tracking-widest block">Lý do khiếu nại</label>
+              <label className="text-sm font-semibold text-primary block">Lý do khiếu nại <span className="text-red-500">*</span></label>
               <select
                 value={reason}
                 onChange={(e) => setReason(e.target.value as ReportReason)}
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-bold text-zinc-800 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                className="w-full bg-primary border border-secondary rounded-xl px-4 py-3 text-sm font-semibold text-primary focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 cursor-pointer transition-colors"
               >
                 {availableReasons.map((r) => (
                   <option key={r.value} value={r.value}>{r.label}</option>
@@ -120,40 +119,50 @@ function CreateReportContent() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-extrabold text-zinc-700 uppercase tracking-widest block">Mô tả chi tiết</label>
+              <label className="text-sm font-semibold text-primary block">Mô tả chi tiết <span className="text-red-500">*</span></label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Hãy giải thích rõ chuyện gì đã xảy ra..."
-                className="w-full h-32 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 resize-none"
+                className="w-full h-32 bg-primary border border-secondary rounded-xl px-4 py-3 text-sm font-medium text-primary placeholder:text-tertiary focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 resize-none transition-colors"
               ></textarea>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-extrabold text-zinc-700 uppercase tracking-widest block">Link ảnh bằng chứng (Tùy chọn)</label>
+              <label className="text-sm font-semibold text-primary block">Link ảnh bằng chứng (Tùy chọn)</label>
               <input
-                type="text"
+                type="url"
                 value={evidenceUrl}
                 onChange={(e) => setEvidenceUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                className="w-full bg-primary border border-secondary rounded-xl px-4 py-3 text-sm font-medium text-primary placeholder:text-tertiary focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
               />
             </div>
 
-            <div className="pt-4 border-t border-zinc-100 flex gap-4">
+            <div className="pt-6 border-t border-secondary flex gap-4">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 py-3.5 bg-zinc-100 text-zinc-600 font-extrabold rounded-2xl text-sm uppercase tracking-wider hover:bg-zinc-200 transition-colors"
+                className="flex-1 py-3.5 bg-secondary hover:bg-tertiary text-primary font-semibold rounded-xl text-sm transition-colors"
               >
                 Hủy bỏ
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 py-3.5 bg-red-600 text-white font-black rounded-2xl text-sm uppercase tracking-wider hover:bg-red-700 transition-colors shadow-md disabled:opacity-50"
+                className="flex-[2] py-3.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {submitting ? "Đang gửi..." : "Gửi khiếu nại"}
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Đang gửi...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Gửi khiếu nại
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -168,8 +177,8 @@ export default function CreateReportPage() {
     <Suspense fallback={
       <ProtectedRoute>
         <DashboardLayout>
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 animate-pulse text-zinc-500 font-bold text-center text-sm py-20">
-            Đang tải biểu mẫu khiếu nại...
+          <div className="max-w-2xl mx-auto flex justify-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-brand-600" />
           </div>
         </DashboardLayout>
       </ProtectedRoute>

@@ -41,11 +41,7 @@ export function RegisterForm() {
       setShowToast(true);
 
       setTimeout(() => {
-        const fallbackRes = (res as unknown) as Record<string, unknown>;
-        const nestedData = fallbackRes.data as Record<string, unknown> | undefined;
-        const tokenValue = res.token || (nestedData?.token as string | undefined);
-
-        router.push(`/verify-email?token=${tokenValue || ""}`);
+        router.push(`/verify-email?email=${data.email}`);
       }, 1500);
     } catch (err) {
       const axiosError = err as AxiosError<{ message: string }>;

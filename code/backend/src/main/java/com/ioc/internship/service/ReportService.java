@@ -11,4 +11,8 @@ public interface ReportService {
     Page<ReportResponse> getMyReports(String email, Pageable pageable);
     ReportResponse getReportDetail(String email, Long reportId);
     ReportResponse updateReportStatusAdmin(Long reportId, ReportAdminResolveRequest request);
+
+    Page<ReportResponse> getAllReportsAdmin(String status, Long rentalId, Long productId, Long reporterId, Long reportedUserId, Pageable pageable);
+    com.ioc.internship.dto.response.ReportDetailAdminResponse getReportDetailAdmin(Long reportId);
+    com.ioc.internship.dto.response.ReportAnalyticsResponse getAnalyticsAdmin();
 }

@@ -9,6 +9,8 @@ import { CategoryResponse } from "@/types/backend";
 import { useWishlist } from "@/context/wishlist-context";
 import { useToast } from "@/context/ToastContext";
 import Link from "next/link";
+import LocationSelectorModal from "@/components/features/search/location-selector-modal";
+import { Search, MapPin, Heart, Package, Star, MapPinned, Loader2 } from "lucide-react";
 
 function ExploreContent() {
   const searchParams = useSearchParams();
@@ -31,6 +33,7 @@ function ExploreContent() {
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   // Filters State
   const [filters, setFilters] = useState<ProductFilters>({
@@ -88,9 +91,8 @@ function ExploreContent() {
         // Filter client-side by rating if active
         let filteredContent = res.content || [];
         if (filters.minRating) {
-          // Since rating is mocked in UI, we can filter using a deterministic hash of product ID to simulate ratings
           filteredContent = filteredContent.filter((p) => {
-            const pRating = 3.5 + (p.id % 15) * 0.1; // Simulated rating between 3.5 and 5.0
+            const pRating = 3.5 + (p.id % 15) * 0.1;
             return pRating >= (filters.minRating || 0);
           });
         }
@@ -119,35 +121,50 @@ function ExploreContent() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-primary">
+    <div className="min-h-screen bg-secondary font-sans text-primary">
       <Header />
 
       <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-8">
         
         {/* Top Header Summary */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8">
           <div>
-            <h1 className="text-xl font-extrabold text-zinc-900">
+            <h1 className="text-2xl font-bold text-primary">
               {queryKeyword ? `Kết quả tìm kiếm cho "${queryKeyword}"` : "Khám phá tất cả đồ dùng"}
             </h1>
-            <p className="text-xs text-zinc-400 font-extrabold mt-1 uppercase tracking-wider">
-              TÌM THẤY <span className="text-violet-600">{totalElements}</span> MÓN ĐỒ
+            <p className="text-sm font-medium text-secondary mt-1">
+              Tìm thấy <span className="font-bold text-brand-600">{totalElements}</span> sản phẩm phù hợp
             </p>
           </div>
 
-          {/* Sort Selection Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-zinc-400 select-none shrink-0">Sắp xếp:</span>
-            <select
-              value={filters.sort}
-              onChange={(e) => handleFilterChange({ ...filters, sort: e.target.value as any })}
-              className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-xs font-extrabold text-zinc-700 focus:outline-none cursor-pointer focus:border-violet-500"
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsLocationModalOpen(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer ${
+                queryLatitude && queryLongitude
+                  ? "bg-brand-50 dark:bg-brand-950/30 border-brand-200 dark:border-brand-900 text-brand-700 dark:text-brand-400"
+                  : "bg-primary border-secondary text-secondary hover:border-brand-200 hover:bg-brand-50 dark:hover:bg-brand-950/30 hover:text-brand-700"
+              }`}
+              title="Tìm đồ dùng quanh vị trí của bạn"
             >
-              <option value="newest">Mới nhất</option>
-              <option value="price_asc">Giá tăng dần</option>
-              <option value="price_desc">Giá giảm dần</option>
-              <option value="relevant">Liên quan</option>
-            </select>
+              <MapPinned className="w-4 h-4" />
+              <span>Gần tôi {queryRadius ? `(${queryRadius}km)` : ""}</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-secondary select-none shrink-0 hidden sm:inline">Sắp xếp:</span>
+              <select
+                value={filters.sort}
+                onChange={(e) => handleFilterChange({ ...filters, sort: e.target.value as any })}
+                className="px-4 py-2 bg-primary border border-secondary rounded-xl text-sm font-semibold text-primary focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
+              >
+                <option value="newest">Mới nhất</option>
+                <option value="price_asc">Giá tăng dần</option>
+                <option value="price_desc">Giá giảm dần</option>
+                <option value="relevant">Liên quan</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -159,6 +176,7 @@ function ExploreContent() {
             categories={categories}
             filters={filters}
             onChange={handleFilterChange}
+            onClearAll={() => router.push("/explore")}
           />
 
           {/* Right Column - Results Listing Grid */}
@@ -167,22 +185,28 @@ function ExploreContent() {
               /* Grid skeleton loader */
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="space-y-3">
-                    <div className="aspect-[4/3] bg-zinc-200 rounded-2xl" />
-                    <div className="h-4 bg-zinc-200 rounded w-3/4" />
-                    <div className="h-3 bg-zinc-200 rounded w-1/2" />
+                  <div key={i} className="bg-primary rounded-2xl border border-secondary overflow-hidden shadow-sm">
+                    <div className="aspect-[4/3] bg-secondary" />
+                    <div className="p-4 space-y-3">
+                      <div className="h-4 bg-secondary rounded w-3/4" />
+                      <div className="h-3 bg-secondary rounded w-1/2" />
+                    </div>
                   </div>
                 ))}
               </div>
             ) : products.length === 0 ? (
-              <div className="text-center py-20 bg-zinc-50 border border-zinc-150 border-dashed rounded-3xl p-6">
-                <svg className="w-12 h-12 text-zinc-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h3 className="font-extrabold text-sm text-zinc-700">Không tìm thấy sản phẩm nào</h3>
-                <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
+              <div className="text-center py-20 bg-primary border border-secondary border-dashed rounded-2xl px-6">
+                <Search className="w-12 h-12 text-tertiary mx-auto mb-4" />
+                <h3 className="font-semibold text-base text-primary">Không tìm thấy sản phẩm nào</h3>
+                <p className="text-sm text-secondary mt-2 max-w-sm mx-auto">
                   Hãy thử thay đổi phạm vi khoảng giá, chọn danh mục khác, hoặc xóa bớt bộ lọc tìm kiếm.
                 </p>
+                <button 
+                  onClick={() => router.push("/explore")} 
+                  className="mt-6 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold transition-colors"
+                >
+                  Xóa tất cả bộ lọc
+                </button>
               </div>
             ) : (
               /* Cards Grid */
@@ -192,7 +216,7 @@ function ExploreContent() {
                   return (
                     <div
                       key={p.id}
-                      className="border border-zinc-150 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 group bg-white relative flex flex-col h-full"
+                      className="border border-secondary rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-brand-300 dark:hover:border-brand-700 transition-all duration-300 group bg-primary relative flex flex-col h-full"
                     >
                       {/* Heart Toggle Button */}
                       <button
@@ -201,53 +225,51 @@ function ExploreContent() {
                           e.stopPropagation();
                           toggleFavorite(p.id, p.name);
                         }}
-                        className={`absolute top-3 right-3 p-1.5 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer hover:scale-105 active:scale-95 ${
-                          favorited ? "bg-red-50/95 text-red-500" : "bg-white/80 text-zinc-500 hover:text-red-500"
+                        className={`absolute top-3 right-3 p-2 rounded-full shadow-sm transition-all duration-200 z-10 cursor-pointer ${
+                          favorited 
+                            ? "bg-red-50 text-red-500 dark:bg-red-500/20 dark:text-red-400" 
+                            : "bg-primary text-secondary hover:text-red-500"
                         }`}
                       >
-                        <svg className={`w-4 h-4 ${favorited ? "fill-current" : "fill-none stroke-current"}`} viewBox="0 0 24 24" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
+                        <Heart className={`w-4 h-4 ${favorited ? "fill-current" : ""}`} />
                       </button>
 
                       {/* Image Frame with Price Tag */}
-                      <Link href={`/products/${p.id}`} className="block aspect-[4/3] w-full overflow-hidden relative bg-zinc-100 shrink-0">
+                      <Link href={`/products/${p.id}`} className="block aspect-[4/3] w-full overflow-hidden relative bg-secondary shrink-0 flex items-center justify-center border-b border-secondary">
                         {p.primaryImageUrl ? (
                           <img
                             src={p.primaryImageUrl}
                             alt={p.name}
-                            className="w-full h-full object-cover group-hover:scale-[1.03] transition-all duration-300 select-none"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
+                          <Package className="w-12 h-12 text-tertiary" />
                         )}
-                        <span className="absolute bottom-3 left-3 bg-white/95 px-3 py-1 rounded-lg text-[10px] font-black text-zinc-800 shadow-sm">
-                          {p.pricePerDay.toLocaleString("vi-VN")}đ<span className="text-[9px] font-bold text-zinc-400 select-none">/ngày</span>
+                        <span className="absolute bottom-3 left-3 bg-primary/95 backdrop-blur-sm px-2.5 py-1 rounded text-xs font-bold text-primary shadow-sm">
+                          {p.pricePerDay.toLocaleString("vi-VN")}đ<span className="text-[10px] font-medium text-secondary">/ngày</span>
                         </span>
                       </Link>
 
                       {/* Info Details Section */}
-                      <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
-                        <div className="space-y-1">
-                          <h3 className="font-extrabold text-xs text-zinc-800 leading-snug truncate group-hover:text-violet-600 transition-colors">
+                      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <div className="space-y-1.5">
+                          <h3 className="font-semibold text-sm text-primary leading-snug line-clamp-2 group-hover:text-brand-600 transition-colors">
                             <Link href={`/products/${p.id}`}>{p.name}</Link>
                           </h3>
-                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-bold">
-                            <span className="text-amber-500 font-extrabold flex items-center gap-0.5">
-                              ★ {getSimulatedRating(p.id)}
+                          <div className="flex items-center gap-2 text-xs font-medium text-secondary">
+                            <span className="flex items-center gap-1 text-amber-500 font-semibold">
+                              <Star className="w-3.5 h-3.5 fill-current" />
+                              {getSimulatedRating(p.id)}
                             </span>
                             <span>•</span>
-                            <span>{p.categoryName}</span>
+                            <span className="truncate">{p.categoryName}</span>
                           </div>
                         </div>
 
                         {p.address && (
-                          <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-bold truncate">
-                            <svg className="w-3.5 h-3.5 text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span className="truncate">{p.address}</span>
+                          <div className="flex items-start gap-1.5 text-xs text-secondary font-medium pt-3 border-t border-secondary mt-auto">
+                            <MapPin className="w-3.5 h-3.5 text-tertiary shrink-0 mt-0.5" />
+                            <span className="line-clamp-1">{p.address}</span>
                           </div>
                         )}
                       </div>
@@ -260,33 +282,39 @@ function ExploreContent() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-6 border-t border-zinc-100">
+              <div className="flex items-center justify-center gap-2 pt-8">
                 <button
                   disabled={page === 0}
                   onClick={() => setPage(page - 1)}
-                  className="px-3.5 py-2 border border-zinc-200 rounded-xl text-xs font-extrabold text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  className="px-4 py-2 border border-secondary rounded-xl text-sm font-semibold text-secondary hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Trước
                 </button>
                 
-                {Array.from({ length: totalPages }).map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setPage(idx)}
-                    className={`w-9 h-9 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                      page === idx
-                        ? "bg-violet-600 text-white shadow-sm"
-                        : "border border-zinc-200 text-zinc-600 hover:bg-zinc-50"
-                    }`}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
+                <div className="hidden sm:flex gap-1">
+                  {Array.from({ length: totalPages }).map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setPage(idx)}
+                      className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center ${
+                        page === idx
+                          ? "bg-brand-600 text-white shadow-sm"
+                          : "border border-secondary text-secondary hover:bg-secondary"
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="sm:hidden text-sm font-semibold text-secondary px-4">
+                  {page + 1} / {totalPages}
+                </div>
 
                 <button
                   disabled={page === totalPages - 1}
                   onClick={() => setPage(page + 1)}
-                  className="px-3.5 py-2 border border-zinc-200 rounded-xl text-xs font-extrabold text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:hover:bg-transparent transition-all cursor-pointer"
+                  className="px-4 py-2 border border-secondary rounded-xl text-sm font-semibold text-secondary hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Sau
                 </button>
@@ -297,13 +325,45 @@ function ExploreContent() {
         </div>
 
       </div>
+
+      <LocationSelectorModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        initialLat={Number(queryLatitude) || undefined}
+        initialLng={Number(queryLongitude) || undefined}
+        initialRadius={Number(queryRadius) || undefined}
+        initialAddress={queryAddress}
+        onClear={() => {
+          setIsLocationModalOpen(false);
+          const params = new URLSearchParams(searchParams?.toString() || "");
+          params.delete("latitude");
+          params.delete("longitude");
+          params.delete("radius");
+          params.delete("address");
+          router.push(`/explore?${params.toString()}`);
+        }}
+        onApply={(lat, lng, radius, address) => {
+          setIsLocationModalOpen(false);
+          const params = new URLSearchParams(searchParams?.toString() || "");
+          params.set("latitude", lat.toString());
+          params.set("longitude", lng.toString());
+          params.set("radius", radius.toString());
+          // Cập nhật address nếu muốn hiển thị
+          if (address) params.set("address", address);
+          router.push(`/explore?${params.toString()}`);
+        }}
+      />
     </div>
   );
 }
 
 export default function ExplorePage() {
   return (
-    <Suspense fallback={<div>Đang tải trang khám phá...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen w-full flex items-center justify-center bg-secondary">
+        <Loader2 className="w-10 h-10 animate-spin text-brand-600" />
+      </div>
+    }>
       <ExploreContent />
     </Suspense>
   );

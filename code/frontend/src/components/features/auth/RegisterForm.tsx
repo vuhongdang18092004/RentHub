@@ -34,16 +34,7 @@ export default function RegisterForm() {
       setShowToast(true);
       
       setTimeout(() => {
-        const fallbackRes = (res as unknown) as Record<string, unknown>;
-        const nestedData = fallbackRes.data as Record<string, unknown> | undefined;
-        
-        const tokenValue = res.token || (nestedData?.token as string | undefined);
-
-        if (!tokenValue) {
-          console.error("Vẫn bị undefined! Cấu trúc object thực tế là:", res);
-        }
-
-        router.push(`/verify-email?token=${tokenValue || ""}`);
+        router.push(`/verify-email?email=${data.email}`);
       }, 1500);
     } catch (err) {
       const axiosError = err as AxiosError<{ message: string }>;

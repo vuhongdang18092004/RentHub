@@ -23,6 +23,8 @@ export interface ProductSummary {
 
 export interface ProductDetail extends ProductSummary {
   description: string;
+  averageRating: number;
+  reviewCount: number;
   depositAmount: number;
   address: string;
   latitude: number | null;

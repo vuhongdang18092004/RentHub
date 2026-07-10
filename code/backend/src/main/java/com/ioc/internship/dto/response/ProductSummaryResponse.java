@@ -22,6 +22,8 @@ public class ProductSummaryResponse {
     private String categoryName;
     private String ownerName;
     private String primaryImageUrl;
+    private BigDecimal averageRating;
+    private Integer reviewCount;
     private LocalDateTime createdAt;
 
     public static ProductSummaryResponse fromEntity(Product product) {
@@ -42,6 +44,8 @@ public class ProductSummaryResponse {
                 .categoryName(product.getCategory().getName())
                 .ownerName(product.getOwner().getFullName())
                 .primaryImageUrl(primaryImageUrl)
+                .averageRating(product.getAverageRating())
+                .reviewCount(product.getReviewCount())
                 .createdAt(product.getCreatedAt())
                 .build();
     }

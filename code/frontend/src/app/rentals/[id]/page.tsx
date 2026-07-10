@@ -28,6 +28,7 @@ export default function RentalDetailPage() {
   const [rental, setRental] = useState<RentalDetailResponse | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
+  const [refundAmount, setRefundAmount] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   const fetchRentalData = async () => {
@@ -46,6 +47,17 @@ export default function RentalDetailPage() {
         (r) => r.status === "PENDING" || r.status === "UNDER_REVIEW"
       );
       setIsLocked(hasUnresolvedReport);
+
+      // Find refund amount if status is REFUND_PENDING
+      if (rentalData.status === "REFUND_PENDING") {
+        const resolvedReport = rentalReports.find(r => r.status === "RESOLVED" && r.adminNote?.includes("REFUND_AMOUNT"));
+        if (resolvedReport && resolvedReport.adminNote) {
+          const match = resolvedReport.adminNote.match(/REFUND_AMOUNT=([0-9.]+)/);
+          if (match && match[1]) {
+            setRefundAmount(Number(match[1]));
+          }
+        }
+      }
 
       // Fetch Payments to determine if paid
       const paymentsData = await paymentService.getPaymentsByRental(rentalId, 0, 100);
@@ -123,6 +135,7 @@ export default function RentalDetailPage() {
                 isOwner={isOwner} 
                 isLocked={isLocked} 
                 isPaid={isPaid}
+                refundAmount={refundAmount}
                 onRefresh={fetchRentalData} 
               />
               

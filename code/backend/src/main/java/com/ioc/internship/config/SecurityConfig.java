@@ -40,16 +40,18 @@ public class SecurityConfig {
                                 "/api/v1/auth/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
+                                "/api/test-debug/**",
                                 "/v3/api-docs/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products/public", "/api/products/public/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products/*/blocked-dates").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/users/*/public", "/api/users/*/public/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/api/admin/users", "/api/admin/users/**", "/api/admin/products", "/api/admin/products/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/admin/users", "/api/admin/users/**", "/api/admin/products", "/api/admin/products/**", "/api/admin/ai", "/api/admin/ai/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/users/profile", "/api/users/profile/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         .requestMatchers("/api/favorites", "/api/favorites/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         .requestMatchers("/api/chat", "/api/chat/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers("/api/ai", "/api/ai/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         // Tất cả các API còn lại trong hệ thống bắt buộc phải ĐĂNG NHẬP
                         .anyRequest().authenticated()
                 )

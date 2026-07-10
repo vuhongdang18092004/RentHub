@@ -38,6 +38,8 @@ export interface UserSummaryResponse {
   id: number;
   email: string;
   fullName: string;
+  phone?: string;
+  avatarUrl?: string;
 }
 
 /**
@@ -118,6 +120,8 @@ export interface ProductSummaryResponse {
   primaryImageUrl?: string;
   categoryName: string;
   ownerName: string;
+  reviewCount: number;
+  averageRating: number;
 }
 
 /**
@@ -136,6 +140,8 @@ export interface ProductDetailResponse {
   category: CategoryResponse;
   owner: UserSummaryResponse;
   images: ProductImageResponse[];
+  reviewCount: number;
+  averageRating: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -154,15 +160,15 @@ export interface RentalRequestDetailResponse {
 }
 
 
-export type RentalStatus = 'WAITING_PAYMENT' | 'HANDOVER_PENDING' | 'ACTIVE' | 'RETURN_PENDING' | 'COMPLETED' | 'CANCELLED';
+export type RentalStatus = 'WAITING_PAYMENT' | 'HANDOVER_PENDING' | 'ACTIVE' | 'RETURN_PENDING' | 'REFUND_PENDING' | 'COMPLETED' | 'CANCELLED';
 
 export type PaymentType = 'DEPOSIT' | 'RENTAL_FEE' | 'REFUND_CANCEL' | 'REFUND_DEPOSIT';
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
-export type PaymentMethod = 'PAYOS' | 'VNPAY';
+export type PaymentMethod = 'VIETQR' | 'PAYOS' | 'VNPAY' | 'MOMO';
 
 export type ReportStatus = 'PENDING' | 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED';
 export type ReportReason = 'PRODUCT_NOT_AS_DESCRIBED' | 'DAMAGED_PRODUCT' | 'LATE_RETURN' | 'PAYMENT_DISPUTE' | 'NO_SHOW' | 'OTHER';
-export type ResolutionAction = 'NO_ACTION' | 'REFUND_FULL' | 'REFUND_PARTIAL' | 'PENALTY_FEE';
+export type ResolutionAction = 'NO_ACTION' | 'COMPLETE_RENTAL' | 'CANCEL_RENTAL' | 'REFUND_FULL' | 'REFUND_PARTIAL';
 
 export interface RentalLifecycleResponse {
   rentalId: number;
@@ -205,6 +211,39 @@ export interface ReportCreateRequest {
   evidenceImageUrl?: string;
 }
 
+export interface AdminDashboardStats {
+  totalUsers: number;
+  totalProducts: number;
+  totalRentals: number;
+  totalReports: number;
+}
+
+export interface ReviewRequest {
+  rentalId: number;
+  rating: number;
+  comment: string;
+}
+
+export interface ReviewResponse {
+  id: number;
+  rentalId: number;
+  productId: number;
+  reviewer: UserSummaryResponse;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface AdminReviewAnalyticsResponse {
+  totalReviews: number;
+  averageRating: number;
+  fiveStar: number;
+  fourStar: number;
+  threeStar: number;
+  twoStar: number;
+  oneStar: number;
+}
+
 export interface ReportResponse {
   id: number;
   reporterId: number;
@@ -235,4 +274,37 @@ export interface RentalDetailResponse {
   status: RentalStatus;
   createdAt: string;
   updatedAt: string;
+  reviewed: boolean;
+  canReview: boolean;
+}
+
+export interface ReportAdminResolveRequest {
+  status: ReportStatus;
+  resolutionAction: ResolutionAction;
+  adminNote?: string;
+  refundAmount?: number;
+}
+
+export interface ReportDetailAdminResponse {
+  id: number;
+  reason: ReportReason;
+  description: string;
+  status: ReportStatus;
+  evidenceImageUrl?: string;
+  adminNote?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+
+  reporter: UserSummaryResponse;
+  reportedUser: UserSummaryResponse;
+  product: ProductSummaryResponse;
+  rental: RentalDetailResponse;
+  
+  paymentHistory: PaymentResponse[];
+}
+
+export interface ReportAnalyticsResponse {
+  byStatus: Record<ReportStatus, number>;
+  byReason: Record<ReportReason, number>;
 }

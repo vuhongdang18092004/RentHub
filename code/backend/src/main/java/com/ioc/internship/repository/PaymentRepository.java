@@ -9,8 +9,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 @Repository
-public interface PaymentRepository extends JpaRepository<Payment, Long> {
+public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpecificationExecutor<Payment> {
     
     boolean existsByTransactionCode(String transactionCode);
     
@@ -22,4 +24,11 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     boolean existsByRentalAndPaymentTypeInAndStatus(@org.springframework.data.repository.query.Param("rental") Rental rental, @org.springframework.data.repository.query.Param("types") java.util.List<PaymentType> types, @org.springframework.data.repository.query.Param("status") PaymentStatus status);
 
     org.springframework.data.domain.Page<Payment> findByRental(Rental rental, org.springframework.data.domain.Pageable pageable);
+
+    java.util.List<Payment> findByRentalOrderByIdDesc(Rental rental);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'SUCCESS' AND p.paymentType != 'REFUND'")
+    java.math.BigDecimal calculateTotalRevenue();
+    @org.springframework.data.jpa.repository.Query("SELECT p.rental.renter.id, p.rental.renter.fullName, p.rental.renter.email, COUNT(p) FROM Payment p WHERE p.paymentType IN ('REFUND', 'REFUND_DEPOSIT', 'REFUND_CANCEL') GROUP BY p.rental.renter.id, p.rental.renter.fullName, p.rental.renter.email ORDER BY COUNT(p) DESC")
+    java.util.List<Object[]> findTopRefundedRenters(org.springframework.data.domain.Pageable pageable);
 }

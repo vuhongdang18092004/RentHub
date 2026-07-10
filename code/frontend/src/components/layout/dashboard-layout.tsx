@@ -5,6 +5,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Logo } from "../foundations/logo";
+import {
+  User,
+  Package,
+  ClipboardList,
+  HandCoins,
+  Bell,
+  Heart,
+  PlusCircle,
+  LayoutDashboard,
+  Users,
+  FolderTree,
+  CheckCircle,
+  AlertTriangle,
+  Star,
+  Zap,
+  Settings,
+  LogOut,
+  CreditCard,
+  FileText,
+  ScrollText,
+} from "lucide-react";
 
 export interface DashboardLayoutProps {
   children: ReactNode;
@@ -23,121 +44,149 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navLinkClass = (path: string, exact = true) => {
     const active = isActive(path, exact);
-    return `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+    return `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200 ${
       active
-        ? "bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300"
+        ? "bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300 shadow-sm"
         : "text-secondary hover:bg-tertiary hover:text-primary"
     }`;
   };
 
+  const sectionLabel = (text: string) => (
+    <div className="px-3 pt-5 pb-1.5">
+      <p className="text-[11px] font-semibold text-quaternary uppercase tracking-widest">{text}</p>
+    </div>
+  );
+
   return (
     <div className="min-h-screen w-full flex bg-secondary font-sans">
       
-      {/* Sidebar - fixed on desktop, hidden on mobile (collapsible template) */}
-      <aside className="w-64 border-r border-secondary bg-primary flex flex-col justify-between p-6 shrink-0 hidden md:flex">
-        <div className="space-y-8">
-          {/* Logo Brand – click to go home */}
-          <div className="px-2">
+      {/* Sidebar - fixed on desktop, hidden on mobile */}
+      <aside className="w-[264px] border-r border-secondary bg-primary flex flex-col justify-between py-6 shrink-0 hidden md:flex">
+        <div className="flex flex-col gap-1">
+          {/* Logo Brand */}
+          <div className="px-6 pb-6">
             <Link href="/">
               <Logo />
             </Link>
           </div>
 
-                  {/* Navigation Links */}
-          <nav className="space-y-1">
+          {/* Navigation Links */}
+          <nav className="px-3 flex flex-col gap-0.5">
+            {sectionLabel("Cá nhân")}
             <Link href="/profile" className={navLinkClass("/profile")}>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+              <User className="w-[18px] h-[18px]" />
               Hồ sơ cá nhân
             </Link>
 
             {role !== "ROLE_ADMIN" && (
               <>
+                {sectionLabel("Sản phẩm")}
                 <Link href="/products/my" className={navLinkClass("/products/my")}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
+                  <Package className="w-[18px] h-[18px]" />
                   Kho đồ của tôi
                 </Link>
-
-                <Link href="/rentals/renter" className={navLinkClass("/rentals/renter")}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
-                  Đơn thuê của tôi
+                <Link href="/products/create" className={navLinkClass("/products/create")}>
+                  <PlusCircle className="w-[18px] h-[18px]" />
+                  Đăng sản phẩm
                 </Link>
-
-                <Link href="/rentals/owner" className={navLinkClass("/rentals/owner")}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Yêu cầu thuê gửi đến
-                </Link>
-
                 <Link href="/products/favorites" className={navLinkClass("/products/favorites")}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
+                  <Heart className="w-[18px] h-[18px]" />
                   Sản phẩm yêu thích
                 </Link>
 
-                <Link href="/products/create" className={navLinkClass("/products/create")}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Đăng sản phẩm
+                {sectionLabel("Giao dịch")}
+                <Link href="/rentals/renter" className={navLinkClass("/rentals/renter")}>
+                  <ClipboardList className="w-[18px] h-[18px]" />
+                  Đơn thuê của tôi
+                </Link>
+                <Link href="/rentals/owner" className={navLinkClass("/rentals/owner")}>
+                  <HandCoins className="w-[18px] h-[18px]" />
+                  Yêu cầu thuê gửi đến
+                </Link>
+
+                {sectionLabel("Khác")}
+                <Link href="/notifications" className={navLinkClass("/notifications")}>
+                  <Bell className="w-[18px] h-[18px]" />
+                  Thông báo
                 </Link>
               </>
             )}
 
             {/* ADMIN Specific Links */}
             {role === "ROLE_ADMIN" && (
-              <div className="pt-4 mt-4 border-t border-secondary space-y-1">
-                <div className="px-4 py-2 text-xs font-bold text-quaternary uppercase tracking-wider">
-                  Admin Panel
-                </div>
+              <>
+                {sectionLabel("Quản trị")}
+                <Link href="/admin/dashboard" className={navLinkClass("/admin/dashboard")}>
+                  <LayoutDashboard className="w-[18px] h-[18px]" />
+                  Tổng quan
+                </Link>
                 <Link href="/admin/users" className={navLinkClass("/admin/users")}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
+                  <Users className="w-[18px] h-[18px]" />
                   Quản lý người dùng
                 </Link>
                 <Link href="/admin/categories" className={navLinkClass("/admin/categories")}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                  </svg>
+                  <FolderTree className="w-[18px] h-[18px]" />
                   Quản lý danh mục
                 </Link>
                 <Link href="/admin/products" className={navLinkClass("/admin/products")}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <CheckCircle className="w-[18px] h-[18px]" />
                   Duyệt sản phẩm
                 </Link>
-              </div>
+
+                {sectionLabel("Tài chính & Giao dịch")}
+                <Link href="/admin/payments" className={navLinkClass("/admin/payments")}>
+                  <CreditCard className="w-[18px] h-[18px]" />
+                  Quản lý thanh toán
+                </Link>
+                <Link href="/admin/rentals" className={navLinkClass("/admin/rentals")}>
+                  <FileText className="w-[18px] h-[18px]" />
+                  Quản lý đơn thuê
+                </Link>
+
+                {sectionLabel("Giám sát")}
+                <Link href="/admin/reports" className={navLinkClass("/admin/reports")}>
+                  <AlertTriangle className="w-[18px] h-[18px]" />
+                  Quản lý khiếu nại
+                </Link>
+                <Link href="/admin/reviews" className={navLinkClass("/admin/reviews")}>
+                  <Star className="w-[18px] h-[18px]" />
+                  Quản lý đánh giá
+                </Link>
+                <Link href="/admin/risk" className={navLinkClass("/admin/risk")}>
+                  <Zap className="w-[18px] h-[18px]" />
+                  Phân tích rủi ro
+                </Link>
+                <Link href="/admin/audit-logs" className={navLinkClass("/admin/audit-logs")}>
+                  <ScrollText className="w-[18px] h-[18px]" />
+                  Nhật ký hoạt động
+                </Link>
+
+                {sectionLabel("Hệ thống")}
+                <Link href="/admin/system" className={navLinkClass("/admin/system")}>
+                  <Settings className="w-[18px] h-[18px]" />
+                  Hệ thống & Cài đặt
+                </Link>
+              </>
             )}
           </nav>
         </div>
 
         {/* Sidebar Footer (User details + Logout) */}
-        <div className="pt-4 border-t border-secondary space-y-4">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold shrink-0">
+        <div className="px-3 pt-4 mt-2 border-t border-secondary">
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <div className="w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center text-brand-700 dark:text-brand-300 text-sm font-semibold shrink-0">
               {user?.fullName?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-primary truncate">{user?.fullName || "Thành viên"}</p>
-              <p className="text-xs text-secondary truncate">{user?.email || ""}</p>
+              <p className="text-sm font-medium text-primary truncate">{user?.fullName || "Thành viên"}</p>
+              <p className="text-xs text-tertiary truncate">{user?.email || ""}</p>
             </div>
           </div>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-zinc-800 hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-secondary hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 transition-all duration-200 cursor-pointer mt-1"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
+            <LogOut className="w-[18px] h-[18px]" />
             Đăng xuất
           </button>
         </div>
@@ -147,21 +196,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         {/* Mobile Header */}
-        <header className="md:hidden border-b border-secondary bg-primary px-6 py-4 flex items-center justify-between">
+        <header className="md:hidden border-b border-secondary bg-primary px-5 py-3.5 flex items-center justify-between">
           <Link href="/"><Logo /></Link>
-          <button
-            onClick={logout}
-            className="p-2 text-error-primary hover:bg-red-50 rounded-xl transition-all cursor-pointer"
-            aria-label="Đăng xuất"
-          >
-            <svg className="w-5.5 h-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href="/notifications" className="p-2 text-secondary hover:bg-tertiary rounded-lg transition-all duration-200">
+              <Bell className="w-5 h-5" />
+            </Link>
+            <button
+              onClick={logout}
+              className="p-2 text-error-primary hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-all duration-200 cursor-pointer"
+              aria-label="Đăng xuất"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
         {/* Dashboard Pages Mount */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <main className="flex-1 overflow-y-auto p-5 md:p-8">
           {children}
         </main>
       </div>

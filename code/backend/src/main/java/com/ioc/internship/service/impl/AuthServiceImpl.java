@@ -4,13 +4,21 @@ import com.ioc.internship.common.utils.JwtUtils;
 import com.ioc.internship.dto.response.AuthResponse;
 import com.ioc.internship.dto.request.LoginRequest;
 import com.ioc.internship.dto.request.RegisterRequest;
+import com.ioc.internship.dto.request.VerifyOtpRequest;
+import com.ioc.internship.dto.request.ResendOtpRequest;
+import com.ioc.internship.dto.request.ForgotPasswordRequest;
+import com.ioc.internship.dto.request.ResetPasswordRequest;
+import com.ioc.internship.dto.response.RegistrationStatusResponse;
 import com.ioc.internship.entity.UserEntity;
-import com.ioc.internship.entity.VerificationToken;
+import com.ioc.internship.entity.EmailOtp;
+import com.ioc.internship.entity.OtpPurpose;
+import com.ioc.internship.entity.OtpStatus;
 import com.ioc.internship.repository.UserRepository;
-import com.ioc.internship.repository.VerificationTokenRepository;
+import com.ioc.internship.repository.EmailOtpRepository;
 import com.ioc.internship.service.AuthService;
 import com.ioc.internship.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,9 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -31,13 +40,51 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
 
-    private final VerificationTokenRepository tokenRepository;
+    private final EmailOtpRepository emailOtpRepository;
     private final EmailService emailService;
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    private String generateOtp() {
+        return String.valueOf(100000 + secureRandom.nextInt(900000));
+    }
+
+    private void createAndSendOtp(String email, OtpPurpose purpose) {
+        // Rate limit checks (Resend OTP Protection)
+        LocalDateTime now = LocalDateTime.now();
+        int reqLastMinute = emailOtpRepository.countByEmailAndCreatedAtAfter(email, now.minusMinutes(1));
+        if (reqLastMinute >= 1) throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Vui lòng đợi 60 giây trước khi yêu cầu mã mới.");
+        
+        int reqLastHour = emailOtpRepository.countByEmailAndCreatedAtAfter(email, now.minusHours(1));
+        if (reqLastHour >= 5) throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Bạn đã vượt quá giới hạn 5 lần gửi mã trong 1 giờ.");
+
+        int reqLastDay = emailOtpRepository.countByEmailAndCreatedAtAfter(email, now.minusDays(1));
+        if (reqLastDay >= 20) throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Bạn đã vượt quá giới hạn 20 lần gửi mã trong 1 ngày.");
+
+        // Invalidate old ACTIVE OTPs
+        emailOtpRepository.findFirstByEmailAndPurposeAndStatusOrderByCreatedAtDesc(email, purpose, OtpStatus.ACTIVE)
+            .ifPresent(oldOtp -> {
+                oldOtp.setStatus(OtpStatus.INVALIDATED);
+                emailOtpRepository.save(oldOtp);
+            });
+
+        String rawOtp = generateOtp();
+        EmailOtp otpEntity = EmailOtp.builder()
+                .email(email)
+                .otpCode(passwordEncoder.encode(rawOtp))
+                .purpose(purpose)
+                .status(OtpStatus.ACTIVE)
+                .expiredAt(now.plusMinutes(5))
+                .build();
+        emailOtpRepository.save(otpEntity);
+
+        emailService.sendOtpEmail(email, rawOtp);
+        log.info("Audit: {}_OTP_SENT to {}", purpose, email);
+    }
 
     @Override
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        // 🌟 TỐI ƯU LOGIC CHẶN TRÙNG & DỌN RÁC
+    public void register(RegisterRequest request) {
+        log.info("Audit: REGISTER_REQUESTED for {}", request.getEmail());
         var existingUserOpt = userRepository.findByEmail(request.getEmail());
 
         if (existingUserOpt.isPresent()) {
@@ -45,35 +92,21 @@ public class AuthServiceImpl implements AuthService {
             if ("ACTIVE".equals(existingUser.getStatus())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email này đã được sử dụng trên hệ thống!");
             } else if ("PENDING".equals(existingUser.getStatus())) {
-                // Nếu tài khoản cũ đang PENDING, xóa sạch cả token lẫn user cũ để làm lại từ đầu
-                tokenRepository.deleteByUserId(existingUser.getId());
-                userRepository.delete(existingUser);
-                userRepository.flush(); // Ép xuống DB ngay lập tức trước khi lưu bản ghi mới
+                existingUser.setFullName(request.getFullName());
+                existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
+                userRepository.save(existingUser);
             }
+        } else {
+            UserEntity user = new UserEntity();
+            user.setEmail(request.getEmail());
+            user.setFullName(request.getFullName());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setRole("ROLE_USER");
+            user.setStatus("PENDING");
+            userRepository.save(user);
         }
 
-        UserEntity user = new UserEntity();
-        user.setEmail(request.getEmail());
-        user.setFullName(request.getFullName());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("ROLE_USER");
-        user.setStatus("PENDING");
-
-        UserEntity savedUser = userRepository.save(user);
-
-        // SINH MÃ TOKEN XÁC THỰC VÀ LƯU VÀO DATABASE
-        String tokenValue = UUID.randomUUID().toString();
-        VerificationToken verificationToken = new VerificationToken(tokenValue, savedUser.getId());
-        tokenRepository.save(verificationToken);
-
-        // BẮN MAIL QUA MAILDEV DOCKER
-        emailService.sendVerificationEmail(savedUser.getEmail(), tokenValue);
-
-        return AuthResponse.builder()
-                .token(tokenValue)
-                .email(savedUser.getEmail())
-                .fullName(savedUser.getFullName())
-                .build();
+        createAndSendOtp(request.getEmail(), OtpPurpose.REGISTER);
     }
 
     @Override
@@ -82,18 +115,14 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng!"));
 
         if (!user.isEnabled()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Tài khoản của bạn chưa được kích hoạt! Vui lòng kiểm tra hộp thư email.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Tài khoản của bạn chưa được kích hoạt. Vui lòng xác thực email.");
         }
 
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
         String jwtToken = jwtUtils.generateToken(user);
-
         return AuthResponse.builder()
                 .token(jwtToken)
                 .email(user.getEmail())
@@ -103,23 +132,132 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public boolean verifyUserToken(String token) {
-        VerificationToken verificationToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mã xác thực không hợp lệ hoặc đã bị chỉnh sửa!"));
+    public AuthResponse verifyRegisterOtp(VerifyOtpRequest request) {
+        UserEntity user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng!"));
 
-        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-            tokenRepository.delete(verificationToken);
-            throw new ResponseStatusException(HttpStatus.GONE, "Mã xác thực đã hết hạn! Vui lòng thực hiện đăng ký lại tài khoản.");
+        if (user.isEnabled()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tài khoản đã được kích hoạt trước đó.");
         }
 
-        UserEntity user = userRepository.findById(verificationToken.getUserId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng hợp lệ gắn liền với mã này!"));
+        EmailOtp otp = emailOtpRepository.findFirstByEmailAndPurposeAndStatusOrderByCreatedAtDesc(request.getEmail(), OtpPurpose.REGISTER, OtpStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không có mã xác thực nào đang hoạt động."));
+
+        if (LocalDateTime.now().isAfter(otp.getExpiredAt())) {
+            otp.setStatus(OtpStatus.EXPIRED);
+            emailOtpRepository.save(otp);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mã OTP đã hết hạn.");
+        }
+
+        if (!passwordEncoder.matches(request.getOtp(), otp.getOtpCode())) {
+            otp.setAttemptCount(otp.getAttemptCount() + 1);
+            if (otp.getAttemptCount() >= 5) {
+                otp.setStatus(OtpStatus.LOCKED);
+                emailOtpRepository.save(otp);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mã OTP đã bị khóa do nhập sai quá nhiều lần. Vui lòng gửi lại mã mới.");
+            }
+            emailOtpRepository.save(otp);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mã OTP không chính xác.");
+        }
+
+        otp.setStatus(OtpStatus.VERIFIED);
+        emailOtpRepository.save(otp);
 
         user.setStatus("ACTIVE");
         userRepository.save(user);
 
-        tokenRepository.delete(verificationToken);
+        log.info("Audit: REGISTER_VERIFIED for {}", request.getEmail());
+        log.info("Audit: AUTO_LOGIN_AFTER_REGISTER for {}", request.getEmail());
 
-        return true;
+        String jwtToken = jwtUtils.generateToken(user);
+        return AuthResponse.builder()
+                .token(jwtToken)
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void resendRegisterOtp(ResendOtpRequest request) {
+        UserEntity user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng!"));
+
+        if (user.isEnabled()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tài khoản đã được kích hoạt.");
+        }
+
+        log.info("Audit: REGISTER_OTP_RESENT for {}", request.getEmail());
+        createAndSendOtp(request.getEmail(), OtpPurpose.REGISTER);
+    }
+
+    @Override
+    public RegistrationStatusResponse getRegistrationStatus(String email) {
+        var userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return RegistrationStatusResponse.builder().registered(false).verified(false).canResendIn(0).build();
+        }
+
+        boolean verified = userOpt.get().isEnabled();
+        int canResendIn = 0;
+
+        var lastOtp = emailOtpRepository.findFirstByEmailAndPurposeAndStatusOrderByCreatedAtDesc(email, OtpPurpose.REGISTER, OtpStatus.ACTIVE);
+        if (lastOtp.isPresent()) {
+            LocalDateTime nextResend = lastOtp.get().getCreatedAt().plusMinutes(1);
+            if (LocalDateTime.now().isBefore(nextResend)) {
+                canResendIn = (int) java.time.Duration.between(LocalDateTime.now(), nextResend).getSeconds();
+            }
+        }
+
+        return RegistrationStatusResponse.builder()
+                .registered(true)
+                .verified(verified)
+                .canResendIn(Math.max(canResendIn, 0))
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản với email này!"));
+
+        log.info("Audit: FORGOT_PASSWORD_REQUESTED for {}", request.getEmail());
+        createAndSendOtp(request.getEmail(), OtpPurpose.FORGOT_PASSWORD);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        UserEntity user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng!"));
+
+        EmailOtp otp = emailOtpRepository.findFirstByEmailAndPurposeAndStatusOrderByCreatedAtDesc(request.getEmail(), OtpPurpose.FORGOT_PASSWORD, OtpStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không có mã xác thực nào đang hoạt động."));
+
+        if (LocalDateTime.now().isAfter(otp.getExpiredAt())) {
+            otp.setStatus(OtpStatus.EXPIRED);
+            emailOtpRepository.save(otp);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mã OTP đã hết hạn.");
+        }
+
+        if (!passwordEncoder.matches(request.getOtp(), otp.getOtpCode())) {
+            otp.setAttemptCount(otp.getAttemptCount() + 1);
+            if (otp.getAttemptCount() >= 5) {
+                otp.setStatus(OtpStatus.LOCKED);
+                emailOtpRepository.save(otp);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mã OTP đã bị khóa do nhập sai quá nhiều lần.");
+            }
+            emailOtpRepository.save(otp);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mã OTP không chính xác.");
+        }
+
+        otp.setStatus(OtpStatus.VERIFIED);
+        emailOtpRepository.save(otp);
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("Audit: PASSWORD_RESET_SUCCESS for {}", request.getEmail());
     }
 }

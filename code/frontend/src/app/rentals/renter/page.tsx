@@ -6,6 +6,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { rentalService, RentalRequestSummaryResponse, RequestStatus } from "@/services/rental-service";
 import { useToast } from "@/context/ToastContext";
+import { Loader2, Package, Inbox } from "lucide-react";
 
 export default function RenterRentalsPage() {
   const { triggerToast } = useToast();
@@ -39,7 +40,7 @@ export default function RenterRentalsPage() {
     if (!window.confirm("Bạn có chắc chắn muốn hủy yêu cầu đặt thuê này?")) return;
     try {
       await rentalService.cancelRentalRequest(id);
-      triggerToast("Đã hủy yêu cầu đặt thuê thành công! ❌");
+      triggerToast("Đã hủy yêu cầu đặt thuê thành công!");
       fetchRequests();
     } catch (err: any) {
       console.error("Lỗi hủy yêu cầu:", err);
@@ -47,52 +48,50 @@ export default function RenterRentalsPage() {
     }
   };
 
-
-
   const getStatusBadge = (status: RequestStatus, rentalStatus?: string) => {
     switch (status) {
       case "PENDING":
         return (
-          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-250 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-900 rounded-full">
             Chờ duyệt
           </span>
         );
       case "APPROVED":
         if (rentalStatus === "ACTIVE") {
           return (
-            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-violet-50 text-violet-750 border border-violet-250 rounded-full">
+            <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-400 border border-brand-200 dark:border-brand-900 rounded-full">
               Đang thuê
             </span>
           );
         }
         if (rentalStatus === "RETURN_PENDING") {
           return (
-            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-750 border border-blue-250 rounded-full animate-pulse">
+            <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400 border border-blue-200 dark:border-blue-900 rounded-full animate-pulse">
               Đang trả đồ
             </span>
           );
         }
         if (rentalStatus === "COMPLETED") {
           return (
-            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-250 rounded-full">
+            <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 rounded-full">
               Hoàn thành
             </span>
           );
         }
         return (
-          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-yellow-50 text-yellow-750 border border-yellow-250 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-full">
             Chờ thanh toán
           </span>
         );
       case "REJECTED":
         return (
-          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-red-50 text-red-700 border border-red-250 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400 border border-red-200 dark:border-red-900 rounded-full">
             Bị từ chối
           </span>
         );
       case "CANCELLED":
         return (
-          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-zinc-50 text-zinc-500 border border-zinc-250 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-secondary text-secondary border border-secondary rounded-full">
             Đã hủy
           </span>
         );
@@ -104,15 +103,15 @@ export default function RenterRentalsPage() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <div className="space-y-6 font-sans">
+        <div className="space-y-6 max-w-7xl mx-auto w-full">
           {/* Header */}
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-primary">Đơn thuê của tôi</h1>
-            <p className="text-sm text-secondary">Theo dõi trạng thái các mặt hàng bạn đã yêu cầu thuê</p>
+          <div>
+            <h1 className="text-2xl font-semibold text-primary">Đơn thuê của tôi</h1>
+            <p className="text-sm text-secondary mt-1">Theo dõi trạng thái các mặt hàng bạn đã yêu cầu thuê</p>
           </div>
 
           {/* Filter Bar */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide select-none">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {([
               { label: "Tất cả", value: "ALL" },
               { label: "Chờ duyệt", value: "PENDING" },
@@ -126,10 +125,10 @@ export default function RenterRentalsPage() {
                   setStatusFilter(opt.value);
                   setPage(0);
                 }}
-                className={`px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                   statusFilter === opt.value
-                    ? "bg-violet-600 border-violet-600 text-white shadow-sm"
-                    : "bg-white border-zinc-200 text-zinc-650 hover:bg-zinc-50"
+                    ? "bg-brand-600 text-white"
+                    : "bg-secondary text-primary hover:bg-tertiary"
                 }`}
               >
                 {opt.label}
@@ -139,65 +138,62 @@ export default function RenterRentalsPage() {
 
           {/* Requests Content */}
           {loading ? (
-            <div className="py-24 bg-primary border border-secondary rounded-[24px] flex flex-col items-center justify-center gap-4">
-              <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm text-secondary font-medium">Đang tải danh sách đơn thuê...</p>
+            <div className="py-20 bg-primary border border-secondary rounded-xl flex flex-col items-center justify-center gap-4 shadow-sm">
+              <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+              <p className="text-sm text-secondary">Đang tải danh sách đơn thuê...</p>
             </div>
           ) : requests.length === 0 ? (
-            <div className="py-24 bg-primary border border-secondary rounded-[24px] flex flex-col items-center justify-center gap-4 text-center px-6">
-              <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+            <div className="py-20 bg-primary border border-secondary rounded-xl flex flex-col items-center justify-center gap-4 text-center px-6 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-secondary">
+                <Inbox className="w-6 h-6" />
               </div>
-              <div className="space-y-1 max-w-sm">
-                <h3 className="text-base font-bold text-primary">Chưa có đơn thuê nào</h3>
-                <p className="text-xs text-secondary">Bạn chưa gửi yêu cầu thuê bất kỳ sản phẩm nào.</p>
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-primary">Chưa có đơn thuê nào</h3>
+                <p className="text-sm text-secondary">Bạn chưa gửi yêu cầu thuê bất kỳ sản phẩm nào.</p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Requests List */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {requests.map((req) => (
                   <div
                     key={req.id}
-                    className="bg-white border border-zinc-150 rounded-2xl p-4 shadow-sm hover:shadow transition-all space-y-4 flex flex-col justify-between"
+                    className="bg-primary border border-secondary rounded-xl p-5 shadow-sm hover:border-brand-300 transition-colors flex flex-col justify-between gap-4"
                   >
                     <div className="flex gap-4">
                       {/* Product Image */}
-                      <div className="w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-150">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-secondary shrink-0 border border-secondary flex items-center justify-center">
                         {req.productImage ? (
                           <img src={req.productImage} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <span className="w-full h-full flex items-center justify-center text-2xl bg-zinc-100">📦</span>
+                          <Package className="w-8 h-8 text-tertiary" />
                         )}
                       </div>
                       
                       {/* Product Details */}
-                      <div className="min-w-0 flex-1 space-y-1">
+                      <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex justify-between items-start gap-2">
-                          <h3 className="font-extrabold text-sm text-zinc-800 truncate leading-snug">
+                          <h3 className="font-semibold text-sm text-primary truncate">
                             {req.productName}
                           </h3>
-                          {getStatusBadge(req.status, req.rentalStatus)}
+                          <div className="shrink-0">{getStatusBadge(req.status, req.rentalStatus)}</div>
                         </div>
-                        <p className="text-[10px] text-zinc-400 font-bold uppercase">
-                          CHỦ ĐỒ: <span className="text-zinc-650 font-black">{req.owner?.fullName}</span>
-                        </p>
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-550 pt-1">
-                          <span>Từ {new Date(req.startDate).toLocaleDateString("vi-VN")}</span>
+                        <div className="text-xs text-secondary">
+                          Chủ đồ: <span className="text-primary font-medium">{req.owner?.fullName}</span>
+                        </div>
+                        <div className="text-xs text-secondary flex items-center gap-1.5 bg-secondary px-2.5 py-1 rounded w-fit">
+                          <span>{new Date(req.startDate).toLocaleDateString("vi-VN")}</span>
                           <span>→</span>
-                          <span>Đến {new Date(req.endDate).toLocaleDateString("vi-VN")}</span>
+                          <span>{new Date(req.endDate).toLocaleDateString("vi-VN")}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Price and Action Footer */}
-                    <div className="flex justify-between items-center border-t border-zinc-100 pt-3">
+                    <div className="flex justify-between items-center border-t border-secondary pt-4 mt-auto">
                       <div>
-                        <span className="text-[9px] text-zinc-400 font-extrabold uppercase tracking-wide">TỔNG CHI PHÍ</span>
-                        <p className="text-sm font-black text-violet-700">
+                        <span className="text-[10px] text-secondary font-semibold uppercase tracking-wider block mb-0.5">Tổng chi phí</span>
+                        <p className="text-sm font-bold text-brand-600">
                           {Number(req.requestedPrice).toLocaleString("vi-VN")}đ
                         </p>
                       </div>
@@ -205,7 +201,7 @@ export default function RenterRentalsPage() {
                       {req.status === "PENDING" && (
                         <button
                           onClick={() => handleCancelRequest(req.id)}
-                          className="px-3.5 py-2 border border-zinc-200 hover:border-red-200 hover:bg-red-50 text-zinc-600 hover:text-red-600 rounded-xl text-xs font-extrabold transition-all cursor-pointer"
+                          className="px-4 py-2 border border-secondary hover:border-red-200 hover:bg-red-50 hover:text-red-600 text-secondary rounded-lg text-sm font-medium transition-colors"
                         >
                           Hủy yêu cầu
                         </button>
@@ -214,9 +210,9 @@ export default function RenterRentalsPage() {
                       {req.status === "APPROVED" && req.rentalId && (
                         <button
                           onClick={() => router.push(`/rentals/${req.rentalId}`)}
-                          className="px-3.5 py-2 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-extrabold shadow-sm hover:shadow hover:scale-[1.01] transition-all cursor-pointer"
+                          className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors"
                         >
-                          Chi tiết thuê đồ
+                          Chi tiết
                         </button>
                       )}
                     </div>
@@ -226,21 +222,21 @@ export default function RenterRentalsPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-1.5 pt-4">
+                <div className="flex items-center justify-center gap-2 pt-6">
                   <button
                     disabled={page === 0}
                     onClick={() => setPage(page - 1)}
-                    className="px-3 py-1.5 border border-zinc-200 rounded-lg text-xs font-bold text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
+                    className="px-4 py-2 border border-secondary rounded-lg text-sm font-medium text-secondary hover:bg-secondary disabled:opacity-50 transition-colors"
                   >
                     Trước
                   </button>
-                  <span className="text-xs text-zinc-500 font-extrabold px-3">
+                  <span className="text-sm text-secondary font-medium px-2">
                     Trang {page + 1} / {totalPages}
                   </span>
                   <button
                     disabled={page === totalPages - 1}
                     onClick={() => setPage(page + 1)}
-                    className="px-3 py-1.5 border border-zinc-200 rounded-lg text-xs font-bold text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
+                    className="px-4 py-2 border border-secondary rounded-lg text-sm font-medium text-secondary hover:bg-secondary disabled:opacity-50 transition-colors"
                   >
                     Sau
                   </button>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CategoryResponse } from "@/types/backend";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Slider } from "@/components/base/slider/slider";
+import { ChevronDown } from "lucide-react";
 
 export interface ProductFilters {
   categoryIds: number[];
@@ -16,9 +17,10 @@ interface FilterSidebarProps {
   categories: CategoryResponse[];
   filters: ProductFilters;
   onChange: (filters: ProductFilters) => void;
+  onClearAll?: () => void;
 }
 
-export function FilterSidebar({ categories, filters, onChange }: FilterSidebarProps) {
+export function FilterSidebar({ categories, filters, onChange, onClearAll }: FilterSidebarProps) {
   // Accordion open/collapse states
   const [collapsed, setCollapsed] = useState({
     categories: false,
@@ -61,36 +63,34 @@ export function FilterSidebar({ categories, filters, onChange }: FilterSidebarPr
       minRating: undefined,
       sort: "newest",
     });
+    if (onClearAll) {
+      onClearAll();
+    }
   };
 
   return (
-    <div className="w-[280px] bg-white border border-zinc-150 rounded-3xl p-5 shadow-sm space-y-6 select-none shrink-0 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
+    <div className="w-[280px] bg-primary border border-secondary rounded-2xl p-6 shadow-sm space-y-6 select-none shrink-0 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
       
       {/* Categories Section */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         <button
           onClick={() => toggleSection("categories")}
-          className="w-full flex items-center justify-between font-black text-xs text-zinc-800 uppercase tracking-wider cursor-pointer"
+          className="w-full flex items-center justify-between font-bold text-sm text-primary uppercase tracking-wide cursor-pointer hover:text-brand-600 transition-colors"
         >
-          <span>Phân loại</span>
-          <svg
-            className={`w-4 h-4 text-zinc-500 transition-transform ${collapsed.categories ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-          </svg>
+          <span>Danh mục</span>
+          <ChevronDown
+            className={`w-4 h-4 text-tertiary transition-transform duration-300 ${collapsed.categories ? "rotate-180" : ""}`}
+          />
         </button>
 
         {!collapsed.categories && (
-          <div className="space-y-2.5 pt-1.5 transition-all">
+          <div className="space-y-3 pt-2">
             {/* All categories option */}
             <Checkbox
               isSelected={filters.categoryIds.length === 0}
               onChange={handleAllCategoriesChange}
             >
-              Tất cả các loại
+              Tất cả danh mục
             </Checkbox>
 
             {/* Individual categories */}
@@ -107,31 +107,26 @@ export function FilterSidebar({ categories, filters, onChange }: FilterSidebarPr
         )}
       </div>
 
-      <hr className="border-zinc-100" />
+      <hr className="border-secondary" />
 
       {/* Price Range Section */}
       <div className="space-y-4">
         <button
           onClick={() => toggleSection("price")}
-          className="w-full flex items-center justify-between font-black text-xs text-zinc-800 uppercase tracking-wider cursor-pointer"
+          className="w-full flex items-center justify-between font-bold text-sm text-primary uppercase tracking-wide cursor-pointer hover:text-brand-600 transition-colors"
         >
-          <span>Giá mỗi ngày</span>
-          <svg
-            className={`w-4 h-4 text-zinc-500 transition-transform ${collapsed.price ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-          </svg>
+          <span>Mức giá</span>
+          <ChevronDown
+            className={`w-4 h-4 text-tertiary transition-transform duration-300 ${collapsed.price ? "rotate-180" : ""}`}
+          />
         </button>
 
         {!collapsed.price && (
-          <div className="space-y-4 pt-1 transition-all">
+          <div className="space-y-5 pt-2">
             {/* Price values readout */}
-            <div className="flex justify-between items-center text-xs font-extrabold text-zinc-600 bg-zinc-50/50 border border-zinc-150 rounded-xl px-3 py-2">
+            <div className="flex justify-between items-center text-sm font-bold text-primary bg-secondary/50 rounded-xl px-4 py-2.5">
               <span>{formatPrice(filters.priceRange[0])}đ</span>
-              <span className="text-zinc-300 font-normal">—</span>
+              <span className="text-tertiary font-medium px-2">—</span>
               <span>{formatPrice(filters.priceRange[1])}đ</span>
             </div>
 
@@ -145,15 +140,15 @@ export function FilterSidebar({ categories, filters, onChange }: FilterSidebarPr
             />
 
             {/* Preset Buttons */}
-            <div className="flex flex-wrap gap-1.5 pt-1">
+            <div className="flex flex-wrap gap-2 pt-2">
               {presetPrices.map((preset) => (
                 <button
                   key={preset}
                   onClick={() => onChange({ ...filters, priceRange: [filters.priceRange[0], preset] })}
-                  className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
                     filters.priceRange[1] === preset
-                      ? "bg-violet-50 border-violet-200 text-violet-700 font-extrabold"
-                      : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-350"
+                      ? "bg-brand-50 border-brand-200 text-brand-700 dark:bg-brand-950/30 dark:border-brand-900 dark:text-brand-400"
+                      : "bg-primary border-secondary text-secondary hover:border-brand-200 hover:text-brand-600"
                   }`}
                 >
                   {formatPrice(preset)}
@@ -164,44 +159,42 @@ export function FilterSidebar({ categories, filters, onChange }: FilterSidebarPr
         )}
       </div>
 
-      <hr className="border-zinc-100" />
+      <hr className="border-secondary" />
 
       {/* Ratings Section */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         <button
           onClick={() => toggleSection("rating")}
-          className="w-full flex items-center justify-between font-black text-xs text-zinc-800 uppercase tracking-wider cursor-pointer"
+          className="w-full flex items-center justify-between font-bold text-sm text-primary uppercase tracking-wide cursor-pointer hover:text-brand-600 transition-colors"
         >
           <span>Đánh giá</span>
-          <svg
-            className={`w-4 h-4 text-zinc-500 transition-transform ${collapsed.rating ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown
+            className={`w-4 h-4 text-tertiary transition-transform duration-300 ${collapsed.rating ? "rotate-180" : ""}`}
+          />
         </button>
 
         {!collapsed.rating && (
-          <div className="space-y-2.5 pt-1.5 transition-all">
+          <div className="space-y-3 pt-2">
             {[
               { label: "Tùy ý", value: undefined },
-              { label: "3+ ★", value: 3 },
-              { label: "4+ ★", value: 4 },
-              { label: "4.5+ ★", value: 4.5 },
+              { label: "Từ 3 sao", value: 3 },
+              { label: "Từ 4 sao", value: 4 },
+              { label: "Từ 4.5 sao", value: 4.5 },
             ].map((opt, idx) => (
               <label
                 key={idx}
-                className="flex items-center gap-2.5 text-xs font-semibold text-zinc-700 cursor-pointer select-none"
+                className="flex items-center gap-3 text-sm font-medium text-secondary cursor-pointer select-none hover:text-primary transition-colors group"
               >
-                <input
-                  type="radio"
-                  name="rating"
-                  checked={filters.minRating === opt.value}
-                  onChange={() => onChange({ ...filters, minRating: opt.value })}
-                  className="w-4 h-4 text-violet-600 border-zinc-300 focus:ring-violet-500 cursor-pointer accent-violet-600"
-                />
+                <div className="relative flex items-center justify-center shrink-0">
+                  <input
+                    type="radio"
+                    name="rating"
+                    checked={filters.minRating === opt.value}
+                    onChange={() => onChange({ ...filters, minRating: opt.value })}
+                    className="peer appearance-none w-4 h-4 border border-secondary rounded-full checked:border-brand-600 transition-colors cursor-pointer"
+                  />
+                  <div className="w-2 h-2 rounded-full bg-brand-600 absolute opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                </div>
                 <span>{opt.label}</span>
               </label>
             ))}
@@ -212,9 +205,9 @@ export function FilterSidebar({ categories, filters, onChange }: FilterSidebarPr
       {/* Clear Filters Button */}
       <button
         onClick={handleClearFilters}
-        className="w-full py-2.5 bg-zinc-50 hover:bg-zinc-100/80 border border-zinc-200 text-zinc-600 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm hover:shadow active:scale-[0.99]"
+        className="w-full py-3 bg-secondary hover:bg-tertiary text-primary rounded-xl text-sm font-bold transition-all cursor-pointer shadow-sm active:scale-[0.98] mt-4"
       >
-        Xóa bộ lọc
+        Xóa tất cả bộ lọc
       </button>
 
     </div>

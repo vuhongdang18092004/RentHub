@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { chatService, ConversationSummaryResponse, MessageResponse, MessageType } from "@/services/chat-service";
 
@@ -39,34 +39,105 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     if (isLoading || !isAuthenticated || !user) return;
     try {
       const data = await chatService.getMyConversations();
-      setConversations(data || []);
+      if (data) {
+        const uniqueData = Array.from(new Map(data.map(c => [c.conversationId, c])).values());
+        setConversations(uniqueData);
+      } else {
+        setConversations([]);
+      }
     } catch (err) {
       console.error("Lỗi lấy hộp thoại chat:", err);
     }
   };
 
-  // Poll conversations and active messages while drawer is open
+  // WebSocket STOMP integration
+  const stompClientRef = useRef<any>(null);
+
   useEffect(() => {
     if (isLoading || !isAuthenticated || !user) return;
     refreshConversations();
 
-    // Set interval to poll conversations and active message list every 4 seconds
-    const interval = setInterval(() => {
-      if (isOpen) {
-        refreshConversations();
-        if (activeConversationId) {
-          // Silent fetch latest messages to keep chat updated
-          chatService.getMessages(activeConversationId, 0, 30).then((res) => {
-            // Sort ascending by ID or createdAt
-            const sorted = (res.content || []).reverse();
-            setMessages(sorted);
-          }).catch(console.error);
-        }
-      }
-    }, 4000);
+    const connectStomp = async () => {
+      const { Client } = await import('@stomp/stompjs');
+      const SockJS = (await import('sockjs-client')).default;
+      
+      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      
+      const wsUrl = "http://localhost:8080/ws";
+      
+      const client = new Client({
+        webSocketFactory: () => new SockJS(wsUrl),
+        connectHeaders: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        debug: (str) => console.log('STOMP: ' + str),
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+      });
 
-    return () => clearInterval(interval);
-  }, [user, isLoading, isAuthenticated, isOpen, activeConversationId]);
+      client.onConnect = () => {
+        console.log("Connected to Chat WebSocket");
+      };
+
+      client.onStompError = (frame) => {
+        console.error('Broker reported error: ' + frame.headers['message']);
+        console.error('Additional details: ' + frame.body);
+      };
+
+      client.activate();
+      stompClientRef.current = client;
+    };
+
+    connectStomp();
+
+    return () => {
+      if (stompClientRef.current) {
+        stompClientRef.current.deactivate();
+      }
+    };
+  }, [user, isLoading, isAuthenticated]);
+
+  // Subscribe to active conversations dynamically
+  const subscriptionsRef = useRef<{ [key: number]: any }>({});
+  const activeConversationIdRef = useRef(activeConversationId);
+
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
+
+  useEffect(() => {
+    const client = stompClientRef.current;
+    if (!client || !client.connected || conversations.length === 0) return;
+
+    // Remove old subscriptions
+    Object.values(subscriptionsRef.current).forEach(sub => sub.unsubscribe());
+    subscriptionsRef.current = {};
+
+    // Subscribe to all conversations the user is part of
+    conversations.forEach(conv => {
+      subscriptionsRef.current[conv.conversationId] = client.subscribe(
+        `/topic/chat/${conv.conversationId}`,
+        (message: any) => {
+          const newMsg = JSON.parse(message.body);
+          
+          if (activeConversationIdRef.current === conv.conversationId) {
+            setMessages(prev => {
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
+            chatService.markAsRead(conv.conversationId);
+          }
+          refreshConversations();
+        }
+      );
+    });
+
+    return () => {
+      Object.values(subscriptionsRef.current).forEach(sub => sub.unsubscribe());
+      subscriptionsRef.current = {};
+    };
+  }, [conversations.map(c => c.conversationId).join(','), stompClientRef.current?.connected]);
 
   const selectConversation = async (id: number) => {
     setActiveConversationId(id);
@@ -148,7 +219,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         messageType: type,
         referencedProductId,
       });
-      setMessages(prev => [...prev, msg]);
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
       await refreshConversations();
     } catch (err) {
       console.error("Lỗi gửi tin nhắn:", err);

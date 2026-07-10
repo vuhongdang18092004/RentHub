@@ -6,8 +6,7 @@ import { ToastProvider } from "@/context/ToastContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { WishlistProvider } from "@/context/wishlist-context";
 import { ChatProvider } from "@/context/chat-context";
-import { ChatDrawer } from "@/components/features/chat/chat-drawer";
-import { AiChatbotBubble } from "@/components/features/ai-chatbot/ai-chatbot-bubble";
+import { GlobalChatWidget } from "@/components/features/chat/global-chat-widget";
 import "@/styles/globals.css";
 import { cx } from "@/utils/cx";
  
@@ -40,8 +39,7 @@ export const viewport: Viewport = {
                                   <WishlistProvider>
                                       <ChatProvider>
                                           {children}
-                                          <ChatDrawer />
-                                          <AiChatbotBubble />
+                                          <GlobalChatWidget />
                                       </ChatProvider>
                                   </WishlistProvider>
                               </ToastProvider>

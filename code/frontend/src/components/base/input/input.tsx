@@ -1,33 +1,24 @@
 "use client";
 
 import { ReactNode, useState, forwardRef } from "react";
-import { TextField as AriaTextField, Input as AriaInput, Label as AriaLabel, Text as AriaText, Group as AriaGroup } from "react-aria-components";
 import { cx } from "@/utils/cx";
 import { isReactComponent } from "@/utils/is-react-component";
-import { Eye, EyeOff } from "@untitledui/icons";
+import { Eye, EyeOff } from "lucide-react";
 
 export type InputSize = "sm" | "md" | "lg";
 export type InputType = "text" | "email" | "password" | "search" | "tel" | "url" | "number";
 
-export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size" | "onChange"> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
   label?: string;
-  placeholder?: string;
   icon?: React.ComponentType<{ className?: string }> | ReactNode;
   hint?: string;
   size?: InputSize;
   type?: InputType;
   isRequired?: boolean;
   isInvalid?: boolean;
-  isDisabled?: boolean;
-  value?: string;
-  onChange?: React.ChangeEventHandler<HTMLInputElement>;
-  name?: string;
-  className?: string;
-  autoComplete?: string;
   error?: string;
 }
 
-// Wrapping with forwardRef for react-hook-form integration
 export const Input = forwardRef<HTMLInputElement, InputProps>(({
   label,
   placeholder,
@@ -38,11 +29,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   isRequired = false,
   isInvalid = false,
   isDisabled = false,
-  value,
-  onChange,
-  name,
   className = "",
-  autoComplete,
   error,
   ...otherProps
 }, ref) => {
@@ -51,10 +38,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   const actualType = isPassword ? (showPassword ? "text" : "password") : type;
 
   const sizeStyles = {
-    sm: "px-3 py-1.5 text-xs rounded-lg min-h-8",
-    md: "px-4 py-2.5 text-sm rounded-xl min-h-10",
-    lg: "px-4.5 py-3 text-md rounded-xl min-h-12",
+    sm: "px-3 py-1.5 text-xs rounded-lg min-h-[32px]",
+    md: "px-4 py-2.5 text-sm rounded-xl min-h-[40px]",
+    lg: "px-4.5 py-3 text-base rounded-xl min-h-[48px]",
   };
+
+  const hasError = isInvalid || !!error;
 
   const renderIcon = (inputIcon: ReactNode | React.ComponentType<{ className?: string }>) => {
     if (!inputIcon) return null;
@@ -66,51 +55,45 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   };
 
   return (
-    <AriaTextField
-      isRequired={isRequired}
-      isInvalid={isInvalid || !!error}
-      isDisabled={isDisabled}
-      className={cx("flex flex-col w-full gap-1.5", className)}
-    >
+    <div className={cx("flex flex-col w-full gap-1.5", className)}>
       {/* Label */}
       {label && (
-        <AriaLabel className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label className="block text-sm font-semibold text-zinc-800 dark:text-zinc-200">
           {label}
-          {isRequired && <span className="text-red-500 ml-0.5">*</span>}
-        </AriaLabel>
+          {isRequired && <span className="text-red-500 ml-1">*</span>}
+        </label>
       )}
 
       {/* Input Group Container */}
-      <AriaGroup
+      <div
         className={cx(
-          "relative flex items-center w-full bg-white dark:bg-zinc-900 border rounded-xl transition-all duration-200 focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500",
-          (isInvalid || !!error)
+          "relative flex items-center w-full bg-white dark:bg-zinc-900 border transition-all duration-200 focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 overflow-hidden",
+          hasError
             ? "border-red-500 focus-within:ring-red-500 focus-within:border-red-500"
-            : "border-zinc-300 dark:border-zinc-700 focus-within:ring-brand-500"
+            : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600",
+          sizeStyles[size].includes("rounded-lg") ? "rounded-lg" : "rounded-xl",
+          isDisabled && "opacity-60 bg-zinc-50 dark:bg-zinc-950 cursor-not-allowed"
         )}
       >
         {/* Leading Icon */}
         {icon && (
-          <div className="pl-3.5 flex items-center justify-center select-none pointer-events-none">
+          <div className="pl-3.5 flex items-center justify-center select-none pointer-events-none shrink-0">
             {renderIcon(icon)}
           </div>
         )}
 
         {/* The actual HTML Input field */}
-        <AriaInput
+        <input
           ref={ref}
           placeholder={placeholder}
           type={actualType}
-          autoComplete={autoComplete}
-          onChange={onChange as any}
-          value={value}
-          name={name}
+          disabled={isDisabled}
           className={cx(
-            "w-full bg-transparent border-none outline-none text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-0",
+            "w-full bg-transparent border-none outline-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-0",
             sizeStyles[size],
             icon && "pl-2"
           )}
-          {...(otherProps as any)}
+          {...otherProps}
         />
 
         {/* Password Eye Toggle Icon */}
@@ -118,7 +101,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="pr-3.5 flex items-center justify-center text-zinc-400 hover:text-zinc-600 focus:outline-none select-none cursor-pointer"
+            className="pr-3.5 flex items-center justify-center text-zinc-400 hover:text-zinc-600 focus:outline-none select-none cursor-pointer shrink-0"
           >
             {showPassword ? (
               <EyeOff className="w-5 h-5" />
@@ -127,23 +110,23 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
             )}
           </button>
         )}
-      </AriaGroup>
+      </div>
 
       {/* Hint & Error Text */}
       {(error || hint) && (
-        <div className="h-5">
+        <div className="h-4">
           {error ? (
-            <AriaText slot="errorMessage" className="text-xs text-red-500 font-medium">
+            <p className="text-xs text-red-500 font-medium">
               {error}
-            </AriaText>
+            </p>
           ) : (
-            <AriaText slot="description" className="text-xs text-zinc-400 dark:text-zinc-500">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               {hint}
-            </AriaText>
+            </p>
           )}
         </div>
       )}
-    </AriaTextField>
+    </div>
   );
 });
 

@@ -7,7 +7,9 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 
-public interface RentalRepository extends JpaRepository<Rental, Long> {
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecificationExecutor<Rental> {
 
     @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END " +
            "FROM Rental r " +
@@ -27,4 +29,9 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     @Query("SELECT r FROM Rental r WHERE r.request.id = :requestId")
     java.util.Optional<Rental> findByRequestId(@Param("requestId") Long requestId);
+
+    long countByStatus(com.ioc.internship.entity.RentalStatus status);
+
+    @Query("SELECT r.owner.id, r.owner.fullName, COUNT(r) FROM Rental r WHERE r.status = 'CANCELLED' GROUP BY r.owner.id, r.owner.fullName ORDER BY COUNT(r) DESC")
+    java.util.List<Object[]> findTopCancelledOwners(org.springframework.data.domain.Pageable pageable);
 }

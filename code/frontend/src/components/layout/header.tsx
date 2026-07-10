@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useChat } from "@/context/chat-context";
 import { Logo } from "../foundations/logo";
+import { NotificationBell } from "./NotificationBell";
 
 export function Header() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -35,22 +36,8 @@ export function Header() {
         </Link>
 
         {/* Center: Pill Search Bar Form */}
-        <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center bg-white border border-zinc-200 rounded-full py-1.5 pl-6 pr-2 shadow-sm hover:shadow-md transition-all divide-x divide-zinc-200 gap-3 max-w-[520px] w-full">
-          <div className="flex-1 flex flex-col text-left">
-            <span className="text-[10px] font-semibold text-zinc-400 tracking-wide">Vị trí hiện tại</span>
-            <input
-              type="text"
-              placeholder="Nhập địa điểm..."
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="text-xs font-semibold text-zinc-800 bg-transparent border-none outline-none placeholder-zinc-400 p-0 w-full"
-            />
-          </div>
-          <div className="flex-1 pl-4 flex flex-col text-left font-sans select-none">
-            <span className="text-[10px] font-semibold text-zinc-400 tracking-wide">Thời gian</span>
-            <span className="text-xs font-semibold text-zinc-800 truncate">Bất kỳ lúc nào</span>
-          </div>
-          <div className="flex-1 pl-4 flex items-center justify-between gap-2">
+        <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center bg-white border border-zinc-200 rounded-full py-1.5 pl-6 pr-2 shadow-sm hover:shadow-md transition-all gap-3 max-w-[320px] w-full">
+          <div className="flex-1 flex items-center justify-between gap-2">
             <div className="flex flex-col text-left">
               <span className="text-[10px] font-semibold text-zinc-400 tracking-wide">Từ khóa</span>
               <input
@@ -72,30 +59,16 @@ export function Header() {
 
         {/* Right Menu Actions */}
         <div className="flex items-center gap-6 shrink-0">
-          <Link href="/" className="text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition-colors">
+          <Link href="/explore" className="text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition-colors">
             Khám phá
           </Link>
           <Link href="/products/create" className="text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition-colors">
             Cho thuê
           </Link>
+          
+          {/* Notification Bell */}
+          {isAuthenticated && <NotificationBell />}
 
-          {/* Chat icon — messaging with badge */}
-          {isAuthenticated && (
-            <button
-              onClick={() => openChat()}
-              className="relative p-2 hover:bg-zinc-50 rounded-xl text-zinc-600 hover:text-zinc-900 transition-all cursor-pointer"
-              title="Tin nhắn"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              {unreadTotal > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none animate-pulse">
-                  {unreadTotal > 99 ? "99+" : unreadTotal}
-                </span>
-              )}
-            </button>
-          )}
           {/* User Account Action */}
           {isAuthenticated ? (
             <div className="relative">

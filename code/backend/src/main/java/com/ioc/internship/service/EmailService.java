@@ -1,28 +1,39 @@
 package com.ioc.internship.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    public void sendVerificationEmail(String toEmail, String token) {
-        // Đường dẫn này trỏ thẳng về trang verify bên Next.js
-        String verificationUrl = "http://localhost:3000/verify-email?token=" + token;
+    @Value("${spring.mail.username:}")
+    private String mailFrom;
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(toEmail);
-        message.setSubject("[RentHub] Kích hoạt tài khoản của bạn");
-        message.setText("Chào mừng bạn đã đăng ký thành viên trên RentHub!\n\n"
-                + "Vui lòng click vào đường link dưới đây để xác thực tài khoản:\n"
-                + verificationUrl + "\n\n"
-                + "Lưu ý: Đường link này chỉ có hiệu lực trong vòng 15 phút.");
+    public void sendOtpEmail(String toEmail, String otpCode) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            if (mailFrom != null && !mailFrom.isEmpty()) {
+                message.setFrom(mailFrom);
+            }
+            message.setTo(toEmail);
+            message.setSubject("[RentHub] Mã xác thực OTP của bạn");
+            message.setText("Chào mừng bạn đến với RentHub!\n\n"
+                    + "Mã xác thực OTP của bạn là: " + otpCode + "\n\n"
+                    + "Lưu ý: Mã này chỉ có hiệu lực trong vòng 5 phút và tuyệt đối không chia sẻ cho người khác.");
 
-        mailSender.send(message);
+            mailSender.send(message);
+            log.info("Đã gửi email OTP thành công tới: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Lỗi khi gửi email OTP tới: {}: {}", toEmail, e.getMessage());
+            throw new RuntimeException("Không thể gửi email xác thực. Vui lòng thử lại sau.");
+        }
     }
 }

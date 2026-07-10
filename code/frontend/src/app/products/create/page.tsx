@@ -14,6 +14,7 @@ import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
 import { LocationMapPreview } from "@/components/location/location-map-preview";
+import { AlertTriangle, Loader2, ImagePlus, Star, Trash2, Link } from "lucide-react";
 
 interface CategoryOption {
   id: number;
@@ -76,7 +77,7 @@ export default function CreateProductPage() {
       }
     };
     fetchCategories();
-  }, []);
+  }, [triggerToast]);
 
   // Helper to upload images to Cloudinary with browser-side signature computation
   const uploadToCloudinary = async (file: File): Promise<string> => {
@@ -146,7 +147,7 @@ export default function CreateProductPage() {
         });
         return updated;
       });
-      triggerToast(`Đã tải lên thành công ${newUrls.length} ảnh! 📸`);
+      triggerToast(`Đã tải lên thành công ${newUrls.length} ảnh!`);
     }
     setUploading(false);
   };
@@ -158,7 +159,7 @@ export default function CreateProductPage() {
       return [...prev, { imageUrl: imageUrlInput.trim(), isPrimary }];
     });
     setImageUrlInput("");
-    triggerToast("Đã thêm ảnh từ URL thành công! 📸");
+    triggerToast("Đã thêm ảnh từ URL thành công!");
   };
 
   const setPrimaryImage = (index: number) => {
@@ -224,13 +225,13 @@ export default function CreateProductPage() {
           </div>
 
           {!hasBankInfo && (
-            <div className="p-4 rounded-3xl bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-start gap-3 shadow-sm">
-              <span className="text-lg">⚠️</span>
+            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-500 text-sm flex items-start gap-3 shadow-sm">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
               <div className="flex-1">
                 <p className="font-bold">Bạn chưa cập nhật tài khoản ngân hàng nhận tiền!</p>
-                <p className="text-xs text-amber-700 mt-1">
+                <p className="text-xs mt-1">
                   Để duyệt yêu cầu thuê của khách hàng, vui lòng{" "}
-                  <a href="/profile" className="font-semibold underline text-amber-900 hover:text-amber-950">
+                  <a href="/profile" className="font-semibold underline hover:text-amber-900 dark:hover:text-amber-400">
                     cập nhật tài khoản ngân hàng nhận tiền tại đây
                   </a>.
                 </p>
@@ -238,14 +239,14 @@ export default function CreateProductPage() {
             </div>
           )}
 
-          <div className="bg-primary p-8 rounded-[24px] shadow-lg border border-secondary">
+          <div className="bg-primary p-6 md:p-8 rounded-2xl shadow-sm border border-secondary">
             {loadingCategories ? (
               <div className="py-12 flex flex-col items-center justify-center gap-4">
-                <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
                 <p className="text-sm text-secondary font-medium">Đang tải danh mục...</p>
               </div>
             ) : (
-              <Form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <Form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 
                 {/* Product Name */}
                 <Input
@@ -259,12 +260,12 @@ export default function CreateProductPage() {
 
                 {/* Category Selection */}
                 <div className="space-y-1.5 font-sans">
-                  <label className="text-xs font-semibold text-secondary flex items-center gap-1">
-                    Danh mục <span className="text-error-primary">*</span>
+                  <label className="text-sm font-semibold text-primary flex items-center gap-1">
+                    Danh mục <span className="text-red-500">*</span>
                   </label>
                   <select
                     {...register("categoryId", { required: "Danh mục là bắt buộc" })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-secondary bg-primary text-sm font-medium focus:outline-none focus:border-brand-500 transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border border-secondary bg-primary text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors cursor-pointer"
                   >
                     <option value="">-- Chọn danh mục --</option>
                     {categories.map((c) => (
@@ -274,40 +275,45 @@ export default function CreateProductPage() {
                     ))}
                   </select>
                   {errors.categoryId && (
-                    <span className="text-xs font-semibold text-error-primary block mt-1">
+                     <p className="text-xs text-red-500 font-medium mt-1">
                       {errors.categoryId.message}
-                    </span>
+                    </p>
                   )}
                 </div>
 
-                {/* Price per Day */}
-                <Input
-                  {...register("pricePerDay", {
-                    required: "Giá thuê là bắt buộc",
-                    min: { value: 1, message: "Giá thuê phải lớn hơn 0" },
-                  })}
-                  label="Giá thuê / ngày (đ)"
-                  placeholder="Ví dụ: 120000"
-                  type="number"
-                  isRequired
-                  error={errors.pricePerDay?.message}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Price per Day */}
+                  <Input
+                    {...register("pricePerDay", {
+                      required: "Giá thuê là bắt buộc",
+                      min: { value: 1, message: "Giá thuê phải lớn hơn 0" },
+                    })}
+                    label="Giá thuê / ngày (đ)"
+                    placeholder="Ví dụ: 120000"
+                    type="number"
+                    isRequired
+                    error={errors.pricePerDay?.message}
+                  />
 
-                {/* Deposit Amount */}
-                <Input
-                  {...register("depositAmount", {
-                    required: "Tiền cọc là bắt buộc",
-                    min: { value: 0, message: "Tiền cọc phải lớn hơn hoặc bằng 0" },
-                  })}
-                  label="Tiền đặt cọc (đ)"
-                  placeholder="Ví dụ: 500000 (điền 0 nếu không cần cọc)"
-                  type="number"
-                  isRequired
-                  error={errors.depositAmount?.message}
-                />
+                  {/* Deposit Amount */}
+                  <Input
+                    {...register("depositAmount", {
+                      required: "Tiền cọc là bắt buộc",
+                      min: { value: 0, message: "Tiền cọc phải lớn hơn hoặc bằng 0" },
+                    })}
+                    label="Tiền đặt cọc (đ)"
+                    placeholder="Ví dụ: 500000 (điền 0 nếu không cần cọc)"
+                    type="number"
+                    isRequired
+                    error={errors.depositAmount?.message}
+                  />
+                </div>
 
                 {/* Address */}
-                <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-primary flex items-center gap-1">
+                    Địa chỉ giao nhận <span className="text-red-500">*</span>
+                  </label>
                   <input type="hidden" {...register("address", { required: "Địa chỉ là bắt buộc" })} />
                   <input type="hidden" {...register("latitude")} />
                   <input type="hidden" {...register("longitude")} />
@@ -323,13 +329,13 @@ export default function CreateProductPage() {
                   />
                   
                   {errors.address && (
-                    <p className="text-xs text-red-500 font-semibold mt-1">
-                      ⚠️ {errors.address.message}
+                    <p className="text-xs text-red-500 font-medium mt-1">
+                      {errors.address.message}
                     </p>
                   )}
 
                   {watch("latitude") && watch("longitude") && (
-                    <div className="mt-4">
+                    <div className="mt-4 rounded-xl overflow-hidden border border-secondary shadow-sm">
                       <LocationMapPreview 
                         latitude={watch("latitude")!} 
                         longitude={watch("longitude")!} 
@@ -340,40 +346,40 @@ export default function CreateProductPage() {
 
                 {/* Cloudinary Multiple Image Uploader */}
                 <div className="space-y-3 font-sans">
-                  <label className="text-xs font-semibold text-secondary">
+                  <label className="text-sm font-semibold text-primary flex items-center gap-1">
                     Hình ảnh sản phẩm <span className="text-red-500">*</span>
                   </label>
                   
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {/* Existing uploaded images */}
                     {uploadedImages.map((img, idx) => (
-                      <div key={idx} className="aspect-[4/3] rounded-xl overflow-hidden border border-zinc-200 bg-zinc-50 relative group">
+                      <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-secondary bg-secondary relative group shadow-sm">
                         <img src={img.imageUrl} alt="" className="w-full h-full object-cover" />
                         
                         {/* Control overlay on hover */}
-                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]">
                           <button
                             type="button"
                             onClick={() => setPrimaryImage(idx)}
-                            className={`p-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                            className={`p-2 rounded-full transition-colors cursor-pointer ${
                               img.isPrimary ? "bg-amber-500 text-white" : "bg-white text-zinc-700 hover:bg-zinc-100"
                             }`}
                             title={img.isPrimary ? "Ảnh chính" : "Đặt làm ảnh chính"}
                           >
-                            ⭐
+                            <Star className={`w-4 h-4 ${img.isPrimary ? "fill-current" : ""}`} />
                           </button>
                           <button
                             type="button"
                             onClick={() => removeImage(idx)}
-                            className="p-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors cursor-pointer"
+                            className="p-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors cursor-pointer"
                             title="Xóa ảnh"
                           >
-                            🗑
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
 
                         {img.isPrimary && (
-                          <span className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500 text-white text-[9px] font-black rounded-md shadow-sm uppercase tracking-wider">
+                          <span className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-[10px] font-bold rounded shadow-sm uppercase tracking-wider">
                             Ảnh chính
                           </span>
                         )}
@@ -381,7 +387,7 @@ export default function CreateProductPage() {
                     ))}
 
                     {/* Upload box */}
-                    <label className="aspect-[4/3] rounded-xl border-2 border-dashed border-zinc-300 hover:border-violet-500 bg-zinc-50 hover:bg-violet-50/20 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all duration-200 group relative">
+                    <label className="aspect-square rounded-xl border-2 border-dashed border-secondary hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/20 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200 group relative shadow-sm">
                       <input
                         type="file"
                         multiple
@@ -392,63 +398,67 @@ export default function CreateProductPage() {
                       />
                       {uploading ? (
                         <>
-                          <div className="w-6 h-6 border-2 border-violet-600 border-t-transparent rounded-full animate-spin"></div>
-                          <span className="text-[10px] font-semibold text-violet-600 animate-pulse">Đang tải...</span>
+                          <Loader2 className="w-6 h-6 animate-spin text-brand-600" />
+                          <span className="text-xs font-semibold text-brand-600">Đang tải...</span>
                         </>
                       ) : (
                         <>
-                          <span className="text-xl group-hover:scale-110 transition-transform">➕</span>
-                          <span className="text-[10px] font-bold text-zinc-500 group-hover:text-violet-600">Thêm ảnh</span>
-                          <span className="text-[8px] text-zinc-400">Tải lên Cloudinary</span>
+                          <div className="p-3 rounded-full bg-secondary text-tertiary group-hover:bg-brand-100 dark:group-hover:bg-brand-900 group-hover:text-brand-600 transition-colors">
+                            <ImagePlus className="w-6 h-6" />
+                          </div>
+                          <span className="text-xs font-semibold text-secondary group-hover:text-brand-600">Thêm ảnh</span>
                         </>
                       )}
                     </label>
                   </div>
 
                   {uploadedImages.length === 0 && (
-                    <p className="text-[11px] text-red-500 font-semibold mt-1">Vui lòng tải lên ít nhất 1 ảnh sản phẩm</p>
+                    <p className="text-xs text-red-500 font-medium mt-1">Vui lòng tải lên ít nhất 1 ảnh sản phẩm</p>
                   )}
 
                   {/* Add URL input */}
-                  <div className="flex items-center gap-2 mt-3">
-                    <input
-                      type="text"
-                      placeholder="Hoặc dán đường dẫn (URL) hình ảnh vào đây..."
-                      value={imageUrlInput}
-                      onChange={(e) => setImageUrlInput(e.target.value)}
-                      className="flex-1 px-3 py-2 text-sm rounded-xl border border-zinc-200 focus:outline-none focus:border-violet-500 transition-colors"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddImageUrl();
-                        }
-                      }}
-                    />
+                  <div className="flex items-center gap-2 mt-4">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Link className="h-4 w-4 text-tertiary" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Hoặc dán đường dẫn (URL) hình ảnh vào đây..."
+                        value={imageUrlInput}
+                        onChange={(e) => setImageUrlInput(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-secondary bg-primary focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddImageUrl();
+                          }
+                        }}
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={handleAddImageUrl}
                       disabled={!imageUrlInput.trim()}
-                      className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-sm font-bold rounded-xl transition-colors disabled:opacity-50"
+                      className="px-4 py-2.5 bg-secondary hover:bg-tertiary text-primary text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
                     >
                       Thêm URL
                     </button>
                   </div>
                 </div>
 
-
-
                 {/* Description */}
                 <div className="space-y-1.5 font-sans">
-                  <label className="text-xs font-semibold text-secondary">Mô tả chi tiết</label>
+                  <label className="text-sm font-semibold text-primary">Mô tả chi tiết</label>
                   <textarea
                     {...register("description")}
                     placeholder="Mô tả hiện trạng sản phẩm, chính sách đền bù và hướng dẫn sử dụng..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-secondary bg-primary text-sm font-medium focus:outline-none focus:border-brand-500 transition-colors min-h-[120px]"
+                    className="w-full px-4 py-3 rounded-xl border border-secondary bg-primary text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors min-h-[120px] resize-y"
                   />
                 </div>
 
                 {/* Submit Action */}
-                <div className="pt-4 flex justify-end gap-3">
+                <div className="pt-6 border-t border-secondary flex justify-end gap-3">
                   <Button
                     type="button"
                     size="lg"

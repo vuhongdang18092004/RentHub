@@ -2,7 +2,12 @@ package com.ioc.internship.controller;
 
 import com.ioc.internship.dto.request.LoginRequest;
 import com.ioc.internship.dto.request.RegisterRequest;
+import com.ioc.internship.dto.request.VerifyOtpRequest;
+import com.ioc.internship.dto.request.ResendOtpRequest;
+import com.ioc.internship.dto.request.ForgotPasswordRequest;
+import com.ioc.internship.dto.request.ResetPasswordRequest;
 import com.ioc.internship.dto.response.AuthResponse;
+import com.ioc.internship.dto.response.RegistrationStatusResponse;
 import com.ioc.internship.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,35 +22,50 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/auth") // Khớp với đường dẫn được mở cửa tự do trong SecurityConfig
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService; // Inject Interface vào đây, Spring Boot sẽ tự động tìm đến bản Impl để chạy
+    private final AuthService authService;
 
-    // 1. API ĐĂNG KÝ: POST http://localhost:8080/api/v1/auth/register
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        // Bốc lấy đối tượng AuthResponse chứa tokenValue từ tầng Service sinh ra
-        AuthResponse response = authService.register(request);
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.ok(Map.of("message", "Chúng tôi đã gửi mã xác thực tới email của bạn."));
+    }
 
-        // Trả thẳng đối tượng AuthResponse về cho Frontend để tự động nối đuôi URL kích hoạt
+    @PostMapping("/verify-register-otp")
+    public ResponseEntity<AuthResponse> verifyRegisterOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        AuthResponse response = authService.verifyRegisterOtp(request);
         return ResponseEntity.ok(response);
     }
 
-    // 2. API XÁC THỰC EMAIL: GET http://localhost:8080/api/v1/auth/verify-email?token=...
-    @GetMapping("/verify-email")
-    public ResponseEntity<?> verifyEmail(@RequestParam("token") String token) {
-        authService.verifyUserToken(token);
-        return ResponseEntity.ok(Map.of("message", "Tài khoản kích hoạt thành công!"));
+    @PostMapping("/resend-register-otp")
+    public ResponseEntity<Map<String, String>> resendRegisterOtp(@Valid @RequestBody ResendOtpRequest request) {
+        authService.resendRegisterOtp(request);
+        return ResponseEntity.ok(Map.of("message", "Đã gửi lại mã xác thực tới email của bạn."));
     }
 
-    // 3. API ĐĂNG NHẬP: POST http://localhost:8080/api/v1/auth/login
+    @GetMapping("/registration-status")
+    public ResponseEntity<RegistrationStatusResponse> getRegistrationStatus(@RequestParam("email") String email) {
+        return ResponseEntity.ok(authService.getRegistrationStatus(email));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        // Tiếp nhận gói dữ liệu LoginRequest, chuyển xuống tầng Service đối chiếu thông tin
         AuthResponse response = authService.login(request);
-        // Trả về Token cùng thông tin User nếu đăng nhập thành công
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(Map.of("message", "Chúng tôi đã gửi mã xác thực tới email của bạn."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công. Bạn có thể đăng nhập bằng mật khẩu mới."));
     }
 }

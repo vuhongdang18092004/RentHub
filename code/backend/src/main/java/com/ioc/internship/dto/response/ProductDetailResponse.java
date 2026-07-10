@@ -21,6 +21,8 @@ public class ProductDetailResponse {
     private String address;
     private BigDecimal latitude;
     private BigDecimal longitude;
+    private BigDecimal averageRating;
+    private Integer reviewCount;
     private ProductStatus status;
     private CategoryResponse category;
     private UserSummaryResponse owner;
@@ -38,6 +40,8 @@ public class ProductDetailResponse {
                 .address(product.getAddress())
                 .latitude(product.getLatitude())
                 .longitude(product.getLongitude())
+                .averageRating(product.getAverageRating())
+                .reviewCount(product.getReviewCount())
                 .status(product.getStatus())
                 .category(CategoryResponse.fromEntity(product.getCategory()))
                 .owner(UserSummaryResponse.fromEntity(product.getOwner()))

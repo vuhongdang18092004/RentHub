@@ -21,7 +21,11 @@ import java.util.List;
 import java.util.Optional;
 
 import com.ioc.internship.service.RentalService;
+import com.ioc.internship.service.NotificationService;
+import com.ioc.internship.dto.request.NotificationCreateCommand;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
@@ -31,6 +35,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
     private final RentalService rentalService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -50,15 +55,15 @@ public class PaymentServiceImpl implements PaymentService {
                 if (depositCount > 0) {
                     throw new RuntimeException("400 Bad Request: Rental already has a successful DEPOSIT payment");
                 }
-            } else if (request.getPaymentType() == PaymentType.RENTAL_FEE) {
-                long feeCount = paymentRepository.countByRentalAndPaymentTypeAndStatus(rental, PaymentType.RENTAL_FEE, PaymentStatus.SUCCESS);
+            } else if (request.getPaymentType() == PaymentType.RENTAL_PAYMENT) {
+                long feeCount = paymentRepository.countByRentalAndPaymentTypeAndStatus(rental, PaymentType.RENTAL_PAYMENT, PaymentStatus.SUCCESS);
                 if (feeCount > 0) {
-                    throw new RuntimeException("400 Bad Request: Rental already has a successful RENTAL_FEE payment");
+                    throw new RuntimeException("400 Bad Request: Rental already has a successful RENTAL_PAYMENT payment");
                 }
             }
         }
 
-        UserEntity payer = (request.getPaymentType() == PaymentType.DEPOSIT || request.getPaymentType() == PaymentType.RENTAL_FEE) 
+        UserEntity payer = (request.getPaymentType() == PaymentType.DEPOSIT || request.getPaymentType() == PaymentType.RENTAL_PAYMENT) 
                 ? rental.getRenter() : rental.getOwner();
 
         Payment payment = Payment.builder()
@@ -72,6 +77,20 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
 
         Payment savedPayment = paymentRepository.save(payment);
+
+        if (savedPayment.getStatus() == PaymentStatus.SUCCESS) {
+            try {
+                notificationService.create(NotificationCreateCommand.builder()
+                        .user(rental.getOwner())
+                        .title("Thanh toán thành công")
+                        .message("Khách thuê đã thanh toán thành công cho đơn thuê " + rental.getProduct().getName())
+                        .type(NotificationType.PAYMENT_SUCCESS)
+                        .actionUrl("/rentals/owner")
+                        .build());
+            } catch (Exception e) {
+                log.error("Failed to send notification for payment success", e);
+            }
+        }
 
         return mapToResponse(savedPayment);
     }
@@ -90,9 +109,9 @@ public class PaymentServiceImpl implements PaymentService {
             throw new RuntimeException("403 Forbidden: You are not the owner of this rental");
         }
 
-        // Validation 3: Rental is not already cancelled
-        if (rental.getStatus() == RentalStatus.CANCELLED) {
-            throw new RuntimeException("400 Bad Request: Rental is already CANCELLED");
+        // Validation 3: Rental must be REFUND_PENDING
+        if (rental.getStatus() != RentalStatus.REFUND_PENDING) {
+            throw new RuntimeException("400 Bad Request: Rental is not REFUND_PENDING");
         }
 
         // Validation 4 & 5: There is a RESOLVED Report with REFUND_FULL or REFUND_PARTIAL
@@ -140,7 +159,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .rental(rental)
                 .payer(owner)
                 .paymentType(request.getPaymentType())
-                .paymentMethod(PaymentMethod.PAYOS)
+                .paymentMethod(PaymentMethod.VIETQR)
                 .amount(request.getAmount())
                 .transactionCode(request.getTransactionCode())
                 .status(PaymentStatus.SUCCESS)
@@ -152,6 +171,18 @@ public class PaymentServiceImpl implements PaymentService {
             rentalService.adminCancelRental(rental.getId());
         } else if (request.getPaymentType() == PaymentType.REFUND_DEPOSIT) {
             rentalService.adminCompleteRental(rental.getId());
+        }
+
+        try {
+            notificationService.create(NotificationCreateCommand.builder()
+                    .user(rental.getRenter())
+                    .title("Hoàn tiền thành công")
+                    .message("Chủ đồ đã hoàn tiền cho bạn từ đơn thuê " + rental.getProduct().getName())
+                    .type(NotificationType.REFUND_COMPLETED)
+                    .actionUrl("/rentals/renter")
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to send notification for refund completion", e);
         }
 
         return mapToResponse(savedPayment);

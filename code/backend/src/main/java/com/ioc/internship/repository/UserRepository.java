@@ -22,4 +22,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
 
     // 4. Kiểm tra số điện thoại tồn tại trừ ID của user đang update
     boolean existsByPhoneAndIdNot(String phone, Long id);
+
+    long countByRole(String role);
 }

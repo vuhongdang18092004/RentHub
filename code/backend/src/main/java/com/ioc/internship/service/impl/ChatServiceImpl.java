@@ -198,7 +198,7 @@ public class ChatServiceImpl implements ChatService {
         if (lastMessageOpt.isPresent()) {
             Message lastMsg = lastMessageOpt.get();
             lastMessageContent = lastMsg.getContent();
-            lastMessageType = lastMsg.getMessageType().name();
+            lastMessageType = lastMsg.getMessageType() != null ? lastMsg.getMessageType().name() : MessageType.TEXT.name();
             lastMessageTime = lastMsg.getCreatedAt();
         }
 
@@ -226,7 +226,7 @@ public class ChatServiceImpl implements ChatService {
                 .id(message.getId())
                 .conversationId(message.getConversation().getId())
                 .sender(UserSummaryResponse.fromEntity(message.getSender()))
-                .messageType(message.getMessageType().name())
+                .messageType(message.getMessageType() != null ? message.getMessageType().name() : MessageType.TEXT.name())
                 .content(message.getContent())
                 .referencedProduct(productResponse)
                 .isRead(message.getIsRead())

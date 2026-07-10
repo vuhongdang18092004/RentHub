@@ -6,6 +6,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { rentalService, RentalRequestSummaryResponse, RentalRequestStatisticsResponse, RequestStatus } from "@/services/rental-service";
 import { useToast } from "@/context/ToastContext";
+import { Loader2, Package, Inbox, AlertTriangle, XCircle, CheckCircle } from "lucide-react";
 
 export default function OwnerRentalsPage() {
   const router = useRouter();
@@ -60,7 +61,7 @@ export default function OwnerRentalsPage() {
     if (!window.confirm("Bạn có chắc chắn muốn DUYỆT yêu cầu thuê này?")) return;
     try {
       await rentalService.approveRentalRequest(id);
-      triggerToast("Đã duyệt yêu cầu đặt thuê thành công! ✅");
+      triggerToast("Đã duyệt yêu cầu đặt thuê thành công!");
       fetchStats();
       fetchRequests();
     } catch (err: any) {
@@ -74,7 +75,7 @@ export default function OwnerRentalsPage() {
     if (!window.confirm("Bạn có chắc chắn muốn TỪ CHỐI yêu cầu thuê này?")) return;
     try {
       await rentalService.rejectRentalRequest(id);
-      triggerToast("Đã từ chối yêu cầu đặt thuê! ❌");
+      triggerToast("Đã từ chối yêu cầu đặt thuê!");
       fetchStats();
       fetchRequests();
     } catch (err: any) {
@@ -86,13 +87,13 @@ export default function OwnerRentalsPage() {
 
   const handleConfirmReturn = async (id?: number) => {
     if (!id) {
-      triggerToast("Không tìm thấy mã đơn thuê! Vui lòng tải lại trang (F5). 🔄");
+      triggerToast("Không tìm thấy mã đơn thuê! Vui lòng tải lại trang.");
       return;
     }
     if (!window.confirm("Bạn xác nhận đã nhận lại sản phẩm an toàn và hoàn tất giao dịch thuê này?")) return;
     try {
       await rentalService.confirmReturn(id);
-      triggerToast("Đã xác nhận nhận đồ và hoàn tất giao dịch! 🎉");
+      triggerToast("Đã xác nhận nhận đồ và hoàn tất giao dịch!");
       fetchStats();
       fetchRequests();
     } catch (err: any) {
@@ -106,46 +107,46 @@ export default function OwnerRentalsPage() {
     switch (status) {
       case "PENDING":
         return (
-          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-250 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-900 rounded-full">
             Chờ duyệt
           </span>
         );
       case "APPROVED":
         if (rentalStatus === "ACTIVE") {
           return (
-            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-violet-50 text-violet-750 border border-violet-250 rounded-full">
+            <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-400 border border-brand-200 dark:border-brand-900 rounded-full">
               Đang thuê
             </span>
           );
         }
         if (rentalStatus === "RETURN_PENDING") {
           return (
-            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-750 border border-blue-250 rounded-full animate-pulse">
+            <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400 border border-blue-200 dark:border-blue-900 rounded-full animate-pulse">
               Đang trả đồ
             </span>
           );
         }
         if (rentalStatus === "COMPLETED") {
           return (
-            <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-250 rounded-full">
+            <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 rounded-full">
               Hoàn thành
             </span>
           );
         }
         return (
-          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-green-50 text-green-700 border border-green-250 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 rounded-full">
             Đã duyệt
           </span>
         );
       case "REJECTED":
         return (
-          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-red-50 text-red-700 border border-red-250 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400 border border-red-200 dark:border-red-900 rounded-full">
             Bị từ chối
           </span>
         );
       case "CANCELLED":
         return (
-          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-zinc-50 text-zinc-500 border border-zinc-250 rounded-full">
+          <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-secondary text-secondary border border-secondary rounded-full">
             Đã hủy
           </span>
         );
@@ -157,64 +158,59 @@ export default function OwnerRentalsPage() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <div className="space-y-6 font-sans">
+        <div className="space-y-6 max-w-7xl mx-auto w-full">
 
           {/* Error Modal Popup */}
           {errorModal && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
-              <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 flex flex-col items-center gap-5 animate-[fadeInScale_0.2s_ease-out]">
-                {/* Icon */}
-                <div className="w-16 h-16 bg-red-50 border-2 border-red-100 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                  </svg>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity">
+              <div className="bg-primary rounded-2xl shadow-xl max-w-sm w-full p-6 flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
+                <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 rounded-full flex items-center justify-center text-red-600">
+                  <AlertTriangle className="w-6 h-6" />
                 </div>
-                {/* Title */}
-                <div className="text-center space-y-2">
-                  <h3 className="text-lg font-black text-zinc-800">Không thể thực hiện thao tác</h3>
-                  <p className="text-sm text-zinc-500 font-semibold leading-relaxed">{errorModal}</p>
+                <div className="text-center space-y-1">
+                  <h3 className="text-lg font-semibold text-primary">Lỗi thao tác</h3>
+                  <p className="text-sm text-secondary leading-relaxed">{errorModal}</p>
                 </div>
-                {/* Close Button */}
                 <button
                   onClick={() => setErrorModal(null)}
-                  className="w-full py-3 bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-black rounded-2xl transition-all active:scale-[0.98]"
+                  className="w-full py-2.5 mt-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors"
                 >
-                  Đã hiểu
+                  Đóng
                 </button>
               </div>
             </div>
           )}
           
           {/* Header */}
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-primary">Yêu cầu thuê gửi đến</h1>
-            <p className="text-sm text-secondary">Phê duyệt hoặc từ chối các yêu cầu thuê đồ dùng của bạn</p>
+          <div>
+            <h1 className="text-2xl font-semibold text-primary">Yêu cầu thuê gửi đến</h1>
+            <p className="text-sm text-secondary mt-1">Phê duyệt hoặc từ chối các yêu cầu thuê đồ dùng của bạn</p>
           </div>
 
           {/* Stats Cards Section */}
           {stats && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-white border border-zinc-150 rounded-2xl p-4 shadow-sm select-none">
-                <span className="text-[10px] text-zinc-400 font-extrabold uppercase tracking-wide">TẤT CẢ YÊU CẦU</span>
-                <p className="text-2xl font-black text-zinc-800 mt-1">{stats.total}</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-primary border border-secondary rounded-xl p-5 shadow-sm flex flex-col justify-between h-[100px]">
+                <span className="text-xs font-semibold text-secondary uppercase tracking-wider">Tất cả yêu cầu</span>
+                <p className="text-2xl font-bold text-primary">{stats.total}</p>
               </div>
-              <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 shadow-sm select-none">
-                <span className="text-[10px] text-amber-600/80 font-extrabold uppercase tracking-wide">ĐANG CHỜ DUYỆT</span>
-                <p className="text-2xl font-black text-amber-700 mt-1">{stats.pending}</p>
+              <div className="bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50 rounded-xl p-5 shadow-sm flex flex-col justify-between h-[100px]">
+                <span className="text-xs font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider">Đang chờ duyệt</span>
+                <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{stats.pending}</p>
               </div>
-              <div className="bg-green-50/50 border border-green-100 rounded-2xl p-4 shadow-sm select-none">
-                <span className="text-[10px] text-green-600/80 font-extrabold uppercase tracking-wide">ĐÃ PHÊ DUYỆT</span>
-                <p className="text-2xl font-black text-green-700 mt-1">{stats.approved}</p>
+              <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/50 rounded-xl p-5 shadow-sm flex flex-col justify-between h-[100px]">
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-500 uppercase tracking-wider">Đã phê duyệt</span>
+                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{stats.approved}</p>
               </div>
-              <div className="bg-red-50/50 border border-red-100 rounded-2xl p-4 shadow-sm select-none">
-                <span className="text-[10px] text-red-600/80 font-extrabold uppercase tracking-wide">BỊ TỪ CHỐI</span>
-                <p className="text-2xl font-black text-red-700 mt-1">{stats.rejected}</p>
+              <div className="bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-900/50 rounded-xl p-5 shadow-sm flex flex-col justify-between h-[100px]">
+                <span className="text-xs font-semibold text-red-600 dark:text-red-500 uppercase tracking-wider">Bị từ chối</span>
+                <p className="text-2xl font-bold text-red-700 dark:text-red-400">{stats.rejected}</p>
               </div>
             </div>
           )}
 
           {/* Filter & Sort Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
               {([
                 { label: "Tất cả", value: "ALL" },
@@ -229,10 +225,10 @@ export default function OwnerRentalsPage() {
                     setStatusFilter(opt.value);
                     setPage(0);
                   }}
-                  className={`px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                     statusFilter === opt.value
-                      ? "bg-violet-600 border-violet-600 text-white shadow-sm"
-                      : "bg-white border-zinc-200 text-zinc-650 hover:bg-zinc-50"
+                      ? "bg-brand-600 text-white"
+                      : "bg-secondary text-primary hover:bg-tertiary"
                   }`}
                 >
                   {opt.label}
@@ -241,14 +237,14 @@ export default function OwnerRentalsPage() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs font-bold text-zinc-450">Sắp xếp:</span>
+              <span className="text-sm text-secondary">Sắp xếp:</span>
               <select
                 value={sort}
                 onChange={(e) => {
                   setSort(e.target.value);
                   setPage(0);
                 }}
-                className="px-3 py-2 bg-white border border-zinc-200 rounded-xl text-xs font-extrabold text-zinc-700 focus:outline-none cursor-pointer focus:border-violet-500"
+                className="px-3 py-1.5 bg-primary border border-secondary rounded-lg text-sm font-medium text-primary focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
               >
                 <option value="newest">Mới nhất</option>
                 <option value="oldest">Cũ nhất</option>
@@ -258,75 +254,69 @@ export default function OwnerRentalsPage() {
 
           {/* Content Listing */}
           {loading ? (
-            <div className="py-24 bg-primary border border-secondary rounded-[24px] flex flex-col items-center justify-center gap-4">
-              <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm text-secondary font-medium">Đang tải danh sách yêu cầu...</p>
+            <div className="py-20 bg-primary border border-secondary rounded-xl flex flex-col items-center justify-center gap-4 shadow-sm">
+              <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+              <p className="text-sm text-secondary">Đang tải danh sách yêu cầu...</p>
             </div>
           ) : requests.length === 0 ? (
-            <div className="py-24 bg-primary border border-secondary rounded-[24px] flex flex-col items-center justify-center gap-4 text-center px-6">
-              <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            <div className="py-20 bg-primary border border-secondary rounded-xl flex flex-col items-center justify-center gap-4 text-center px-6 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-secondary">
+                <Inbox className="w-6 h-6" />
               </div>
-              <div className="space-y-1 max-w-sm">
-                <h3 className="text-base font-bold text-primary">Chưa nhận được yêu cầu nào</h3>
-                <p className="text-xs text-secondary">Hiện tại chưa có thành viên nào gửi yêu cầu thuê sản phẩm của bạn.</p>
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-primary">Chưa nhận được yêu cầu nào</h3>
+                <p className="text-sm text-secondary">Hiện tại chưa có thành viên nào gửi yêu cầu thuê sản phẩm của bạn.</p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Grid of Owner Requests */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {requests.map((req) => (
                   <div
                     key={req.id}
-                    className="bg-white border border-zinc-150 rounded-2xl p-4 shadow-sm hover:shadow transition-all space-y-4 flex flex-col justify-between"
+                    className="bg-primary border border-secondary rounded-xl p-5 shadow-sm hover:border-brand-300 transition-colors flex flex-col justify-between gap-4"
                   >
-                    <div className="space-y-3">
-                      <div className="flex gap-4">
-                        {/* Product Image */}
-                        <div className="w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-150">
-                          {req.productImage ? (
-                            <img src={req.productImage} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="w-full h-full flex items-center justify-center text-2xl bg-zinc-100">📦</span>
-                          )}
+                    <div className="flex gap-4">
+                      {/* Product Image */}
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-secondary shrink-0 border border-secondary flex items-center justify-center">
+                        {req.productImage ? (
+                          <img src={req.productImage} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Package className="w-8 h-8 text-tertiary" />
+                        )}
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex justify-between items-start gap-2">
+                          <h3 className="font-semibold text-sm text-primary truncate">
+                            {req.productName}
+                          </h3>
+                          <div className="shrink-0">{getStatusBadge(req.status, req.rentalStatus)}</div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full bg-brand-50 flex items-center justify-center text-brand-700 text-[10px] font-bold shrink-0">
+                            {req.renter.fullName.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-xs text-secondary">
+                            Người thuê: <span className="text-primary font-medium">{req.renter.fullName}</span>
+                          </span>
                         </div>
 
-                        {/* Product Info */}
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex justify-between items-start gap-2">
-                            <h3 className="font-extrabold text-sm text-zinc-800 truncate leading-snug">
-                              {req.productName}
-                            </h3>
-                            {getStatusBadge(req.status, req.rentalStatus)}
-                          </div>
-                          
-                          {/* Renter Details Info */}
-                          <div className="flex items-center gap-2 pt-0.5">
-                            <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 text-[9px] font-black shrink-0 border border-violet-250">
-                              {req.renter.fullName.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="text-[10px] text-zinc-500 font-bold">
-                              Người thuê: <span className="text-zinc-700 font-black">{req.renter.fullName}</span>
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-550 pt-1">
-                            <span>Từ {new Date(req.startDate).toLocaleDateString("vi-VN")}</span>
-                            <span>→</span>
-                            <span>Đến {new Date(req.endDate).toLocaleDateString("vi-VN")}</span>
-                          </div>
+                        <div className="text-xs text-secondary flex items-center gap-1.5 bg-secondary px-2.5 py-1 rounded w-fit">
+                          <span>{new Date(req.startDate).toLocaleDateString("vi-VN")}</span>
+                          <span>→</span>
+                          <span>{new Date(req.endDate).toLocaleDateString("vi-VN")}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex justify-between items-center border-t border-zinc-100 pt-3">
+                    <div className="flex justify-between items-center border-t border-secondary pt-4 mt-auto">
                       <div>
-                        <span className="text-[9px] text-zinc-400 font-extrabold uppercase tracking-wide">DOANH THU THUÊ</span>
-                        <p className="text-sm font-black text-violet-700">
+                        <span className="text-[10px] text-secondary font-semibold uppercase tracking-wider block mb-0.5">Doanh thu thuê</span>
+                        <p className="text-sm font-bold text-brand-600">
                           {Number(req.requestedPrice).toLocaleString("vi-VN")}đ
                         </p>
                       </div>
@@ -335,13 +325,13 @@ export default function OwnerRentalsPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleReject(req.id)}
-                            className="px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-xs hover:shadow active:scale-[0.99]"
+                            className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
                           >
                             Từ chối
                           </button>
                           <button
                             onClick={() => handleApprove(req.id)}
-                            className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-xs hover:shadow active:scale-[0.99]"
+                            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
                           >
                             Duyệt đơn
                           </button>
@@ -351,46 +341,45 @@ export default function OwnerRentalsPage() {
                           {req.rentalStatus === "RETURN_PENDING" && (
                             <button
                               onClick={() => handleConfirmReturn(req.rentalId!)}
-                              className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-xs hover:shadow active:scale-[0.99] animate-[pulse_2s_infinite]"
+                              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors animate-[pulse_2s_infinite]"
                             >
                               Xác nhận nhận đồ
                             </button>
                           )}
                           <button
                             onClick={() => router.push(`/rentals/${req.rentalId}`)}
-                            className="px-3.5 py-2 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-extrabold shadow-sm hover:shadow hover:scale-[1.01] transition-all cursor-pointer"
+                            className="px-4 py-2 bg-secondary hover:bg-tertiary text-primary rounded-lg text-sm font-medium transition-colors"
                           >
-                            Chi tiết thuê đồ
+                            Chi tiết
                           </button>
                         </div>
                       ) : (
-                        <div className="text-[10px] text-zinc-400 font-bold select-none italic">
-                          Hết hiệu lực xử lý
+                        <div className="text-xs text-secondary font-medium">
+                          Đã xử lý xong
                         </div>
                       )}
                     </div>
-
                   </div>
                 ))}
               </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-1.5 pt-4">
+                <div className="flex items-center justify-center gap-2 pt-6">
                   <button
                     disabled={page === 0}
                     onClick={() => setPage(page - 1)}
-                    className="px-3 py-1.5 border border-zinc-200 rounded-lg text-xs font-bold text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
+                    className="px-4 py-2 border border-secondary rounded-lg text-sm font-medium text-secondary hover:bg-secondary disabled:opacity-50 transition-colors"
                   >
                     Trước
                   </button>
-                  <span className="text-xs text-zinc-500 font-extrabold px-3">
+                  <span className="text-sm text-secondary font-medium px-2">
                     Trang {page + 1} / {totalPages}
                   </span>
                   <button
                     disabled={page === totalPages - 1}
                     onClick={() => setPage(page + 1)}
-                    className="px-3 py-1.5 border border-zinc-200 rounded-lg text-xs font-bold text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
+                    className="px-4 py-2 border border-secondary rounded-lg text-sm font-medium text-secondary hover:bg-secondary disabled:opacity-50 transition-colors"
                   >
                     Sau
                   </button>

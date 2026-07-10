@@ -14,7 +14,15 @@ export const authService = {
     return originalAuthService.register(data as any);
   },
 
-  verifyEmail: async (token: string) => {
-    return originalAuthService.verifyEmail(token);
+  verifyRegisterOtp: async (data: { email: string; otp: string }) => {
+    return originalAuthService.verifyRegisterOtp(data);
+  },
+
+  resendRegisterOtp: async (data: { email: string }) => {
+    return originalAuthService.resendRegisterOtp(data);
+  },
+
+  getRegistrationStatus: async (email: string) => {
+    return originalAuthService.getRegistrationStatus(email);
   }
 };

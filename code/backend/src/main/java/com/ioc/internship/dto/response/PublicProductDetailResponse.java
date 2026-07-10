@@ -22,6 +22,8 @@ public class PublicProductDetailResponse {
     private String address;
     private BigDecimal latitude;
     private BigDecimal longitude;
+    private BigDecimal averageRating;
+    private Integer reviewCount;
     private ProductStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -44,6 +46,8 @@ public class PublicProductDetailResponse {
                 .address(product.getAddress())
                 .latitude(product.getLatitude())
                 .longitude(product.getLongitude())
+                .averageRating(product.getAverageRating())
+                .reviewCount(product.getReviewCount())
                 .status(product.getStatus())
                 .createdAt(product.getCreatedAt())
                 .updatedAt(product.getUpdatedAt())

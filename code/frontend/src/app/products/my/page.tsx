@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getPrimaryImage } from "@/utils/image-utils";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { productService, ProductSummary } from "@/services/product-service";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { Plus, Package, Loader2, Image as ImageIcon, Pencil, Trash2, Box } from "lucide-react";
 
 export default function MyProductsPage() {
   const { triggerToast } = useToast();
@@ -54,99 +56,92 @@ export default function MyProductsPage() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-7xl mx-auto w-full">
           
           {/* Header section */}
           <div className="flex justify-between items-center">
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold text-primary">Kho đồ của tôi</h1>
-              <p className="text-sm text-secondary">Quản lý danh sách các mặt hàng cho thuê của bạn</p>
+            <div>
+              <h1 className="text-2xl font-semibold text-primary">Kho đồ của tôi</h1>
+              <p className="text-sm text-secondary mt-1">Quản lý danh sách các mặt hàng cho thuê của bạn</p>
             </div>
             <Link
               href="/products/create"
-              className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold transition-all inline-flex items-center gap-2"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-semibold transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus className="w-5 h-5" />
               Đăng tin mới
             </Link>
           </div>
 
           {/* List Section */}
           {loading ? (
-            <div className="py-24 bg-primary border border-secondary rounded-[24px] flex flex-col items-center justify-center gap-4">
-              <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="py-20 bg-primary border border-secondary rounded-xl flex flex-col items-center justify-center gap-4 shadow-sm">
+              <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
               <p className="text-sm text-secondary font-medium">Đang tải danh sách đồ dùng...</p>
             </div>
           ) : products.length === 0 ? (
-            <div className="py-24 bg-primary border border-secondary rounded-[24px] flex flex-col items-center justify-center gap-4 text-center px-6">
-              <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center text-brand-600">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
+            <div className="py-20 bg-primary border border-secondary rounded-xl flex flex-col items-center justify-center gap-4 text-center px-6 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-secondary">
+                <Box className="w-6 h-6" />
               </div>
-              <div className="space-y-1 max-w-sm">
-                <h3 className="text-base font-bold text-primary">Chưa có sản phẩm nào</h3>
-                <p className="text-xs text-secondary">Bạn chưa đăng tải bất kỳ mặt hàng cho thuê nào trên hệ thống.</p>
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-primary">Chưa có sản phẩm nào</h3>
+                <p className="text-sm text-secondary">Bạn chưa đăng tải bất kỳ mặt hàng cho thuê nào trên hệ thống.</p>
               </div>
               <Link
                 href="/products/create"
-                className="mt-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold transition-all"
+                className="mt-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-semibold transition-colors"
               >
                 Đăng tin cho thuê ngay
               </Link>
             </div>
           ) : (
-            <div className="bg-primary border border-secondary rounded-[24px] overflow-hidden shadow-sm">
+            <div className="bg-primary border border-secondary rounded-xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-secondary border-b border-secondary">
-                      <th className="px-6 py-4 text-xs font-bold text-quaternary uppercase tracking-wider">Hình ảnh</th>
-                      <th className="px-6 py-4 text-xs font-bold text-quaternary uppercase tracking-wider">Tên sản phẩm</th>
-                      <th className="px-6 py-4 text-xs font-bold text-quaternary uppercase tracking-wider">Danh mục</th>
-                      <th className="px-6 py-4 text-xs font-bold text-quaternary uppercase tracking-wider">Giá thuê / ngày</th>
-                      <th className="px-6 py-4 text-xs font-bold text-quaternary uppercase tracking-wider">Trạng thái</th>
-                      <th className="px-6 py-4 text-xs font-bold text-quaternary uppercase tracking-wider text-right">Thao tác</th>
+                      <th className="px-6 py-3.5 text-xs font-semibold text-secondary uppercase tracking-wider">Hình ảnh</th>
+                      <th className="px-6 py-3.5 text-xs font-semibold text-secondary uppercase tracking-wider">Tên sản phẩm</th>
+                      <th className="px-6 py-3.5 text-xs font-semibold text-secondary uppercase tracking-wider">Danh mục</th>
+                      <th className="px-6 py-3.5 text-xs font-semibold text-secondary uppercase tracking-wider">Giá thuê / ngày</th>
+                      <th className="px-6 py-3.5 text-xs font-semibold text-secondary uppercase tracking-wider">Trạng thái</th>
+                      <th className="px-6 py-3.5 text-xs font-semibold text-secondary uppercase tracking-wider text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-secondary">
                     {products.map((product) => (
-                      <tr key={product.id} className="hover:bg-secondary transition-colors">
+                      <tr key={product.id} className="hover:bg-tertiary transition-colors">
                         <td className="px-6 py-4">
-                          <div className="w-12 h-12 rounded-lg bg-tertiary overflow-hidden flex items-center justify-center shrink-0">
-                            {product.primaryImage ? (
-                              // eslint-disable-next-line @next/next/no-img-element
+                          <div className="w-12 h-12 rounded-lg border border-secondary bg-secondary overflow-hidden flex items-center justify-center shrink-0">
+                            {getPrimaryImage(product) ? (
                               <img
-                                src={product.primaryImage}
+                                src={getPrimaryImage(product)}
                                 alt={product.name}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <svg className="w-6 h-6 text-quaternary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
+                              <ImageIcon className="w-5 h-5 text-tertiary" />
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 font-semibold text-sm text-primary">{product.name}</td>
+                        <td className="px-6 py-4 font-medium text-sm text-primary">{product.name}</td>
                         <td className="px-6 py-4 text-sm text-secondary">{product.category.name}</td>
-                        <td className="px-6 py-4 text-sm font-bold text-brand-700">
+                        <td className="px-6 py-4 text-sm font-semibold text-brand-600 dark:text-brand-400">
                           {product.pricePerDay.toLocaleString("vi-VN")} đ
                         </td>
                         <td className="px-6 py-4">
                           <span
-                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
+                            className={`inline-flex px-2.5 py-0.5 rounded text-xs font-medium ${
                               product.status === "AVAILABLE"
-                                ? "bg-green-50 text-green-700"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
                                 : product.status === "RENTED"
-                                ? "bg-orange-50 text-orange-700"
+                                ? "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-400"
                                 : product.status === "PENDING"
-                                ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                                ? "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
                                 : product.status === "BLOCKED"
-                                ? "bg-rose-50 text-rose-700 border border-rose-200"
-                                : "bg-zinc-150 text-zinc-600"
+                                ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400"
+                                : "bg-secondary text-secondary"
                             }`}
                           >
                             {product.status === "AVAILABLE"
@@ -161,26 +156,22 @@ export default function MyProductsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-3">
+                          <div className="flex justify-end gap-2">
                             {product.status !== "RENTED" && (
                               <Link
                                 href={`/products/${product.id}/edit`}
-                                className="p-2 text-secondary hover:bg-brand-50 hover:text-brand-600 rounded-lg transition-colors cursor-pointer"
+                                className="p-2 text-secondary hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-950/50 rounded-lg transition-colors"
                                 title="Sửa tin"
                               >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
+                                <Pencil className="w-4 h-4" />
                               </Link>
                             )}
                             <button
                               onClick={() => handleDelete(product.id)}
-                              className="p-2 text-error-primary hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors"
                               title="Xóa tin"
                             >
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </td>

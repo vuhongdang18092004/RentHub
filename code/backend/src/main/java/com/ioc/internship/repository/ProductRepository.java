@@ -31,4 +31,5 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Page<Product> findAllByOrderByCreatedAtDesc(Pageable pageable);
     Optional<Product> findByIdAndOwnerId(Long id, Long ownerId);
     Page<Product> findByStatusAndCategoryIdOrderByCreatedAtDesc(ProductStatus status, Long categoryId, Pageable pageable);
+    long countByStatus(ProductStatus status);
 }

@@ -9,8 +9,11 @@ import com.ioc.internship.repository.ProductRepository;
 import com.ioc.internship.repository.RentalRepository;
 import com.ioc.internship.repository.RentalRequestRepository;
 import com.ioc.internship.repository.UserRepository;
+import com.ioc.internship.service.NotificationService;
+import com.ioc.internship.dto.request.NotificationCreateCommand;
 import com.ioc.internship.service.RentalRequestService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RentalRequestServiceImpl implements RentalRequestService {
@@ -31,6 +35,7 @@ public class RentalRequestServiceImpl implements RentalRequestService {
     private final RentalRepository rentalRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     private UserEntity getUserByEmail(String email) {
         return userRepository.findByEmail(email)
@@ -74,7 +79,21 @@ public class RentalRequestServiceImpl implements RentalRequestService {
                 .status(RequestStatus.PENDING)
                 .build();
 
-        return RentalRequestDetailResponse.fromEntity(rentalRequestRepository.save(rentalRequest));
+        RentalRequest savedRequest = rentalRequestRepository.save(rentalRequest);
+
+        try {
+            notificationService.create(NotificationCreateCommand.builder()
+                    .user(product.getOwner())
+                    .title("Yêu cầu thuê mới")
+                    .message(renter.getFullName() + " muốn thuê " + product.getName())
+                    .type(NotificationType.RENTAL_REQUEST_CREATED)
+                    .actionUrl("/rentals/owner") // owner views their requests
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to send notification for rental request creation", e);
+        }
+
+        return RentalRequestDetailResponse.fromEntity(savedRequest);
     }
 
     @Override
@@ -250,7 +269,7 @@ public class RentalRequestServiceImpl implements RentalRequestService {
         rentalRequest.setStatus(RequestStatus.APPROVED);
         rentalRequestRepository.save(rentalRequest);
 
-        long days = ChronoUnit.DAYS.between(rentalRequest.getStartDate(), rentalRequest.getEndDate());
+        long days = ChronoUnit.DAYS.between(rentalRequest.getStartDate(), rentalRequest.getEndDate()) + 1;
         BigDecimal total = rentalRequest.getRequestedPrice().multiply(BigDecimal.valueOf(days)).add(rentalRequest.getRequestedDeposit());
 
         Rental rental = Rental.builder()
@@ -268,6 +287,18 @@ public class RentalRequestServiceImpl implements RentalRequestService {
                 .build();
 
         rentalRepository.save(rental);
+
+        try {
+            notificationService.create(NotificationCreateCommand.builder()
+                    .user(rentalRequest.getRenter())
+                    .title("Yêu cầu thuê được duyệt")
+                    .message(owner.getFullName() + " đã đồng ý cho bạn thuê " + product.getName())
+                    .type(NotificationType.RENTAL_REQUEST_APPROVED)
+                    .actionUrl("/rentals/renter")
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to send notification for rental request approval", e);
+        }
     }
 
     @Override
@@ -287,6 +318,18 @@ public class RentalRequestServiceImpl implements RentalRequestService {
 
         rentalRequest.setStatus(RequestStatus.REJECTED);
         rentalRequestRepository.save(rentalRequest);
+
+        try {
+            notificationService.create(NotificationCreateCommand.builder()
+                    .user(rentalRequest.getRenter())
+                    .title("Yêu cầu thuê bị từ chối")
+                    .message(owner.getFullName() + " đã từ chối yêu cầu thuê " + rentalRequest.getProduct().getName())
+                    .type(NotificationType.RENTAL_REQUEST_REJECTED)
+                    .actionUrl("/rentals/renter")
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to send notification for rental request rejection", e);
+        }
     }
 
     @Override

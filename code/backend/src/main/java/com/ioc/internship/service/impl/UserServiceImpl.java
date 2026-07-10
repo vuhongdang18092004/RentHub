@@ -34,6 +34,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserEntity getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
+    }
+
+    @Override
     @Transactional
     public UserResponse updateMyProfile(String email, UserUpdateRequest request) {
         UserEntity user = userRepository.findByEmail(email)

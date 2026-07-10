@@ -7,8 +7,12 @@ import { Header } from "@/components/layout/header";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
+
+import { getPrimaryImage } from "@/utils/image-utils";
 import { rentalService } from "@/services/rental-service";
 import { paymentService } from "@/services/payment-service";
+
+import { Copy, Check, AlertTriangle, ArrowLeft, Loader2, Package, ShieldCheck, ChevronLeft, ChevronRight, CreditCard, Landmark } from "lucide-react";
 
 // Importing react-aria-components for the DateRangePicker as requested
 import { 
@@ -34,31 +38,6 @@ function formatDisplayDate(dateStr?: string) {
   const [year, month, day] = dateStr.split("-");
   return `${parseInt(day)} Th${parseInt(month)}`;
 }
-
-// Icon Components
-const CopyIcon = () => (
-  <svg className="w-4 h-4 text-zinc-400 hover:text-zinc-650 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-  </svg>
-);
-
-const AlertIcon = () => (
-  <svg className="w-5 h-5 text-yellow-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-  </svg>
-);
-
-const BackIcon = () => (
-  <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-  </svg>
-);
 
 function CheckoutContent() {
   const items: any[] = [];
@@ -89,9 +68,6 @@ function CheckoutContent() {
     address: "",
     phone: "",
   });
-
-  // Payment method state
-  const [paymentTab, setPaymentTab] = useState<"bank" | "card">("bank");
 
   // VietQR state
   const [orderCode, setOrderCode] = useState("");
@@ -167,12 +143,12 @@ function CheckoutContent() {
 
   // Handle countdown logic
   useEffect(() => {
-    if (step !== 2 || paymentTab !== "bank" || timeLeft <= 0) return;
+    if (step !== 2 || timeLeft <= 0) return;
     const interval = setInterval(() => {
       setTimeLeft((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [step, paymentTab, timeLeft]);
+  }, [step, timeLeft]);
 
   // Calculate pricing dynamically based on current flow
   let finalSubtotal = totalPrice;
@@ -238,14 +214,14 @@ function CheckoutContent() {
 
   // Fetch VietQR image
   useEffect(() => {
-    if (step === 2 && paymentTab === "bank" && orderCode) {
+    if (step === 2 && orderCode) {
       if (rentalPaymentInfo) {
         fetchQrCode(orderCode, rentalPaymentInfo);
       } else {
         fetchQrCode(orderCode);
       }
     }
-  }, [step, paymentTab, orderCode, rentalPaymentInfo]);
+  }, [step, orderCode, rentalPaymentInfo]);
 
   const handleRecreateQr = () => {
     setTimeLeft(900);
@@ -312,14 +288,14 @@ function CheckoutContent() {
     setIsSubmitting(true);
     try {
       if (paymentRequest.rentalId) {
-        await paymentService.recordPayment({
-          rentalId: paymentRequest.rentalId,
-          paymentType: "RENTAL_FEE",
-          amount: finalTotal,
-          transactionCode: orderCode,
-          paymentMethod: paymentTab === "bank" ? "PAYOS" : "VNPAY",
-          status: "SUCCESS"
-        });
+          await paymentService.recordPayment({
+            rentalId: paymentRequest.rentalId,
+            paymentType: "RENTAL_FEE",
+            amount: finalTotal - finalDeposit,
+            transactionCode: orderCode,
+            paymentMethod: "VIETQR",
+            status: "SUCCESS"
+          });
         
         if (finalDeposit > 0) {
           try {
@@ -328,7 +304,7 @@ function CheckoutContent() {
               paymentType: "DEPOSIT",
               amount: finalDeposit,
               transactionCode: orderCode + "_DEP",
-              paymentMethod: paymentTab === "bank" ? "PAYOS" : "VNPAY",
+              paymentMethod: "VIETQR",
               status: "SUCCESS"
             });
           } catch (e) {
@@ -375,24 +351,24 @@ function CheckoutContent() {
 
   if (loadingRequest) {
     return (
-      <div className="min-h-screen bg-zinc-50 font-sans">
+      <div className="min-h-screen bg-primary font-sans flex flex-col">
         <Header />
-        <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
-          <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-zinc-500">Đang tải thông tin đơn thanh toán...</p>
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-brand-600" />
+          <p className="text-sm font-semibold text-secondary">Đang tải thông tin đơn thanh toán...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 font-sans pb-16">
+    <div className="min-h-screen bg-secondary font-sans pb-16 flex flex-col">
       <Header />
 
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-6">
+      <div className="max-w-[1200px] w-full mx-auto px-4 md:px-6 py-8">
         
         {/* Breadcrumbs & Navigation */}
-        <div className="flex items-center gap-2 text-xs text-zinc-500 mb-6">
+        <div className="flex items-center gap-2 text-sm text-secondary mb-8">
           <button 
             onClick={() => {
               if (paymentRequest) {
@@ -403,60 +379,60 @@ function CheckoutContent() {
                 router.push("/cart");
               }
             }}
-            className="flex items-center justify-center w-8 h-8 rounded-full border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors shadow-xs"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-primary border border-secondary hover:bg-tertiary transition-colors shadow-sm"
           >
-            <BackIcon />
+            <ArrowLeft className="w-4 h-4" />
           </button>
-          <span className="font-semibold text-zinc-400">|</span>
-          <Link href={paymentRequest ? "/rentals/renter" : "/cart"} className="hover:text-zinc-700 transition-colors">
+          <span className="font-semibold text-tertiary">/</span>
+          <Link href={paymentRequest ? "/rentals/renter" : "/cart"} className="hover:text-primary transition-colors">
             {paymentRequest ? "Đơn thuê của tôi" : "Giỏ hàng"}
           </Link>
-          <span>/</span>
-          <span className="font-bold text-zinc-800">Thanh toán</span>
+          <span className="font-semibold text-tertiary">/</span>
+          <span className="font-bold text-primary">Thanh toán</span>
         </div>
 
         {/* Step Indicator */}
-        <div className="flex justify-center items-center max-w-[500px] mx-auto mb-10">
+        <div className="flex justify-center items-center max-w-2xl mx-auto mb-12">
           <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              step >= 1 ? "bg-violet-600 text-white" : "bg-zinc-200 text-zinc-500"
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all shadow-sm ${
+              step >= 1 ? "bg-brand-600 text-white" : "bg-primary border border-secondary text-secondary"
             }`}>
-              {step > 1 ? <CheckIcon /> : "1"}
+              {step > 1 ? <Check className="w-5 h-5" /> : "1"}
             </div>
-            <span className={`text-[10px] font-black mt-2 tracking-wider uppercase ${
-              step >= 1 ? "text-zinc-800 font-bold" : "text-zinc-400"
+            <span className={`text-xs font-semibold mt-3 uppercase tracking-wide ${
+              step >= 1 ? "text-primary" : "text-secondary"
             }`}>
               {paymentRequest ? "Khởi tạo" : "Xem lại"}
             </span>
           </div>
 
-          <div className={`flex-1 h-[2px] mx-4 transition-colors ${
-            step >= 2 ? "bg-violet-600" : "bg-zinc-200"
+          <div className={`flex-1 h-1 mx-4 rounded-full transition-colors ${
+            step >= 2 ? "bg-brand-600" : "bg-primary border-t border-b border-secondary"
           }`} />
 
           <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              step >= 2 ? "bg-violet-600 text-white" : "bg-zinc-200 text-zinc-500"
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all shadow-sm ${
+              step >= 2 ? "bg-brand-600 text-white" : "bg-primary border border-secondary text-secondary"
             }`}>
-              {step > 2 ? <CheckIcon /> : "2"}
+              {step > 2 ? <Check className="w-5 h-5" /> : "2"}
             </div>
-            <span className={`text-[10px] font-black mt-2 tracking-wider uppercase ${
-              step >= 2 ? "text-zinc-800 font-bold" : "text-zinc-400"
+            <span className={`text-xs font-semibold mt-3 uppercase tracking-wide ${
+              step >= 2 ? "text-primary" : "text-secondary"
             }`}>Thanh toán</span>
           </div>
 
-          <div className={`flex-1 h-[2px] mx-4 transition-colors ${
-            step >= 3 ? "bg-violet-600" : "bg-zinc-200"
+          <div className={`flex-1 h-1 mx-4 rounded-full transition-colors ${
+            step >= 3 ? "bg-brand-600" : "bg-primary border-t border-b border-secondary"
           }`} />
 
           <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              step >= 3 ? "bg-violet-600 text-white" : "bg-zinc-200 text-zinc-500"
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all shadow-sm ${
+              step >= 3 ? "bg-brand-600 text-white" : "bg-primary border border-secondary text-secondary"
             }`}>
-              {step > 3 ? <CheckIcon /> : "3"}
+              {step > 3 ? <Check className="w-5 h-5" /> : "3"}
             </div>
-            <span className={`text-[10px] font-black mt-2 tracking-wider uppercase ${
-              step >= 3 ? "text-zinc-800 font-bold" : "text-zinc-400"
+            <span className={`text-xs font-semibold mt-3 uppercase tracking-wide ${
+              step >= 3 ? "text-primary" : "text-secondary"
             }`}>Xác nhận</span>
           </div>
         </div>
@@ -471,53 +447,56 @@ function CheckoutContent() {
             {step === 1 && !paymentRequest && (
               <>
                 {/* Product review card */}
-                <div className="bg-white rounded-3xl border border-zinc-150 p-6 shadow-xs">
-                  <h2 className="text-sm font-black text-zinc-700 uppercase tracking-wider mb-4">
-                    Món thuê · {items.length}
-                  </h2>
-                  <div className="divide-y divide-zinc-100">
+                <div className="bg-primary rounded-2xl border border-secondary p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-6 border-b border-secondary pb-4">
+                    <Package className="w-5 h-5 text-brand-600" />
+                    <h2 className="text-base font-semibold text-primary uppercase tracking-wide">
+                      Món thuê · {items.length}
+                    </h2>
+                  </div>
+                  <div className="divide-y divide-secondary">
                     {items.map((item) => (
                       <div key={item.product.id} className="py-4 first:pt-0 last:pb-0 flex gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-zinc-100 shrink-0 overflow-hidden border border-zinc-100">
-                          {item.product.primaryImage ? (
-                            <img src={item.product.primaryImage} alt={item.product.name} className="w-full h-full object-cover" />
+                        <div className="w-20 h-20 rounded-xl bg-secondary shrink-0 overflow-hidden border border-secondary flex items-center justify-center">
+                          {getPrimaryImage(item.product) ? (
+                            <img src={getPrimaryImage(item.product)} alt={item.product.name} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xl">📦</div>
+                            <Package className="w-8 h-8 text-tertiary" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-extrabold text-zinc-800 truncate">{item.product.name}</h3>
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div>
+                            <h3 className="text-sm font-semibold text-primary truncate">{item.product.name}</h3>
+                            {/* Owner name */}
+                            {(item.product as any).ownerFullName && (
+                              <div className="text-xs text-secondary mt-1">
+                                Chủ sở hữu: <span className="font-medium text-primary">{(item.product as any).ownerFullName}</span>
+                              </div>
+                            )}
+                          </div>
                           
                           {/* Date details / datepicker selection */}
-                          <div className="mt-1">
+                          <div className="mt-2">
                             {item.startDate && item.endDate ? (
-                              <div className="text-xs text-zinc-500 font-bold flex items-center gap-1.5">
-                                <span className="bg-zinc-100 px-2 py-0.5 rounded text-zinc-700">
+                              <div className="text-xs font-medium flex items-center gap-2">
+                                <span className="bg-secondary px-2.5 py-1 rounded-lg text-primary">
                                   {formatDisplayDate(item.startDate)} — {formatDisplayDate(item.endDate)}
                                 </span>
-                                <span className="text-zinc-400">·</span>
-                                <span>{item.rentDays} ngày</span>
+                                <span className="text-secondary">•</span>
+                                <span className="text-primary font-semibold">{item.rentDays} ngày</span>
                               </div>
                             ) : (
-                              <div className="mt-1.5">
+                              <div className="mt-1">
                                 <AriaDateRangePicker 
                                   onChange={(start, end, days) => updateDates(item.product.id, start, end, days)} 
                                 />
                               </div>
                             )}
                           </div>
-
-                          {/* Owner name */}
-                          {(item.product as any).ownerFullName && (
-                            <div className="text-[10px] text-zinc-400 font-semibold mt-2 flex items-center gap-1">
-                              <span className="w-4 h-4 rounded-full bg-zinc-200 inline-block" />
-                              <span>Chủ sở hữu: {(item.product as any).ownerFullName}</span>
-                            </div>
-                          )}
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xs font-black text-zinc-750">{(item.product.pricePerDay * item.rentDays).toLocaleString("vi-VN")}đ</p>
-                          <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider mt-0.5">{item.product.pricePerDay.toLocaleString("vi-VN")}đ/ngày</p>
+                        <div className="text-right shrink-0 flex flex-col justify-between">
+                          <p className="text-sm font-bold text-brand-600">{(item.product.pricePerDay * item.rentDays).toLocaleString("vi-VN")}đ</p>
+                          <p className="text-xs text-secondary font-medium">{item.product.pricePerDay.toLocaleString("vi-VN")}đ/ngày</p>
                         </div>
                       </div>
                     ))}
@@ -525,29 +504,26 @@ function CheckoutContent() {
                 </div>
 
                 {/* Delivery address card */}
-                <div className="bg-white rounded-3xl border border-zinc-150 p-6 shadow-xs">
-                  <div className="flex items-center gap-2 mb-4">
-                    <svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <h2 className="text-sm font-black text-zinc-700 uppercase tracking-wider">Địa chỉ giao hàng</h2>
+                <div className="bg-primary rounded-2xl border border-secondary p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-6 border-b border-secondary pb-4">
+                    <Package className="w-5 h-5 text-brand-600" />
+                    <h2 className="text-base font-semibold text-primary uppercase tracking-wide">Địa chỉ giao hàng</h2>
                   </div>
 
                   {/* Tabs address */}
-                  <div className="flex gap-2 p-1 bg-zinc-100 rounded-xl mb-4 max-w-[320px]">
+                  <div className="flex gap-2 p-1 bg-secondary rounded-xl mb-6 max-w-sm">
                     <button
                       onClick={() => setAddressTab("saved")}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                        addressTab === "saved" ? "bg-white text-zinc-800 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
+                      className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+                        addressTab === "saved" ? "bg-primary text-primary shadow-sm" : "text-secondary hover:text-primary"
                       }`}
                     >
                       Địa chỉ đã lưu
                     </button>
                     <button
                       onClick={() => setAddressTab("new")}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                        addressTab === "new" ? "bg-white text-zinc-800 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
+                      className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+                        addressTab === "new" ? "bg-primary text-primary shadow-sm" : "text-secondary hover:text-primary"
                       }`}
                     >
                       Địa chỉ mới
@@ -555,47 +531,47 @@ function CheckoutContent() {
                   </div>
 
                   {addressTab === "saved" ? (
-                    <div className="border border-violet-600/30 bg-violet-50/20 rounded-2xl p-4 relative">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[9px] font-black tracking-widest text-violet-600 uppercase">Nhà</span>
-                        <span className="bg-violet-100 text-violet-700 text-[8px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                          MẶC ĐỊNH <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    <div className="border border-brand-200 dark:border-brand-900 bg-brand-50 dark:bg-brand-950/20 rounded-xl p-5 relative">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xs font-bold tracking-widest text-brand-600 uppercase">Nhà</span>
+                        <span className="bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-400 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                          MẶC ĐỊNH <Check className="w-3 h-3" />
                         </span>
                       </div>
-                      <p className="text-xs font-extrabold text-zinc-800 mb-1">{user?.fullName || "Trịnh Ngọc Khánh"}</p>
-                      <p className="text-xs text-zinc-500 font-medium mb-1">{user?.address || "142 Đường Tây 4, Căn hộ 3B, Hà Nội, Việt Nam"}</p>
-                      <p className="text-[10px] text-zinc-400 font-bold tracking-wider">{user?.phone || "+84 123 456 789"}</p>
+                      <p className="text-sm font-semibold text-primary mb-1">{user?.fullName || "Trịnh Ngọc Khánh"}</p>
+                      <p className="text-sm text-secondary mb-2">{user?.address || "142 Đường Tây 4, Căn hộ 3B, Hà Nội, Việt Nam"}</p>
+                      <p className="text-xs font-medium text-secondary">{user?.phone || "+84 123 456 789"}</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-wider mb-1">Họ và tên</label>
+                        <label className="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Họ và tên</label>
                         <input
                           type="text"
                           value={newAddressInfo.fullName}
                           onChange={(e) => setNewAddressInfo({ ...newAddressInfo, fullName: e.target.value })}
                           placeholder="Nhập tên người nhận"
-                          className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-violet-600 bg-white"
+                          className="w-full px-4 py-2.5 bg-primary border border-secondary rounded-xl text-sm font-medium text-primary focus:outline-none focus:ring-2 focus:ring-brand-500 transition-shadow"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-wider mb-1">Địa chỉ nhận hàng</label>
+                        <label className="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Địa chỉ nhận hàng</label>
                         <input
                           type="text"
                           value={newAddressInfo.address}
                           onChange={(e) => setNewAddressInfo({ ...newAddressInfo, address: e.target.value })}
                           placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
-                          className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-violet-600 bg-white"
+                          className="w-full px-4 py-2.5 bg-primary border border-secondary rounded-xl text-sm font-medium text-primary focus:outline-none focus:ring-2 focus:ring-brand-500 transition-shadow"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-wider mb-1">Số điện thoại</label>
+                        <label className="block text-xs font-semibold text-secondary uppercase tracking-wide mb-1.5">Số điện thoại</label>
                         <input
                           type="text"
                           value={newAddressInfo.phone}
                           onChange={(e) => setNewAddressInfo({ ...newAddressInfo, phone: e.target.value })}
                           placeholder="Nhập số điện thoại liên lạc"
-                          className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-violet-600 bg-white"
+                          className="w-full px-4 py-2.5 bg-primary border border-secondary rounded-xl text-sm font-medium text-primary focus:outline-none focus:ring-2 focus:ring-brand-500 transition-shadow"
                         />
                       </div>
                     </div>
@@ -606,17 +582,17 @@ function CheckoutContent() {
                 <button
                   disabled={isSubmitting}
                   onClick={handleCreateRentalRequest}
-                  className={`w-full py-3.5 bg-violet-600 hover:bg-violet-700 text-white font-extrabold rounded-2xl shadow-md transition-all text-xs tracking-wider uppercase flex items-center justify-center gap-2 ${
-                    isSubmitting ? "cursor-wait opacity-80" : "cursor-pointer"
+                  className={`w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-sm transition-all text-sm uppercase tracking-wide flex items-center justify-center gap-2 ${
+                    isSubmitting ? "opacity-80 cursor-wait" : ""
                   }`}
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                       <span>Đang gửi yêu cầu...</span>
                     </>
                   ) : (
-                    "Gửi yêu cầu thuê →"
+                    "Gửi yêu cầu thuê"
                   )}
                 </button>
               </>
@@ -626,30 +602,31 @@ function CheckoutContent() {
             {step === 2 && (
               <>
                 {/* Giao den details */}
-                <div className="bg-white rounded-3xl border border-zinc-150 p-6 shadow-xs flex justify-between items-start">
+                <div className="bg-primary rounded-2xl border border-secondary p-6 shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                   <div>
-                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-1">GIAO ĐẾN</span>
+                    <span className="text-xs font-semibold text-secondary uppercase tracking-wide block mb-2">Giao đến</span>
                     {paymentRequest ? (
                       <>
-                        <p className="text-xs font-extrabold text-zinc-800">{user?.fullName || "Trịnh Ngọc Khánh"}</p>
-                        <p className="text-xs text-zinc-500 font-medium mt-0.5">
+                        <p className="text-sm font-semibold text-primary">{user?.fullName || "Trịnh Ngọc Khánh"}</p>
+                        <p className="text-sm text-secondary mt-1">
                           {paymentRequest.message?.replace("Giao hàng tới: ", "").split(" (")[0] || user?.address || "142 Đường Tây 4, Hà Nội, Việt Nam"}
                         </p>
                       </>
                     ) : (
                       <>
-                        <p className="text-xs font-extrabold text-zinc-800">{activeAddress.name} — Nhà</p>
-                        <p className="text-xs text-zinc-500 font-medium mt-0.5">{activeAddress.address}</p>
+                        <p className="text-sm font-semibold text-primary">{activeAddress.name} — Nhà</p>
+                        <p className="text-sm text-secondary mt-1">{activeAddress.address}</p>
                       </>
                     )}
-                    <p className="text-[9px] font-extrabold text-violet-600 mt-2 tracking-wider bg-violet-50 px-2 py-0.5 rounded inline-block">
-                      🚚 Tiêu chuẩn — 25-27 Th2
-                    </p>
+                    <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 rounded-lg text-xs font-semibold">
+                      <Package className="w-3.5 h-3.5" />
+                      Tiêu chuẩn — 25-27 Th2
+                    </div>
                   </div>
                   {!paymentRequest && (
                     <button
                       onClick={() => setStep(1)}
-                      className="text-xs font-bold text-violet-600 hover:text-violet-700 transition-colors"
+                      className="text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
                     >
                       Thay đổi
                     </button>
@@ -657,66 +634,41 @@ function CheckoutContent() {
                 </div>
 
                 {/* Phuong thuc thanh toan card */}
-                <div className="bg-white rounded-3xl border border-zinc-150 p-6 shadow-xs">
-                  <h2 className="text-sm font-black text-zinc-700 uppercase tracking-wider mb-4">Phương thức thanh toán</h2>
-                  
-                  {/* Payment Tabs */}
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-xl mb-6">
-                    <button
-                      onClick={() => setPaymentTab("card")}
-                      className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                        paymentTab === "card" ? "bg-white text-zinc-800 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
-                      }`}
-                    >
-                      Thẻ ngân hàng
-                    </button>
-                    <button
-                      onClick={() => setPaymentTab("bank")}
-                      className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                        paymentTab === "bank" ? "bg-violet-600 text-white shadow-xs" : "text-zinc-500 hover:text-zinc-850"
-                      }`}
-                    >
-                      Chuyển khoản
-                    </button>
+                <div className="bg-primary rounded-2xl border border-secondary p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-6 border-b border-secondary pb-4">
+                    <CreditCard className="w-5 h-5 text-brand-600" />
+                    <h2 className="text-base font-semibold text-primary uppercase tracking-wide">Phương thức thanh toán</h2>
                   </div>
 
-                  {paymentTab === "card" ? (
-                    <div className="py-8 text-center bg-zinc-50 border border-zinc-200 border-dashed rounded-2xl text-xs font-semibold text-zinc-400">
-                      💳 Tính năng đang phát triển
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center py-4 bg-zinc-50/50 rounded-2xl border border-zinc-100 p-6">
-                      <p className="text-xs font-extrabold text-zinc-700 mb-1">Quét mã QR để thanh toán</p>
+                  <div className="flex flex-col items-center py-8 bg-secondary/50 rounded-xl border border-secondary px-6">
+                    <p className="text-sm font-semibold text-primary mb-2">Quét mã QR để thanh toán</p>
                       
                       {/* Countdown Timer */}
-                      <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-bold mb-6">
-                        <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Thời gian còn lại:</span>
-                        <span className="text-violet-600 text-sm font-black">{formatTime(timeLeft)}</span>
+                      <div className="flex items-center gap-2 text-sm font-medium mb-6 bg-primary px-4 py-2 rounded-lg border border-secondary shadow-sm">
+                        <span className="text-secondary">Thời gian còn lại:</span>
+                        <span className="text-brand-600 font-bold">{formatTime(timeLeft)}</span>
                       </div>
 
                       {/* QR Display / Loading skeleton */}
-                      <div className="w-[180px] h-[180px] bg-white border border-zinc-200 rounded-2xl flex items-center justify-center p-2 shadow-sm relative overflow-hidden">
+                      <div className="w-56 h-56 bg-primary border border-secondary rounded-xl flex items-center justify-center p-3 shadow-sm relative overflow-hidden">
                         {qrLoading ? (
-                          <div className="w-full h-full bg-zinc-100 animate-pulse rounded-xl" />
+                          <div className="w-full h-full bg-secondary animate-pulse rounded-lg" />
                         ) : qrError ? (
                           <div className="flex flex-col items-center justify-center p-4 text-center">
-                            <span className="text-red-500 font-bold text-xs">Lỗi tải mã QR</span>
+                            <span className="text-red-500 font-semibold text-sm">Lỗi tải mã QR</span>
                             <button 
                               onClick={() => fetchQrCode(orderCode)} 
-                              className="mt-2 text-[10px] font-black text-violet-600 bg-violet-50 px-2.5 py-1 rounded"
+                              className="mt-3 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
                             >
                               Tải lại
                             </button>
                           </div>
                         ) : timeLeft <= 0 ? (
                           <div className="flex flex-col items-center justify-center p-4 text-center">
-                            <span className="text-zinc-400 font-bold text-xs mb-2">Mã QR hết hạn</span>
+                            <span className="text-secondary font-semibold text-sm mb-3">Mã QR hết hạn</span>
                             <button 
                               onClick={handleRecreateQr} 
-                              className="text-[10px] font-black text-white bg-violet-600 px-3 py-1.5 rounded-lg shadow-sm"
+                              className="text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
                             >
                               Tạo lại mã QR
                             </button>
@@ -725,18 +677,17 @@ function CheckoutContent() {
                           <img 
                             src={qrDataURL} 
                             alt="VietQR Payment Code" 
-                            className="w-full h-full object-contain transition-opacity duration-550 opacity-100" 
+                            className="w-full h-full object-contain rounded-lg" 
                           />
                         ) : (
-                          <div className="w-full h-full bg-zinc-150 animate-pulse rounded-xl" />
+                          <div className="w-full h-full bg-secondary animate-pulse rounded-lg" />
                         )}
                       </div>
 
-                      <p className="text-[10px] text-zinc-455 font-bold text-center mt-5 leading-relaxed max-w-[280px]">
+                      <p className="text-xs text-secondary font-medium text-center mt-6 max-w-xs leading-relaxed">
                         Mở ứng dụng ngân hàng bất kỳ trên điện thoại và quét mã QR ở trên để hoàn tất thanh toán.
                       </p>
                     </div>
-                  )}
                 </div>
 
                 {/* Step 2 buttons */}
@@ -749,16 +700,17 @@ function CheckoutContent() {
                         setStep(1);
                       }
                     }}
-                    className="flex-1 py-3.5 border border-zinc-200 hover:bg-zinc-100 bg-white text-zinc-700 font-extrabold rounded-2xl shadow-xs transition-all text-xs tracking-wider uppercase"
+                    className="flex-1 py-4 bg-primary border border-secondary hover:bg-tertiary text-primary font-semibold rounded-xl transition-colors text-sm uppercase tracking-wide flex items-center justify-center gap-2"
                   >
-                    ← Quay lại
+                    <ArrowLeft className="w-4 h-4" />
+                    Quay lại
                   </button>
                   <button
                     onClick={() => setStep(3)}
                     disabled={timeLeft <= 0 || qrLoading}
-                    className="flex-1 py-3.5 bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-300 disabled:cursor-not-allowed text-white font-extrabold rounded-2xl shadow-md transition-all text-xs tracking-wider uppercase"
+                    className="flex-1 py-4 bg-brand-600 hover:bg-brand-700 disabled:bg-secondary disabled:text-tertiary disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm uppercase tracking-wide shadow-sm"
                   >
-                    Tiếp theo →
+                    Tiếp theo
                   </button>
                 </div>
               </>
@@ -767,131 +719,123 @@ function CheckoutContent() {
             {/* Step 3 Content - Manual Bank details */}
             {step === 3 && (
               <>
-                <div className="bg-white rounded-3xl border border-zinc-150 p-6 shadow-xs text-center space-y-4">
-                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">SỐ TIỀN CẦN CHUYỂN</span>
-                  <p className="text-3xl font-black text-violet-700">{finalTotal.toLocaleString("vi-VN")}đ</p>
-                  <p className="text-xs text-zinc-400 font-bold">hoặc chuyển khoản thủ công</p>
+                <div className="bg-primary rounded-2xl border border-secondary p-8 shadow-sm text-center">
+                  <span className="text-xs font-semibold text-secondary uppercase tracking-widest block mb-3">Số tiền cần chuyển</span>
+                  <p className="text-4xl font-bold text-brand-600 mb-2">{finalTotal.toLocaleString("vi-VN")}đ</p>
+                  <p className="text-sm text-secondary">Hoặc chuyển khoản thủ công theo thông tin bên dưới</p>
                   
                   {/* Manual details table */}
-                  <div className="border border-zinc-100 rounded-2xl overflow-hidden mt-4 text-left">
-                    <div className="grid grid-cols-12 border-b border-zinc-100 py-3.5 px-4 items-center">
-                      <div className="col-span-4 text-[9px] font-black text-zinc-450 uppercase tracking-wider">NGÂN HÀNG</div>
-                      <div className="col-span-8 flex justify-between items-center pl-2">
-                        <span className="text-xs font-extrabold text-zinc-700">
+                  <div className="border border-secondary rounded-xl overflow-hidden mt-8 text-left divide-y divide-secondary">
+                    <div className="grid grid-cols-12 py-4 px-5 items-center hover:bg-tertiary transition-colors">
+                      <div className="col-span-4 text-xs font-semibold text-secondary uppercase tracking-wide">Ngân hàng</div>
+                      <div className="col-span-8 flex justify-between items-center">
+                        <span className="text-sm font-semibold text-primary">
                           {process.env.NEXT_PUBLIC_BANK_NAME_DISPLAY || "Vietcombank"}
                         </span>
-                        <button onClick={() => handleCopy(process.env.NEXT_PUBLIC_BANK_NAME_DISPLAY || "Vietcombank", "Ngân hàng")}>
-                          <CopyIcon />
+                        <button onClick={() => handleCopy(process.env.NEXT_PUBLIC_BANK_NAME_DISPLAY || "Vietcombank", "Ngân hàng")} className="p-1 text-secondary hover:text-brand-600 transition-colors">
+                          <Copy className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-12 border-b border-zinc-100 py-3.5 px-4 items-center">
-                      <div className="col-span-4 text-[9px] font-black text-zinc-455 uppercase tracking-wider">CHỦ TÀI KHOẢN</div>
-                      <div className="col-span-8 flex justify-between items-center pl-2">
-                        <span className="text-xs font-extrabold text-zinc-700 uppercase">
+                    <div className="grid grid-cols-12 py-4 px-5 items-center hover:bg-tertiary transition-colors">
+                      <div className="col-span-4 text-xs font-semibold text-secondary uppercase tracking-wide">Chủ tài khoản</div>
+                      <div className="col-span-8 flex justify-between items-center">
+                        <span className="text-sm font-semibold text-primary uppercase">
                           {bankInfo?.bankOwner || "CONG TY CP SHARIO"}
                         </span>
-                        <button onClick={() => handleCopy(bankInfo?.bankOwner || "CONG TY CP SHARIO", "Chủ tài khoản")}>
-                          <CopyIcon />
+                        <button onClick={() => handleCopy(bankInfo?.bankOwner || "CONG TY CP SHARIO", "Chủ tài khoản")} className="p-1 text-secondary hover:text-brand-600 transition-colors">
+                          <Copy className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-12 border-b border-zinc-100 py-3.5 px-4 items-center">
-                      <div className="col-span-4 text-[9px] font-black text-zinc-455 uppercase tracking-wider">SỐ TÀI KHOẢN</div>
-                      <div className="col-span-8 flex justify-between items-center pl-2">
-                        <span className="text-xs font-black text-zinc-800 tracking-wider">
+                    <div className="grid grid-cols-12 py-4 px-5 items-center hover:bg-tertiary transition-colors">
+                      <div className="col-span-4 text-xs font-semibold text-secondary uppercase tracking-wide">Số tài khoản</div>
+                      <div className="col-span-8 flex justify-between items-center">
+                        <span className="text-sm font-bold text-primary tracking-wider">
                           {bankInfo?.bankAccount || "1234 5678 9012"}
                         </span>
-                        <button onClick={() => handleCopy(bankInfo?.bankAccount || "123456789012", "Số tài khoản")}>
-                          <CopyIcon />
+                        <button onClick={() => handleCopy(bankInfo?.bankAccount || "123456789012", "Số tài khoản")} className="p-1 text-secondary hover:text-brand-600 transition-colors">
+                          <Copy className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-12 border-b border-zinc-100 py-3.5 px-4 items-center">
-                      <div className="col-span-4 text-[9px] font-black text-zinc-455 uppercase tracking-wider">SỐ TIỀN</div>
-                      <div className="col-span-8 flex justify-between items-center pl-2">
-                        <span className="text-xs font-black text-zinc-800">
-                          {finalTotal.toLocaleString("vi-VN")}đ
-                        </span>
-                        <button onClick={() => handleCopy(finalTotal.toString(), "Số tiền")}>
-                          <CopyIcon />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-12 py-3.5 px-4 items-center">
-                      <div className="col-span-4 text-[9px] font-black text-zinc-455 uppercase tracking-wider">NỘI DUNG CHUYỂN KHOẢN</div>
-                      <div className="col-span-8 flex justify-between items-center pl-2">
-                        <span className="text-xs font-black text-violet-755 font-mono select-all">
+                    <div className="grid grid-cols-12 py-4 px-5 items-center hover:bg-tertiary transition-colors">
+                      <div className="col-span-4 text-xs font-semibold text-secondary uppercase tracking-wide">Nội dung</div>
+                      <div className="col-span-8 flex justify-between items-center">
+                        <span className="text-sm font-bold text-brand-600 font-mono select-all">
                           {orderCode}
                         </span>
-                        <button onClick={() => handleCopy(orderCode, "Nội dung chuyển khoản")}>
-                          <CopyIcon />
+                        <button onClick={() => handleCopy(orderCode, "Nội dung chuyển khoản")} className="p-1 text-secondary hover:text-brand-600 transition-colors">
+                          <Copy className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Warning alert */}
-                  <div className="bg-yellow-50/50 border border-yellow-200/50 rounded-2xl p-4 flex gap-3 text-left">
-                    <AlertIcon />
+                  <div className="mt-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl p-4 flex gap-3 text-left">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                     <div>
-                      <p className="text-xs font-extrabold text-yellow-800">Lưu ý quan trọng</p>
-                      <p className="text-[10px] text-yellow-700 font-semibold mt-0.5 leading-relaxed">
-                        Vui lòng chuyển <span className="font-extrabold text-yellow-800">đúng số tiền</span> và ghi <span className="font-extrabold text-yellow-800">đúng nội dung chuyển khoản</span> như trên để hệ thống ghi nhận chính xác tự động.
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-500">Lưu ý quan trọng</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
+                        Vui lòng chuyển <span className="font-bold">đúng số tiền</span> và ghi <span className="font-bold">đúng nội dung chuyển khoản</span> như trên để hệ thống tự động ghi nhận chính xác.
                       </p>
                     </div>
                   </div>
 
                   {/* Confirmation Checkbox */}
-                  <label className="flex gap-2 items-start text-left pt-4 select-none cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isConfirmed}
-                      onChange={(e) => setIsConfirmed(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 text-violet-600 border-zinc-300 rounded focus:ring-violet-500"
-                    />
-                    <span className="text-[10.5px] text-zinc-500 font-bold leading-normal">
-                      Tôi đã chuyển khoản thành công với đúng số tiền và nội dung chuyển khoản như trên
+                  <label className="flex items-start gap-3 mt-6 text-left cursor-pointer group">
+                    <div className="relative flex items-center justify-center mt-0.5 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={isConfirmed}
+                        onChange={(e) => setIsConfirmed(e.target.checked)}
+                        className="peer appearance-none w-5 h-5 border-2 border-secondary rounded-md checked:bg-brand-600 checked:border-brand-600 transition-colors cursor-pointer"
+                      />
+                      <Check className="w-3.5 h-3.5 text-white absolute opacity-0 peer-checked:opacity-100 pointer-events-none" />
+                    </div>
+                    <span className="text-sm text-primary font-medium group-hover:text-brand-600 transition-colors">
+                      Tôi xác nhận đã chuyển khoản thành công với đúng số tiền và nội dung chuyển khoản như trên
                     </span>
                   </label>
                 </div>
 
                 {/* Security verification badge */}
-                <div className="bg-zinc-100 border border-zinc-200/50 rounded-2xl p-3.5 flex items-center justify-center gap-1.5 text-zinc-500">
-                  <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <span className="text-[9.5px] font-bold">Bảo mật bởi Shario Protect — Mã hóa 256-bit. Bảo hiểm toàn bộ. Hoàn tiền ngay lập tức.</span>
+                <div className="bg-secondary/50 border border-secondary rounded-xl p-4 flex items-center justify-center gap-2 text-secondary">
+                  <ShieldCheck className="w-5 h-5" />
+                  <span className="text-xs font-semibold">Bảo mật bởi Shario Protect — Mã hóa 256-bit. Bảo hiểm toàn diện.</span>
                 </div>
 
                 {/* Step 3 buttons */}
                 <div className="flex gap-4">
                   <button
                     onClick={() => setStep(2)}
-                    className="py-3.5 px-6 border border-zinc-200 hover:bg-zinc-100 bg-white text-zinc-700 font-extrabold rounded-2xl shadow-xs transition-all text-xs tracking-wider uppercase"
+                    className="flex-1 py-4 bg-primary border border-secondary hover:bg-tertiary text-primary font-semibold rounded-xl transition-colors text-sm uppercase tracking-wide flex items-center justify-center gap-2"
                   >
                     Quay lại
                   </button>
                   <button
                     onClick={handleConfirmPayment}
                     disabled={!isConfirmed || isSubmitting}
-                    className={`flex-1 py-3.5 rounded-2xl text-xs font-black tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2 ${
+                    className={`flex-[2] py-4 rounded-xl text-sm font-semibold uppercase tracking-wide transition-all flex items-center justify-center gap-2 ${
                       !isConfirmed || isSubmitting
-                        ? "bg-zinc-300 text-zinc-400 cursor-not-allowed"
-                        : "bg-violet-600 hover:bg-violet-700 text-white cursor-pointer hover:shadow-lg active:scale-[0.99]"
+                        ? "bg-secondary text-tertiary cursor-not-allowed"
+                        : "bg-brand-600 hover:bg-brand-700 text-white shadow-sm"
                     }`}
                   >
                     {isSubmitting ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <Loader2 className="w-5 h-5 animate-spin" />
                         <span>Đang xử lý...</span>
                       </>
                     ) : (
-                      "✓ Tôi đã chuyển khoản"
+                      <>
+                        <Check className="w-5 h-5" />
+                        Tôi đã chuyển khoản
+                      </>
                     )}
                   </button>
                 </div>
@@ -900,36 +844,32 @@ function CheckoutContent() {
 
             {/* Step 4 Content - Payment Successful Confirmation */}
             {step === 4 && (
-              <div className="bg-white rounded-3xl border border-zinc-150 p-8 shadow-xs text-center space-y-6 flex flex-col items-center py-12">
-                <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center text-green-500 border border-green-200">
-                  <svg className="w-8 h-8 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
+              <div className="bg-primary rounded-2xl border border-secondary p-10 shadow-sm text-center flex flex-col items-center">
+                <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-500 border border-emerald-200 dark:border-emerald-900 mb-6">
+                  <Check className="w-10 h-10 animate-bounce" />
                 </div>
                 
-                <div className="space-y-2">
-                  <h2 className="text-xl font-black text-zinc-900">Thanh toán thành công!</h2>
-                  <p className="text-sm text-zinc-550 max-w-md mx-auto">
-                    Đơn đặt thuê của bạn đã được kích hoạt thành công. Chủ đồ đã nhận được thông tin thanh toán của bạn.
-                  </p>
-                </div>
+                <h2 className="text-2xl font-bold text-primary mb-3">Thanh toán thành công!</h2>
+                <p className="text-sm text-secondary max-w-md mx-auto mb-8">
+                  Đơn đặt thuê của bạn đã được kích hoạt thành công. Chủ đồ đã nhận được thông tin thanh toán của bạn.
+                </p>
 
-                <div className="border border-zinc-100 rounded-2xl p-4 w-full text-left space-y-3 bg-zinc-50/50">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-zinc-400 font-bold">Mã đơn thuê:</span>
-                    <span className="text-zinc-700 font-black">RH{paymentRequest?.rentalId}</span>
+                <div className="w-full bg-secondary/50 border border-secondary rounded-xl p-6 text-left space-y-4 mb-8">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-secondary">Mã đơn thuê</span>
+                    <span className="text-sm font-bold text-primary">RH{paymentRequest?.rentalId}</span>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-zinc-400 font-bold">Sản phẩm:</span>
-                    <span className="text-zinc-700 font-extrabold truncate max-w-[200px]">{paymentRequest?.productName}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-secondary">Sản phẩm</span>
+                    <span className="text-sm font-bold text-primary truncate max-w-[200px]">{paymentRequest?.productName}</span>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-zinc-400 font-bold">Số tiền đã trả:</span>
-                    <span className="text-violet-700 font-black">{finalTotal.toLocaleString("vi-VN")}đ</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-secondary">Số tiền đã thanh toán</span>
+                    <span className="text-base font-bold text-brand-600">{finalTotal.toLocaleString("vi-VN")}đ</span>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-zinc-400 font-bold">Trạng thái:</span>
-                    <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-green-50 text-green-700 border border-green-200 rounded-full">
+                  <div className="flex justify-between items-center pt-4 border-t border-secondary">
+                    <span className="text-sm font-semibold text-secondary">Trạng thái</span>
+                    <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 rounded-full">
                       Đã thanh toán
                     </span>
                   </div>
@@ -937,9 +877,9 @@ function CheckoutContent() {
 
                 <button
                   onClick={() => router.push("/rentals/renter")}
-                  className="w-full py-3.5 bg-violet-600 hover:bg-violet-750 text-white rounded-2xl text-xs font-black tracking-wider uppercase shadow-md hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer"
+                  className="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold uppercase tracking-wide transition-colors shadow-sm"
                 >
-                  Quay lại đơn thuê của tôi
+                  Quản lý đơn thuê
                 </button>
               </div>
             )}
@@ -947,29 +887,32 @@ function CheckoutContent() {
 
           {/* Right Column (Order Summary - Sticky) */}
           <div className="lg:col-span-5 lg:sticky lg:top-24">
-            <div className="bg-white rounded-3xl border border-zinc-150 p-6 shadow-xs space-y-5">
-              <h2 className="text-sm font-black text-zinc-800 uppercase tracking-wider">Tóm tắt đơn hàng</h2>
+            <div className="bg-primary rounded-2xl border border-secondary p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6 border-b border-secondary pb-4">
+                <Package className="w-5 h-5 text-brand-600" />
+                <h2 className="text-base font-semibold text-primary uppercase tracking-wide">Tóm tắt đơn hàng</h2>
+              </div>
               
               {/* Cart List */}
-              <div className="space-y-4 max-h-[280px] overflow-y-auto pr-1">
+              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar mb-6">
                 {paymentRequest ? (
                   // Summary for existing Request Payment flow
-                  <div className="flex gap-3 items-center">
-                    <div className="w-12 h-12 bg-zinc-100 rounded-xl overflow-hidden shrink-0 border border-zinc-100">
-                      <span className="w-full h-full flex items-center justify-center text-lg">📦</span>
+                  <div className="flex gap-4 items-center">
+                    <div className="w-16 h-16 bg-secondary rounded-xl overflow-hidden shrink-0 border border-secondary flex items-center justify-center">
+                      <Package className="w-8 h-8 text-tertiary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-extrabold text-zinc-800 truncate leading-snug">
+                      <h4 className="text-sm font-semibold text-primary line-clamp-2 leading-snug">
                         {paymentRequest.productName}
                       </h4>
-                      <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
-                        {formatDisplayDate(paymentRequest.startDate)} — {formatDisplayDate(paymentRequest.endDate)} · {
+                      <p className="text-xs font-medium text-secondary mt-1">
+                        {formatDisplayDate(paymentRequest.startDate)} — {formatDisplayDate(paymentRequest.endDate)} • {
                           Math.ceil(Math.abs(new Date(paymentRequest.endDate).getTime() - new Date(paymentRequest.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
                         } ngày
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="text-xs font-extrabold text-zinc-700">
+                      <span className="text-sm font-bold text-primary">
                         {finalSubtotal.toLocaleString("vi-VN")}đ
                       </span>
                     </div>
@@ -977,26 +920,26 @@ function CheckoutContent() {
                 ) : (
                   // Summary for Cart checkout flow
                   items.map((item) => (
-                    <div key={item.product.id} className="flex gap-3 items-center">
-                      <div className="w-12 h-12 bg-zinc-100 rounded-xl overflow-hidden shrink-0 border border-zinc-100">
-                        {item.product.primaryImage ? (
-                          <img src={item.product.primaryImage} alt={item.product.name} className="w-full h-full object-cover" />
+                    <div key={item.product.id} className="flex gap-4 items-center">
+                      <div className="w-16 h-16 bg-secondary rounded-xl overflow-hidden shrink-0 border border-secondary flex items-center justify-center">
+                        {getPrimaryImage(item.product) ? (
+                          <img src={getPrimaryImage(item.product)} alt={item.product.name} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-lg">📦</div>
+                          <Package className="w-8 h-8 text-tertiary" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-extrabold text-zinc-800 truncate leading-snug">{item.product.name}</h4>
-                        <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
+                        <h4 className="text-sm font-semibold text-primary truncate leading-snug">{item.product.name}</h4>
+                        <p className="text-xs font-medium text-secondary mt-1">
                           {item.startDate && item.endDate ? (
-                            `${formatDisplayDate(item.startDate)} — ${formatDisplayDate(item.endDate)} · ${item.rentDays} ngày`
+                            `${formatDisplayDate(item.startDate)} — ${formatDisplayDate(item.endDate)} • ${item.rentDays} ngày`
                           ) : (
-                            "Chờ chọn ngày"
+                            "Chưa chọn ngày"
                           )}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-xs font-extrabold text-zinc-700">
+                        <span className="text-sm font-bold text-primary">
                           {(item.product.pricePerDay * item.rentDays).toLocaleString("vi-VN")}đ
                         </span>
                       </div>
@@ -1005,35 +948,36 @@ function CheckoutContent() {
                 )}
               </div>
 
-              <div className="border-t border-zinc-100 pt-4 space-y-2.5 text-xs">
-                <div className="flex justify-between font-semibold text-zinc-550">
-                  <span>Tạm tính</span>
-                  <span className="text-zinc-800 font-bold">{finalSubtotal.toLocaleString("vi-VN")}đ</span>
+              <div className="border-t border-secondary pt-5 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-secondary">Tạm tính</span>
+                  <span className="font-semibold text-primary">{finalSubtotal.toLocaleString("vi-VN")}đ</span>
                 </div>
-                <div className="flex justify-between font-semibold text-zinc-550">
-                  <span>Phí dịch vụ</span>
-                  <span className="text-zinc-800 font-bold">{serviceFee.toLocaleString("vi-VN")}đ</span>
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-secondary">Phí dịch vụ (10%)</span>
+                  <span className="font-semibold text-primary">{serviceFee.toLocaleString("vi-VN")}đ</span>
                 </div>
                 {finalDeposit > 0 && (
-                  <div className="flex justify-between font-semibold text-zinc-550">
-                    <span>Tiền đặt cọc (Sẽ hoàn lại)</span>
-                    <span className="text-zinc-800 font-bold">{finalDeposit.toLocaleString("vi-VN")}đ</span>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium text-secondary">Tiền cọc (Hoàn lại)</span>
+                    <span className="font-semibold text-primary">{finalDeposit.toLocaleString("vi-VN")}đ</span>
                   </div>
                 )}
-                <div className="flex justify-between font-semibold text-zinc-550">
-                  <span>Vận chuyển (Tiêu chuẩn)</span>
-                  <span className="text-green-600 font-bold">Miễn phí</span>
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-secondary">Vận chuyển</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-500">Miễn phí</span>
                 </div>
 
-                <div className="border-t border-zinc-100 pt-4 flex justify-between items-baseline">
-                  <span className="text-xs font-black text-zinc-800 uppercase tracking-wider">Tổng cộng</span>
-                  <span className="text-xl font-black text-zinc-900">{finalTotal.toLocaleString("vi-VN")}đ</span>
+                <div className="border-t border-secondary mt-5 pt-5 flex justify-between items-end">
+                  <span className="text-sm font-semibold text-primary uppercase tracking-wide">Tổng thanh toán</span>
+                  <span className="text-2xl font-bold text-brand-600">{finalTotal.toLocaleString("vi-VN")}đ</span>
                 </div>
               </div>
 
               {/* Shario protect badge */}
-              <div className="bg-violet-50/50 border border-violet-100/50 rounded-2xl p-3 flex items-center gap-2 text-violet-700 text-[10px] font-bold justify-center select-none">
-                <span>🛡 Bảo vệ bởi Shario Protect</span>
+              <div className="mt-6 bg-brand-50 dark:bg-brand-950/20 border border-brand-200 dark:border-brand-900 rounded-xl p-4 flex items-center justify-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-brand-600" />
+                <span className="text-xs font-semibold text-brand-700 dark:text-brand-400">Giao dịch được bảo vệ 100%</span>
               </div>
             </div>
           </div>
@@ -1068,44 +1012,48 @@ function AriaDateRangePicker({ onChange }: { onChange: (start: string, end: stri
           }
         }}
       >
-        <Group className="flex items-center gap-1 bg-white border border-zinc-200 rounded-xl p-1.5 focus-within:border-violet-600 transition-colors text-xs font-semibold max-w-[240px]">
-          <DateInput slot="start" className="flex">
+        <Group className="flex items-center gap-1 bg-primary border border-secondary rounded-lg px-2 py-1.5 focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 transition-all text-xs font-medium max-w-fit">
+          <DateInput slot="start" className="flex outline-none">
             {(segment) => (
               <DateSegment
                 segment={segment}
-                className="px-0.5 rounded focus:bg-violet-100 focus:text-violet-900 outline-none select-none"
+                className="px-1 py-0.5 rounded focus:bg-brand-100 dark:focus:bg-brand-900 focus:text-brand-700 dark:focus:text-brand-100 outline-none select-none text-primary"
               />
             )}
           </DateInput>
-          <span aria-hidden="true" className="text-zinc-400 px-1">—</span>
-          <DateInput slot="end" className="flex">
+          <span aria-hidden="true" className="text-secondary">—</span>
+          <DateInput slot="end" className="flex outline-none">
             {(segment) => (
               <DateSegment
                 segment={segment}
-                className="px-0.5 rounded focus:bg-violet-100 focus:text-violet-900 outline-none select-none"
+                className="px-1 py-0.5 rounded focus:bg-brand-100 dark:focus:bg-brand-900 focus:text-brand-700 dark:focus:text-brand-100 outline-none select-none text-primary"
               />
             )}
           </DateInput>
         </Group>
-        <Popover className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xl z-50">
-          <Dialog>
+        <Popover className="bg-primary border border-secondary rounded-xl p-4 shadow-xl z-50">
+          <Dialog className="outline-none">
             <RangeCalendar className="w-full">
-              <header className="flex justify-between items-center mb-3">
-                <AriaButton slot="previous" className="p-1 hover:bg-zinc-100 rounded text-zinc-500 font-bold text-xs select-none">◀</AriaButton>
-                <Heading className="text-xs font-bold text-zinc-700" />
-                <AriaButton slot="next" className="p-1 hover:bg-zinc-100 rounded text-zinc-500 font-bold text-xs select-none">▶</AriaButton>
+              <header className="flex justify-between items-center mb-4 px-1">
+                <AriaButton slot="previous" className="p-1.5 hover:bg-secondary rounded-md text-secondary transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                  <ChevronLeft className="w-4 h-4" />
+                </AriaButton>
+                <Heading className="text-sm font-semibold text-primary" />
+                <AriaButton slot="next" className="p-1.5 hover:bg-secondary rounded-md text-secondary transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                  <ChevronRight className="w-4 h-4" />
+                </AriaButton>
               </header>
               <CalendarGrid className="w-full text-center border-collapse">
-                <CalendarHeaderCell className="text-[10px] font-bold text-zinc-400 py-1" />
+                <CalendarHeaderCell className="text-xs font-semibold text-secondary pb-2" />
                 <CalendarGridBody>
                   {(date) => (
                     <CalendarCell
                       date={date}
                       className={({ isSelected, isSelectionStart, isSelectionEnd, isDisabled }) => `
-                        h-7 w-7 text-xs font-bold rounded-full transition-all relative flex items-center justify-center select-none cursor-pointer mx-auto
-                        ${isDisabled ? 'text-zinc-300 cursor-not-allowed opacity-50' : ''}
-                        ${isSelected ? 'bg-violet-50 text-violet-700' : 'text-zinc-750 hover:bg-zinc-100'}
-                        ${(isSelectionStart || isSelectionEnd) ? 'bg-violet-600 text-white rounded-full' : ''}
+                        h-8 w-8 text-sm font-medium rounded-full transition-all relative flex items-center justify-center select-none cursor-pointer mx-auto outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 focus-visible:ring-offset-primary
+                        ${isDisabled ? 'text-tertiary cursor-not-allowed' : 'text-primary hover:bg-secondary'}
+                        ${isSelected ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-400' : ''}
+                        ${(isSelectionStart || isSelectionEnd) ? 'bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-full' : ''}
                       `}
                     />
                   )}
@@ -1123,8 +1071,8 @@ export default function CheckoutPage() {
   return (
     <ProtectedRoute>
       <Suspense fallback={
-        <div className="min-h-screen w-full flex items-center justify-center bg-secondary">
-          <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="min-h-screen w-full flex items-center justify-center bg-primary">
+          <Loader2 className="w-10 h-10 animate-spin text-brand-600" />
         </div>
       }>
         <CheckoutContent />

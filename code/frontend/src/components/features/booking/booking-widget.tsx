@@ -177,143 +177,147 @@ export function BookingWidget({ product, isOwner, onMessageClick }: BookingWidge
   const productAvailable = product.status === "AVAILABLE";
 
   return (
-    <div className="bg-white border border-zinc-150 rounded-3xl p-6 shadow-sm space-y-6 sticky top-24">
-      {/* Calendar Header Title with Nav Buttons */}
-      <div className="flex justify-between items-center pb-2 border-b border-zinc-100 select-none">
-        <button
-          type="button"
-          disabled={activeMonthOffset === 0}
-          onClick={handlePrevMonths}
-          className={`p-1.5 rounded-lg border border-zinc-200 bg-white transition-colors cursor-pointer ${
-            activeMonthOffset === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-zinc-50"
-          }`}
-        >
-          <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div className="font-extrabold text-xs text-zinc-700 uppercase tracking-wider">
-          {monthNames[months[0].month]} {months[0].year} — {monthNames[months[1].month]} {months[1].year}
+    <div className="bg-white border border-zinc-150 rounded-3xl p-6 shadow-sm sticky top-24 flex flex-col max-h-[calc(100vh-120px)]">
+      
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2 space-y-6 scrollbar-hide pb-2">
+        {/* Calendar Header Title with Nav Buttons */}
+        <div className="flex justify-between items-center pb-2 border-b border-zinc-100 select-none">
+          <button
+            type="button"
+            disabled={activeMonthOffset === 0}
+            onClick={handlePrevMonths}
+            className={`p-1.5 rounded-lg border border-zinc-200 bg-white transition-colors cursor-pointer ${
+              activeMonthOffset === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-zinc-50"
+            }`}
+          >
+            <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="font-extrabold text-xs text-zinc-700 uppercase tracking-wider">
+            {monthNames[months[0].month]} {months[0].year} — {monthNames[months[1].month]} {months[1].year}
+          </div>
+          <button
+            type="button"
+            onClick={handleNextMonths}
+            className="p-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors cursor-pointer"
+          >
+            <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleNextMonths}
-          className="p-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors cursor-pointer"
-        >
-          <svg className="w-3.5 h-3.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
 
-      {/* Side-by-side Months */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {months.map(({ year, month }, mIdx) => {
-          const daysInMonth = getDaysInMonth(year, month);
-          const firstDay = getFirstDayOfMonth(year, month);
-          const blanks = Array(firstDay).fill(null);
-          const days = Array.from({ length: daysInMonth }).map((_, i) => new Date(year, month, i + 1));
+        {/* Side-by-side Months */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {months.map(({ year, month }, mIdx) => {
+            const daysInMonth = getDaysInMonth(year, month);
+            const firstDay = getFirstDayOfMonth(year, month);
+            const blanks = Array(firstDay).fill(null);
+            const days = Array.from({ length: daysInMonth }).map((_, i) => new Date(year, month, i + 1));
 
-          return (
-            <div key={mIdx} className="space-y-3">
-              <div className="text-center text-xs font-extrabold text-zinc-500">
-                {monthNames[month]} {year}
+            return (
+              <div key={mIdx} className="space-y-3">
+                <div className="text-center text-xs font-extrabold text-zinc-500">
+                  {monthNames[month]} {year}
+                </div>
+                <div className="grid grid-cols-7 gap-y-1 text-center text-[10px] font-semibold text-zinc-400">
+                  {daysOfWeek.map((day) => (
+                    <div key={day} className="py-1">{day}</div>
+                  ))}
+                  {blanks.map((_, i) => (
+                    <div key={`blank-${i}`} />
+                  ))}
+                  {days.map((dayDate) => {
+                    const isPast = dayDate < today;
+                    const blocked = isBlocked(dayDate);
+                    const selected = isSelected(dayDate);
+                    const inRange = isInRange(dayDate);
+                    const isStart = startDate && dayDate.getTime() === startDate.getTime();
+                    const isEnd = endDate && dayDate.getTime() === endDate.getTime();
+
+                    return (
+                      <button
+                        key={dayDate.getDate()}
+                        disabled={isPast || blocked}
+                        onClick={() => handleDayClick(dayDate)}
+                        className={`h-7 w-7 mx-auto rounded-full text-[10px] font-bold transition-all relative flex items-center justify-center select-none ${
+                          isPast
+                            ? "text-zinc-300 cursor-not-allowed"
+                            : blocked
+                            ? "bg-zinc-200 text-zinc-400 cursor-not-allowed line-through"
+                            : selected
+                            ? "bg-violet-600 text-white"
+                            : inRange
+                            ? "bg-violet-50 text-violet-700"
+                            : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
+                        }`}
+                      >
+                        {dayDate.getDate()}
+                        {selected && (
+                          <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-7 gap-y-1 text-center text-[10px] font-semibold text-zinc-400">
-                {daysOfWeek.map((day) => (
-                  <div key={day} className="py-1">{day}</div>
-                ))}
-                {blanks.map((_, i) => (
-                  <div key={`blank-${i}`} />
-                ))}
-                {days.map((dayDate) => {
-                  const isPast = dayDate < today;
-                  const blocked = isBlocked(dayDate);
-                  const selected = isSelected(dayDate);
-                  const inRange = isInRange(dayDate);
-                  const isStart = startDate && dayDate.getTime() === startDate.getTime();
-                  const isEnd = endDate && dayDate.getTime() === endDate.getTime();
+            );
+          })}
+        </div>
 
-                  return (
-                    <button
-                      key={dayDate.getDate()}
-                      disabled={isPast || blocked}
-                      onClick={() => handleDayClick(dayDate)}
-                      className={`h-7 w-7 mx-auto rounded-full text-[10px] font-bold transition-all relative flex items-center justify-center select-none ${
-                        isPast
-                          ? "text-zinc-300 cursor-not-allowed"
-                          : blocked
-                          ? "bg-zinc-200 text-zinc-400 cursor-not-allowed line-through"
-                          : selected
-                          ? "bg-violet-600 text-white"
-                          : inRange
-                          ? "bg-violet-50 text-violet-700"
-                          : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
-                      }`}
-                    >
-                      {dayDate.getDate()}
-                      {selected && (
-                        <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full"></span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-4 text-[10px] text-zinc-500 font-semibold border-t border-b border-zinc-100 py-3">
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-violet-600"></span>
+            <span>Đã chọn</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded bg-violet-50 border border-violet-100"></span>
+            <span>Trong khoảng</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-4 h-4 rounded bg-zinc-200 border border-zinc-300 inline-flex items-center justify-center text-[8px] text-zinc-400 font-black line-through">✓</span>
+            <span>Đã đặt</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-zinc-100"></span>
+            <span>Trống</span>
+          </div>
+        </div>
+
+        {/* Checkin / Checkout date summaries */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="border border-zinc-150 rounded-xl p-3 bg-zinc-50/50">
+            <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-wider">NHẬN</label>
+            <span className="text-xs font-extrabold text-zinc-700 mt-1 block">
+              {startDate ? formatDateToString(startDate) : "—"}
+            </span>
+          </div>
+          <div className="border border-zinc-150 rounded-xl p-3 bg-zinc-50/50">
+            <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-wider">TRẢ</label>
+            <span className="text-xs font-extrabold text-zinc-700 mt-1 block">
+              {endDate ? formatDateToString(endDate) : "—"}
+            </span>
+          </div>
+        </div>
+
+        {/* Pricing Summary */}
+        {startDate && endDate && (
+          <div className="bg-violet-50/50 border border-violet-100/50 rounded-xl p-4 flex justify-between items-center text-xs font-semibold text-zinc-700 animate-fade-in">
+            <div>
+              {product.pricePerDay.toLocaleString("vi-VN")}đ × {totalDays} ngày
             </div>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-4 text-[10px] text-zinc-500 font-semibold border-t border-b border-zinc-100 py-3">
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-violet-600"></span>
-          <span>Đã chọn</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded bg-violet-50 border border-violet-100"></span>
-          <span>Trong khoảng</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-zinc-200 border border-zinc-300 inline-flex items-center justify-center text-[8px] text-zinc-400 font-black line-through">✓</span>
-          <span>Đã đặt</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-zinc-100"></span>
-          <span>Trống</span>
-        </div>
-      </div>
-
-      {/* Checkin / Checkout date summaries */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="border border-zinc-150 rounded-xl p-3 bg-zinc-50/50">
-          <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-wider">NHẬN</label>
-          <span className="text-xs font-extrabold text-zinc-700 mt-1 block">
-            {startDate ? formatDateToString(startDate) : "—"}
-          </span>
-        </div>
-        <div className="border border-zinc-150 rounded-xl p-3 bg-zinc-50/50">
-          <label className="block text-[9px] font-black text-zinc-400 uppercase tracking-wider">TRẢ</label>
-          <span className="text-xs font-extrabold text-zinc-700 mt-1 block">
-            {endDate ? formatDateToString(endDate) : "—"}
-          </span>
-        </div>
-      </div>
-
-      {/* Pricing Summary */}
-      {startDate && endDate && (
-        <div className="bg-violet-50/50 border border-violet-100/50 rounded-xl p-4 flex justify-between items-center text-xs font-semibold text-zinc-700 animate-fade-in">
-          <div>
-            {product.pricePerDay.toLocaleString("vi-VN")}đ × {totalDays} ngày
+            <div className="font-black text-violet-700 text-sm">
+              {totalPrice.toLocaleString("vi-VN")}đ
+            </div>
           </div>
-          <div className="font-black text-violet-700 text-sm">
-            {totalPrice.toLocaleString("vi-VN")}đ
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Action Buttons */}
-      <div className="space-y-2">
+      {/* Action Buttons - Sticky at bottom */}
+      <div className="space-y-2 shrink-0 pt-4 border-t border-zinc-100 mt-2">
         {isOwner ? (
           <div className="text-center py-3 bg-zinc-100 text-zinc-500 rounded-xl text-xs font-bold select-none border border-zinc-200">
             Đây là sản phẩm của bạn

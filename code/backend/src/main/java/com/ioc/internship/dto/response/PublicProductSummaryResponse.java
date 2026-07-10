@@ -21,6 +21,8 @@ public class PublicProductSummaryResponse {
     private String ownerFullName;
     private String primaryImageUrl;
     private ProductStatus status;
+    private BigDecimal averageRating;
+    private Integer reviewCount;
     private LocalDateTime createdAt;
 
     public static PublicProductSummaryResponse fromEntity(Product product) {
@@ -47,6 +49,8 @@ public class PublicProductSummaryResponse {
                 .ownerFullName(product.getOwner() != null ? product.getOwner().getFullName() : null)
                 .primaryImageUrl(primaryImageUrl)
                 .status(product.getStatus())
+                .averageRating(product.getAverageRating())
+                .reviewCount(product.getReviewCount())
                 .createdAt(product.getCreatedAt())
                 .build();
     }

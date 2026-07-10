@@ -24,4 +24,6 @@ public class RentalDetailResponse {
     private RentalStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Boolean reviewed;
+    private Boolean canReview;
 }

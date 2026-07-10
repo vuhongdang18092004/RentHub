@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { useWishlist } from "@/context/wishlist-context";
 import { BookingWidget } from "@/components/features/booking/booking-widget";
+import { ProductReviews } from "@/components/features/products/ProductReviews";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -23,6 +24,7 @@ export default function ProductDetailPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [similarProducts, setSimilarProducts] = useState<ProductSummary[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -100,48 +102,11 @@ export default function ProductDetailPage() {
     setActiveImage((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
   };
 
-  // Mock data for rating & amenities to match Shario design
-  const mockRating = {
-    average: 4.8,
-    totalCount: 12,
-    stars: [
-      { count: 5, percentage: 75, countLabel: "9" },
-      { count: 4, percentage: 17, countLabel: "2" },
-      { count: 3, percentage: 8, countLabel: "1" },
-      { count: 2, percentage: 0, countLabel: "0" },
-      { count: 1, percentage: 0, countLabel: "0" },
-    ],
-  };
-
   const mockFeatures = [
     { num: 1, title: "Thiết kế cao cấp", desc: "Vật liệu hoàn thiện tỉ mỉ, độ bền cao" },
     { num: 2, title: "Hiệu năng vượt trội", desc: "Được tối ưu hóa cho mục đích sử dụng chuyên nghiệp" },
     { num: 3, title: "Tiện lợi linh hoạt", desc: "Dễ dàng thao tác và di chuyển mọi nơi" },
     { num: 4, title: "Chất lượng tin cậy", desc: "Đảm bảo kỹ thuật và an toàn tối đa" },
-  ];
-
-  const mockReviews = [
-    {
-      author: "Trần Thị Hương",
-      rating: 5,
-      time: "2 tuần trước",
-      avatarLetter: "H",
-      content: "Đồ dùng nhận được rất đúng mô tả, chủ cho thuê cực kỳ thân thiện và hướng dẫn sử dụng rất nhiệt tình. Chắc chắn sẽ tiếp tục ủng hộ!",
-    },
-    {
-      author: "Nguyễn Quốc Bảo",
-      rating: 5,
-      time: "1 tháng trước",
-      avatarLetter: "B",
-      content: "Trải nghiệm sản phẩm tuyệt vời, giao hàng nhanh chóng, hỗ trợ nhiệt tình. Rất xứng đáng 5 sao!",
-    },
-    {
-      author: "Lê Minh Châu",
-      rating: 4,
-      time: "1 tháng trước",
-      avatarLetter: "C",
-      content: "Sản phẩm chất lượng tốt, chạy ổn định, thủ tục giao nhận nhanh gọn lẹ. Sẽ thuê tiếp khi cần thiết.",
-    },
   ];
 
   return (
@@ -189,12 +154,14 @@ export default function ProductDetailPage() {
                       <img
                         src={product.images[activeImage]?.imageUrl}
                         alt={product.name}
-                        className="w-full h-full object-cover select-none"
+                        onClick={() => setIsLightboxOpen(true)}
+                        className="w-full h-full object-cover select-none cursor-pointer hover:opacity-95 transition-opacity"
                       />
                       {product.images.length > 1 && (
                         <>
                           <button
                             onClick={handlePrevImage}
+                            aria-label="Ảnh trước"
                             className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-zinc-700 shadow-md flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
                           >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -203,6 +170,7 @@ export default function ProductDetailPage() {
                           </button>
                           <button
                             onClick={handleNextImage}
+                            aria-label="Ảnh tiếp theo"
                             className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-zinc-700 shadow-md flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
                           >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -231,6 +199,7 @@ export default function ProductDetailPage() {
                       <button
                         key={img.id}
                         onClick={() => setActiveImage(idx)}
+                        aria-label={`Xem ảnh ${idx + 1}`}
                         className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                           activeImage === idx ? "border-violet-600 shadow-sm" : "border-transparent hover:border-zinc-300"
                         }`}
@@ -254,6 +223,7 @@ export default function ProductDetailPage() {
                     <button
                       disabled={actionLoading}
                       onClick={handleToggleFavorite}
+                      aria-label={favorited ? "Bỏ yêu thích" : "Yêu thích"}
                       className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm hover:scale-105 active:scale-95 ${
                         favorited
                           ? "border-red-100 bg-red-50 text-red-500"
@@ -276,6 +246,7 @@ export default function ProductDetailPage() {
                         navigator.clipboard.writeText(window.location.href);
                         triggerToast("Đã copy liên kết sản phẩm! 🔗");
                       }}
+                      aria-label="Chia sẻ"
                       className="w-10 h-10 rounded-full border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
                       title="Chia sẻ"
                     >
@@ -288,7 +259,7 @@ export default function ProductDetailPage() {
 
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-bold text-zinc-500">
                   <span className="flex items-center gap-0.5 text-amber-500 font-extrabold">
-                    ★ {mockRating.average} <span className="text-zinc-400 font-bold">({mockRating.totalCount})</span>
+                    ★ {(product.averageRating || 0).toFixed(1)} <span className="text-zinc-400 font-bold">({product.reviewCount || 0} reviews)</span>
                   </span>
                   <span>•</span>
                   {product.address && (
@@ -300,11 +271,18 @@ export default function ProductDetailPage() {
                   <span className="text-zinc-400">{product.category.name}</span>
                 </div>
 
-                <div className="flex items-baseline gap-2 pt-2">
-                  <span className="text-2xl font-black text-zinc-900">
-                    {product.pricePerDay.toLocaleString("vi-VN")}đ
-                  </span>
-                  <span className="text-xs text-zinc-400 font-extrabold uppercase">/ ngày</span>
+                <div className="flex flex-col gap-1 pt-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-zinc-900">
+                      {product.pricePerDay.toLocaleString("vi-VN")}đ
+                    </span>
+                    <span className="text-xs text-zinc-400 font-extrabold uppercase">/ ngày</span>
+                  </div>
+                  {product.depositAmount !== undefined && product.depositAmount !== null && (
+                    <div className="text-sm font-bold text-zinc-500">
+                      Cọc: <span className="text-zinc-700">{product.depositAmount.toLocaleString("vi-VN")}đ</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -362,62 +340,12 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              {/* Reviews Analysis */}
-              <div className="space-y-6 pb-6 border-b border-zinc-100">
-                <h3 className="font-extrabold text-sm text-zinc-800 uppercase tracking-wider">Đánh giá từ người dùng ({mockRating.totalCount})</h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
-                  {/* Left big number */}
-                  <div className="sm:col-span-4 text-center sm:border-r sm:border-zinc-100 py-2">
-                    <div className="text-4xl font-black text-zinc-800 leading-none">{mockRating.average}</div>
-                    <div className="flex justify-center gap-0.5 text-amber-400 my-2">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <span key={i} className="text-sm">★</span>
-                      ))}
-                    </div>
-                    <div className="text-[10px] text-zinc-400 font-bold">Điểm trung bình</div>
-                  </div>
-
-                  {/* Progress bars */}
-                  <div className="sm:col-span-8 space-y-1.5">
-                    {mockRating.stars.map((star) => (
-                      <div key={star.count} className="flex items-center gap-3 text-[10px] font-bold text-zinc-500">
-                        <span className="w-3 select-none">{star.count}</span>
-                        <span className="text-zinc-400">★</span>
-                        <div className="flex-1 h-2 rounded-full bg-zinc-100 overflow-hidden">
-                          <div className="h-full bg-amber-400 rounded-full" style={{ width: `${star.percentage}%` }} />
-                        </div>
-                        <span className="w-5 text-right select-none">{star.countLabel}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Review comments list */}
-                <div className="space-y-4 pt-2">
-                  {mockReviews.map((rev, idx) => (
-                    <div key={idx} className="p-4 bg-zinc-50/50 border border-zinc-100 rounded-2xl space-y-3">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center shrink-0 border border-zinc-300">
-                            <span className="text-zinc-600 font-bold text-xs">{rev.avatarLetter}</span>
-                          </div>
-                          <div>
-                            <span className="text-xs font-black text-zinc-700 block">{rev.author}</span>
-                            <span className="text-[9px] text-zinc-400 font-bold block mt-0.5">{rev.time}</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-0.5 text-amber-400 text-xs">
-                          {Array.from({ length: rev.rating }).map((_, i) => (
-                            <span key={i}>★</span>
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-xs text-zinc-600 leading-relaxed">{rev.content}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Reviews Analysis & List */}
+              <ProductReviews
+                productId={product.id}
+                reviewCount={product.reviewCount}
+                averageRating={product.averageRating}
+              />
 
               {/* Similar Products */}
               {similarProducts.length > 0 && (
@@ -502,6 +430,57 @@ export default function ProductDetailPage() {
 
           </div>
 
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {isLightboxOpen && product && product.images.length > 0 && (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center animate-fade-in">
+          {/* Close button */}
+          <button
+            onClick={() => setIsLightboxOpen(false)}
+            className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer text-white"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Prev button */}
+          {product.images.length > 1 && (
+            <button
+              onClick={handlePrevImage}
+              className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer text-white"
+            >
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+
+          {/* Main Image */}
+          <img
+            src={product.images[activeImage]?.imageUrl}
+            alt={product.name}
+            className="max-h-[90vh] max-w-[90vw] object-contain select-none"
+          />
+
+          {/* Next button */}
+          {product.images.length > 1 && (
+            <button
+              onClick={handleNextImage}
+              className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer text-white"
+            >
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+
+          {/* Counter bottom */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 font-bold tracking-widest text-sm">
+            {activeImage + 1} / {product.images.length}
+          </div>
         </div>
       )}
     </div>

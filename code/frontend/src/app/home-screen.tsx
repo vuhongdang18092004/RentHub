@@ -9,7 +9,7 @@ import { useWishlist } from "@/context/wishlist-context";
 import api from "@/lib/axios";
 import { Header } from "@/components/layout/header";
 import { productService, ProductSummary } from "@/services/product-service";
-import { LocationMapPreview } from "@/components/location/location-map-preview";
+import LocationSelectorModal from "@/components/features/search/location-selector-modal";
 
 const THUMBNAILS = [
   "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=300&auto=format&fit=crop&q=60", // bicycle
@@ -198,93 +198,14 @@ export function HomeScreen() {
       handleSearch();
     }
   };
-
   // Location Selector Modal states
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [modalSearchQuery, setModalSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [modalCoords, setModalCoords] = useState<{ lat: number; lng: number }>({
     lat: 20.9625,
     lng: 105.7486,
   });
   const [modalAddress, setModalAddress] = useState("Đại học Phenikaa");
-  const [modalRadius, setModalRadius] = useState(3);
-  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-
-  // Query VietMap Autocomplete API
-  const handleQueryChange = async (val: string) => {
-    setModalSearchQuery(val);
-    if (!val.trim()) {
-      setSuggestions([]);
-      return;
-    }
-    try {
-      setSuggestionsLoading(true);
-      const url = `/api/vietmap?action=autocomplete&text=${encodeURIComponent(val)}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        let list: any[] = [];
-        if (Array.isArray(data)) list = data;
-        else if (data && Array.isArray(data.data)) list = data.data;
-        else if (data && Array.isArray(data.results)) list = data.results;
-        setSuggestions(list);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSuggestionsLoading(false);
-    }
-  };
-
-  // Select a location suggestion
-  const handleSelectSuggestion = async (sugg: any) => {
-    const addressName = sugg.name || sugg.description || sugg.display_name || "";
-    setModalAddress(addressName);
-    setModalSearchQuery(addressName);
-    setSuggestions([]);
-    
-    // Fetch place details for coordinates
-    const refId = sugg.refid || sugg.ref_id || sugg.place_id || "";
-    if (refId) {
-      try {
-        const url = `/api/vietmap?action=place&refid=${refId}`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          const detail = data.data || data.result || data;
-          if (detail && detail.lat !== undefined && detail.lng !== undefined) {
-            setModalCoords({ lat: Number(detail.lat), lng: Number(detail.lng) });
-          } else if (detail && detail.location) {
-            setModalCoords({ lat: Number(detail.location.lat), lng: Number(detail.location.lng) });
-          }
-        }
-      } catch (err) {
-        console.error("Lỗi lấy tọa độ Vietmap:", err);
-      }
-    }
-  };
-
-  // GPS Locate device coordinates
-  const handleGPSLocate = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          setModalCoords({ lat, lng });
-          setModalAddress("Vị trí hiện tại của bạn");
-          setModalSearchQuery("Vị trí hiện tại của bạn");
-        },
-        (error) => {
-          console.error(error);
-          triggerToast("Không thể truy cập vị trí GPS của bạn.");
-        }
-      );
-    } else {
-      triggerToast("Trình duyệt không hỗ trợ Geolocation.");
-    }
-  };
+  const [modalRadius, setModalRadius] = useState(10);
 
   // Active Admin Tab
   const [adminTab, setAdminTab] = useState<"users" | "categories" | "products">("users");
@@ -571,27 +492,26 @@ export function HomeScreen() {
     router.push("/");
   };
 
-  // Categorized product lists
-  const sportsFiltered = availableProducts.filter((p) => {
-    const catName = p.category?.name?.toLowerCase() || "";
-    return catName.includes("thể thao") || catName.includes("sport") || catName.includes("phương tiện") || catName.includes("xe");
-  });
-  const sportsList = sportsFiltered.length > 0 ? sportsFiltered.slice(0, 4) : availableProducts.slice(0, 4);
+  // Categorized product lists - group products by their actual category name
+  const categoryNames = Array.from(
+    new Set(availableProducts.map((p) => p.category?.name || (p as any).categoryName).filter(Boolean))
+  );
 
-  const outdoorFiltered = availableProducts.filter((p) => {
-    const catName = p.category?.name?.toLowerCase() || "";
-    return catName.includes("dã ngoại") || catName.includes("outdoor") || catName.includes("lều") || catName.includes("camping") || catName.includes("cắm trại");
+  const dynamicCategories = categoryNames.map((name, idx) => {
+    const productsInCat = availableProducts.filter(
+      (p) => p.category?.name === name || (p as any).categoryName === name
+    );
+    // Try to map to the loaded category list to get its ID, otherwise fallback
+    const matchedCat = categoriesList.find((c) => c.name === name);
+    return {
+      id: matchedCat?.id || `cat-${idx}`,
+      name: name as string,
+      products: productsInCat.slice(0, 5), // max 5
+    };
   });
-  const outdoorList = outdoorFiltered.length > 0 ? outdoorFiltered.slice(0, 4) : availableProducts.slice(4, 8);
-
-  const electronicsFiltered = availableProducts.filter((p) => {
-    const catName = p.category?.name?.toLowerCase() || "";
-    return catName.includes("điện tử") || catName.includes("electronics") || catName.includes("máy ảnh") || catName.includes("loa") || catName.includes("camera") || catName.includes("phụ kiện");
-  });
-  const electronicsList = electronicsFiltered.length > 0 ? electronicsFiltered.slice(0, 5) : availableProducts.slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-primary text-primary flex flex-col font-sans select-none overflow-x-hidden home-smooth-bg">
+    <div className="min-h-screen bg-primary text-primary flex flex-col font-sans select-none overflow-x-clip home-smooth-bg">
       {/* Premium Interactive UI CSS Stylesheet */}
       <style>{`
         .home-smooth-bg {
@@ -890,33 +810,8 @@ export function HomeScreen() {
                     maxWidth: "800px"
                   }}
                 >
-                  <div 
-                    onClick={() => setIsLocationModalOpen(true)}
-                    className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center cursor-pointer hover:bg-zinc-50/50 rounded-l-2xl transition-colors"
-                  >
-                    <span className="text-[10px] font-bold text-[#475569] tracking-wider">Ở ĐÂU?</span>
-                    <input
-                      type="text"
-                      placeholder="Hai Bà Trưng, HN"
-                      aria-label="Địa điểm thuê"
-                      value={searchAddress}
-                      onChange={(e) => setSearchAddress(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      readOnly
-                      className="text-sm font-semibold text-[#1E293B] bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5 cursor-pointer pointer-events-none"
-                    />
-                  </div>
-                  <div className="flex-1 flex flex-col text-left px-4 py-2.5 justify-center">
-                    <span className="text-[10px] font-bold text-[#475569] tracking-wider">KHI NÀO?</span>
-                    <input
-                      type="text"
-                      placeholder="Không giới hạn"
-                      aria-label="Thời gian thuê"
-                      onKeyDown={handleKeyDown}
-                      className="text-sm font-semibold text-[#1E293B] bg-transparent border-none outline-none placeholder-zinc-400 p-0 mt-0.5"
-                    />
-                  </div>
-                  <div className="flex-1 flex items-center justify-between pl-4 pr-2 py-2.5 gap-2">
+
+                  <div className="flex-1 flex items-center justify-between pl-6 pr-2 py-2.5 gap-2 rounded-l-2xl">
                     <div className="flex flex-col text-left w-full">
                       <span className="text-[10px] font-bold text-[#475569] tracking-wider">BẠN CẦN GÌ?</span>
                       <div className="relative w-full">
@@ -934,10 +829,43 @@ export function HomeScreen() {
                         </div>
                       </div>
                     </div>
-                    {/* Ghost search icon — no filled circle */}
+                    {/* Geolocation Button */}
+                    <button
+                      onClick={() => {
+                        if (navigator.geolocation) {
+                          triggerToast("Đang định vị vị trí của bạn...");
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                              setSearchLat(pos.coords.latitude);
+                              setSearchLng(pos.coords.longitude);
+                              setSearchRadius(10); // default 10km
+                              triggerToast("Đã lấy vị trí thành công! 📍");
+                            },
+                            (err) => {
+                              console.error("Lỗi lấy vị trí:", err);
+                              triggerToast("Không thể lấy vị trí. Vui lòng cấp quyền trong trình duyệt.");
+                            }
+                          );
+                        } else {
+                          triggerToast("Trình duyệt của bạn không hỗ trợ định vị.");
+                        }
+                      }}
+                      className={`p-2 rounded-full transition-all cursor-pointer shrink-0 border ${
+                        searchLat && searchLng
+                          ? "bg-violet-50 border-violet-200 text-violet-700"
+                          : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:text-violet-600 hover:bg-violet-50 hover:border-violet-100"
+                      }`}
+                      title="Tìm quanh đây"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </button>
+                    {/* Search icon */}
                     <button 
                       onClick={handleSearch}
-                      className="p-2 text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-full transition-all cursor-pointer shrink-0"
+                      className="p-2 text-white bg-violet-600 hover:bg-violet-700 rounded-full transition-all cursor-pointer shrink-0 shadow-sm hover:shadow active:scale-95 ml-1"
                     >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1525,74 +1453,44 @@ export function HomeScreen() {
 
         </div>
 
-        {/* --- Section 3: Sports and Outdoor Categorized Lists --- */}
+        {/* --- Section 3: Dynamic Categorized Lists (Top 2 Categories) --- */}
         <div className="max-w-[1280px] w-full px-6 md:px-8 py-10 space-y-12">
           
-          {/* Sports Category Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between bg-teal-50 border border-teal-100 rounded-2xl p-4">
-              <div className="flex items-center gap-2 text-teal-800 font-extrabold text-lg">
-                <span>🚲</span>
-                <span>Thể thao</span>
+          {(dynamicCategories.length >= 2 ? dynamicCategories.slice(0, 2) : dynamicCategories).map((cat, idx) => (
+            <div key={cat.id} className="space-y-4">
+              <div className={`flex items-center justify-between rounded-2xl p-4 ${idx === 0 ? 'bg-teal-50 border border-teal-100 text-teal-800' : 'bg-green-50 border border-green-100 text-green-800'}`}>
+                <div className="flex items-center gap-2 font-extrabold text-lg">
+                  <span>{idx === 0 ? '🚲' : '⛺'}</span>
+                  <span>{cat.name}</span>
+                </div>
+                <Link href={`/explore?categoryId=${typeof cat.id === 'number' ? cat.id : ''}`} className={`transition-colors ${idx === 0 ? 'text-teal-700 hover:text-teal-900' : 'text-green-700 hover:text-green-900'}`}>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </Link>
               </div>
-              <Link href="/" className="text-teal-700 hover:text-teal-900 transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {productsLoading
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
-                      <div className="h-[200px] bg-zinc-200" />
-                      <div className="p-4 space-y-2">
-                        <div className="h-4 bg-zinc-200 rounded w-3/4" />
-                        <div className="h-3 bg-zinc-100 rounded w-1/2" />
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                {productsLoading
+                  ? Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                        <div className="h-[200px] bg-zinc-200" />
+                        <div className="p-4 space-y-2">
+                          <div className="h-4 bg-zinc-200 rounded w-3/4" />
+                          <div className="h-3 bg-zinc-100 rounded w-1/2" />
+                        </div>
                       </div>
-                    </div>
-                  ))
-                : sportsList.map((prod) => (
-                    <ProductCard key={prod.id} prod={prod} />
-                  ))}
-            </div>
-          </div>
-
-          {/* Outdoor Category Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-2xl p-4">
-              <div className="flex items-center gap-2 text-green-800 font-extrabold text-lg">
-                <span>⛺</span>
-                <span>Dã ngoại</span>
+                    ))
+                  : cat.products.map((prod: any) => (
+                      <ProductCard key={prod.id} prod={prod} />
+                    ))}
               </div>
-              <Link href="/" className="text-green-700 hover:text-green-900 transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              {productsLoading
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
-                      <div className="h-[200px] bg-zinc-200" />
-                      <div className="p-4 space-y-2">
-                        <div className="h-4 bg-zinc-200 rounded w-3/4" />
-                        <div className="h-3 bg-zinc-100 rounded w-1/2" />
-                      </div>
-                    </div>
-                  ))
-                : outdoorList.map((prod) => (
-                    <ProductCard key={prod.id} prod={prod} />
-                  ))}
-            </div>
-          </div>
+          ))}
 
         </div>
 
-        {/* --- Section 4: "Có thể bạn cần" --- */}
+        {/* --- Section 4: "Có thể bạn cần" (Category 3) --- */}
         <div className="max-w-[1280px] w-full px-6 md:px-8 py-16 space-y-8 bg-radial-[at_50%_0%] from-purple-50/30 to-transparent">
           
           <div className="space-y-2 relative max-w-[400px]">
@@ -1602,32 +1500,36 @@ export function HomeScreen() {
           </div>
 
           <div className="space-y-4 pt-6">
-            <div className="flex items-center justify-between bg-purple-50 border border-purple-100 rounded-2xl p-4">
-              <div className="flex items-center gap-2 text-purple-800 font-extrabold text-lg">
-                <span>📷</span>
-                <span>Điện tử</span>
+            {(dynamicCategories.length >= 3 ? [dynamicCategories[2]] : []).map((cat) => (
+              <div key={cat.id} className="space-y-4">
+                <div className="flex items-center justify-between bg-purple-50 border border-purple-100 rounded-2xl p-4">
+                  <div className="flex items-center gap-2 text-purple-800 font-extrabold text-lg">
+                    <span>📷</span>
+                    <span>{cat.name}</span>
+                  </div>
+                  <Link href={`/explore?categoryId=${typeof cat.id === 'number' ? cat.id : ''}`} className="text-purple-700 hover:text-purple-900 transition-colors">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </Link>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
+                  {productsLoading
+                    ? Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
+                          <div className="h-[170px] bg-zinc-200" />
+                          <div className="p-3.5 space-y-2">
+                            <div className="h-3 bg-zinc-200 rounded w-3/4" />
+                          </div>
+                        </div>
+                      ))
+                    : cat.products.map((prod: any) => (
+                        <ProductCard key={prod.id} prod={prod} />
+                      ))}
+                </div>
               </div>
-              <Link href="/" className="text-purple-700 hover:text-purple-900 transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
-              {productsLoading
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
-                      <div className="h-[170px] bg-zinc-200" />
-                      <div className="p-3.5 space-y-2">
-                        <div className="h-3 bg-zinc-200 rounded w-3/4" />
-                      </div>
-                    </div>
-                  ))
-                : electronicsList.map((prod) => (
-                    <ProductCard key={prod.id} prod={prod} />
-                  ))}
-            </div>
+            ))}
           </div>
 
         </div>
@@ -1752,120 +1654,28 @@ export function HomeScreen() {
         </footer>
 
         {/* Location Selector Modal */}
-        {isLocationModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
-            <div className="bg-white rounded-[2rem] w-full max-w-[480px] overflow-hidden shadow-2xl border border-zinc-100 flex flex-col font-sans relative animate-in fade-in zoom-in-95 duration-200">
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 pt-6 pb-4">
-                <h3 className="text-base font-extrabold text-zinc-900">Chọn địa điểm</h3>
-                <button 
-                  onClick={() => setIsLocationModalOpen(false)}
-                  className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-full transition-colors cursor-pointer"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Content body */}
-              <div className="px-6 pb-6 space-y-5 flex-1 flex flex-col overflow-y-auto max-h-[85vh]">
-                {/* Input block */}
-                <div className="relative">
-                  <div className="flex items-center gap-2 border border-zinc-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 rounded-2xl px-4 py-3 bg-zinc-50/55 transition-all">
-                    <svg className="w-4 h-4 text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Nhập địa chỉ..."
-                      value={modalSearchQuery}
-                      onChange={(e) => handleQueryChange(e.target.value)}
-                      className="w-full bg-transparent border-none outline-none text-sm font-semibold text-zinc-800 placeholder-zinc-400 p-0"
-                    />
-                    <button 
-                      onClick={handleGPSLocate}
-                      title="Định vị hiện tại"
-                      className="p-1 text-zinc-400 hover:text-violet-600 transition-colors shrink-0 cursor-pointer"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm-9 4h2m14 0h2m-9-9v2m0 14v2" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  {/* Suggestions Dropdown */}
-                  {suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-100 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[200px] overflow-y-auto">
-                      {suggestions.map((sugg, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleSelectSuggestion(sugg)}
-                          className="w-full text-left px-4 py-3 hover:bg-violet-50 text-xs font-semibold text-zinc-700 transition-colors border-b border-zinc-50 last:border-b-0 flex items-start gap-2 cursor-pointer"
-                        >
-                          <span className="mt-0.5 text-zinc-400 shrink-0">📍</span>
-                          <span>{sugg.name || sugg.description || sugg.display_name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Map Preview */}
-                <div className="w-full h-[220px] rounded-3xl overflow-hidden relative z-0 border border-zinc-100 shadow-inner">
-                  <LocationMapPreview latitude={modalCoords.lat} longitude={modalCoords.lng} radius={modalRadius} />
-                </div>
-
-                {/* Selected Location Indicator */}
-                <div className="flex items-center gap-2 text-xs font-extrabold text-zinc-800 bg-zinc-50 p-3 rounded-2xl border border-zinc-100">
-                  <span className="text-violet-500">📍</span>
-                  <span className="truncate">{modalAddress}</span>
-                </div>
-
-                {/* Radius select */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between text-xs font-extrabold text-zinc-500">
-                    <span className="tracking-wider uppercase">Chỉnh bán kính</span>
-                    <span className="text-violet-600 text-sm font-black">{modalRadius} km</span>
-                  </div>
-                  <input 
-                    type="range"
-                    min="1"
-                    max="50"
-                    value={modalRadius}
-                    onChange={(e) => setModalRadius(Number(e.target.value))}
-                    className="w-full h-1.5 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-violet-600 focus:outline-none"
-                    style={{
-                      background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${(modalRadius - 1) * 2}%, #E4E4E7 ${(modalRadius - 1) * 2}%, #E4E4E7 100%)`
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Footer Buttons */}
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-100 bg-zinc-50/50">
-                <button 
-                  onClick={() => setIsLocationModalOpen(false)}
-                  className="px-5 py-2.5 hover:bg-zinc-100 text-zinc-600 text-xs font-extrabold rounded-xl transition-all active:scale-[0.98] cursor-pointer"
-                >
-                  Huỷ
-                </button>
-                <button 
-                  onClick={() => {
-                    setSearchAddress(modalAddress);
-                    setSearchLat(modalCoords.lat);
-                    setSearchLng(modalCoords.lng);
-                    setSearchRadius(modalRadius);
-                    setIsLocationModalOpen(false);
-                  }}
-                  className="px-6 py-2.5 bg-[#2E1065] hover:bg-[#3B0764] text-white text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
-                >
-                  Áp dụng
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <LocationSelectorModal
+          isOpen={isLocationModalOpen}
+          onClose={() => setIsLocationModalOpen(false)}
+          initialAddress={modalAddress}
+          initialLat={modalCoords?.lat}
+          initialLng={modalCoords?.lng}
+          initialRadius={modalRadius}
+          onApply={(lat, lng, radius, address) => {
+            setSearchAddress(address);
+            setSearchLat(lat);
+            setSearchLng(lng);
+            setSearchRadius(radius);
+            setIsLocationModalOpen(false);
+            
+            // Auto search when location is applied
+            const params = new URLSearchParams();
+            params.set("latitude", lat.toString());
+            params.set("longitude", lng.toString());
+            params.set("radius", radius.toString());
+            router.push(`/explore?${params.toString()}`);
+          }}
+        />
 
       </div>
     </div>

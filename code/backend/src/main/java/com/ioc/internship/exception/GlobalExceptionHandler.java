@@ -44,6 +44,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        ex.printStackTrace(); // Log error trace to console
         Map<String, String> error = new HashMap<>();
         String message = ex.getMessage();
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;

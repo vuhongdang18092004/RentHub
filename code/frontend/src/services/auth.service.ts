@@ -16,15 +16,23 @@ export const authService = {
     return res.data;
   },
 
-  register: async (data: RegisterInput): Promise<AuthResponse> => {
+  register: async (data: RegisterInput): Promise<{ message: string }> => {
     const res = await api.post("/v1/auth/register", data);
     return res.data;
   },
 
-  verifyEmail: async (token: string) => {
-    const response = await axios.get(`${API_URL}/verify-email`, {
-      params: { token: encodeURIComponent(token) },
-    });
-    return response.data;
+  verifyRegisterOtp: async (data: { email: string; otp: string }): Promise<AuthResponse> => {
+    const res = await api.post("/v1/auth/verify-register-otp", data);
+    return res.data;
+  },
+
+  resendRegisterOtp: async (data: { email: string }): Promise<{ message: string }> => {
+    const res = await api.post("/v1/auth/resend-register-otp", data);
+    return res.data;
+  },
+
+  getRegistrationStatus: async (email: string) => {
+    const res = await api.get(`/v1/auth/registration-status?email=${encodeURIComponent(email)}`);
+    return res.data;
   },
 };

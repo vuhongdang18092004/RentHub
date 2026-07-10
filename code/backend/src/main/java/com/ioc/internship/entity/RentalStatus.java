@@ -5,6 +5,7 @@ public enum RentalStatus {
     HANDOVER_PENDING,
     ACTIVE,
     RETURN_PENDING,
+    REFUND_PENDING,
     COMPLETED,
     CANCELLED
 }
