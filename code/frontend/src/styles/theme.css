@@ -36,7 +36,7 @@
     --shadow-skeuomorphic: 0px 0px 0px 1px rgba(0, 0, 0, 0.18) inset, 0px -2px 0px 0px rgba(0, 0, 0, 0.05) inset;
     --shadow-xs-skeuomorphic: var(--shadow-skeuomorphic), var(--shadow-xs);
 
-    --color-brand-50:  #F9F5FF;
+    --color-brand-50:  #F9F4FF;
     --color-brand-100: #F4EBFF;
     --color-brand-200: #E9D7FE;
     --color-brand-300: #D6BBFB;

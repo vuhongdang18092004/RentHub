@@ -81,6 +81,7 @@ public class GeminiProvider implements AIProvider {
                     part.put("functionCall", functionCall);
                     if (toolCall.getThoughtSignature() != null && !toolCall.getThoughtSignature().trim().isEmpty()) {
                         part.put("thought_signature", toolCall.getThoughtSignature());
+                        part.put("thoughtSignature", toolCall.getThoughtSignature());
                     }
                     parts.add(part);
                 }
@@ -198,7 +199,9 @@ public class GeminiProvider implements AIProvider {
                     if (funcCall.has("args")) {
                         toolCall.setArguments(objectMapper.convertValue(funcCall.get("args"), Map.class));
                     }
-                    if (part.has("thought_signature")) {
+                    if (part.has("thoughtSignature")) {
+                        toolCall.setThoughtSignature(part.get("thoughtSignature").asText());
+                    } else if (part.has("thought_signature")) {
                         toolCall.setThoughtSignature(part.get("thought_signature").asText());
                     }
                     if (result.getToolCalls() == null) {
