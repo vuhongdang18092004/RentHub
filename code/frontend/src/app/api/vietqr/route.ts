@@ -5,9 +5,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { amount, content, bankAccount: reqBankAccount, bankCode: reqBankCode, userBankName: reqBankOwner } = body;
 
-    const bankAccount = reqBankAccount || process.env.BANK_ACCOUNT || "1234567890";
-    const bankCode = (reqBankCode || process.env.BANK_CODE || "VCB").toLowerCase();
-    const bankOwner = reqBankOwner || process.env.BANK_OWNER || "CONG TY CP RENTHUB";
+    // Use dynamic request parameters (from database owner info) with SePay VA as default fallback
+    const bankAccount = reqBankAccount || "VQRQAKHZL5756";
+    const bankCode = (reqBankCode || "mb").toLowerCase();
+    const bankOwner = reqBankOwner || "BUI TRUNG DUC";
 
     if (!bankAccount || !bankCode) {
       return NextResponse.json(
@@ -16,8 +17,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Construct the public, free, and robust img.vietqr.io Quick Link URL
-    const qrDataURL = `https://img.vietqr.io/image/${bankCode}-${bankAccount}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(bankOwner)}`;
+    // Construct the public, free, and robust qr.sepay.vn Quick Link URL
+    let formattedBankCode = bankCode.toUpperCase();
+    if (formattedBankCode === "MB") {
+      formattedBankCode = "MBBank";
+    }
+    const qrDataURL = `https://qr.sepay.vn/img?acc=${bankAccount}&bank=${formattedBankCode}&amount=${amount}&des=${encodeURIComponent(content)}`;
 
     return NextResponse.json({
       qrDataURL,

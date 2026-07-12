@@ -15,4 +15,5 @@ public class AIToolCall {
     private String id;
     private String name;
     private Map<String, Object> arguments;
+    private String thoughtSignature;
 }

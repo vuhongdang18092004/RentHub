@@ -140,7 +140,7 @@ export function RentalActions({ rental, isOwner, isLocked, isPaid, refundAmount,
         }
         return (
           <button
-            onClick={() => router.push(`/checkout?requestId=${rental.id}`)}
+            onClick={() => router.push(`/checkout?requestId=${rental.requestId || rental.id}`)}
             className="w-full py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md active:scale-[0.99] cursor-pointer"
           >
             Thanh toán ngay

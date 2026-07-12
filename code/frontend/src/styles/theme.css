@@ -36,17 +36,17 @@
     --shadow-skeuomorphic: 0px 0px 0px 1px rgba(0, 0, 0, 0.18) inset, 0px -2px 0px 0px rgba(0, 0, 0, 0.05) inset;
     --shadow-xs-skeuomorphic: var(--shadow-skeuomorphic), var(--shadow-xs);
 
-    --color-brand-50:  rgb(249 245 255);
-    --color-brand-100: rgb(244 235 255);
-    --color-brand-200: rgb(233 215 254);
-    --color-brand-300: rgb(214 187 251);
-    --color-brand-400: rgb(182 146 246);
-    --color-brand-500: rgb(158 119 237);
-    --color-brand-600: rgb(127 86 217);   /* primary CTA */
-    --color-brand-700: rgb(105 65 198);
-    --color-brand-800: rgb(83 56 158);
-    --color-brand-900: rgb(66 48 125);
-    --color-brand-950: rgb(44 28 95);
+    --color-brand-50:  #F9F5FF;
+    --color-brand-100: #F4EBFF;
+    --color-brand-200: #E9D7FE;
+    --color-brand-300: #D6BBFB;
+    --color-brand-400: #B692F6;
+    --color-brand-500: #9E77ED;
+    --color-brand-600: #7F56D9;   /* primary CTA */
+    --color-brand-700: #6941C6;
+    --color-brand-800: #53389E;
+    --color-brand-900: #42307D;
+    --color-brand-950: #2C1C5F;
 
     /* TEXT */
     --color-text-primary:          var(--color-neutral-900);

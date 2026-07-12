@@ -290,6 +290,7 @@ public class RentalServiceImpl implements RentalService {
 
         return com.ioc.internship.dto.response.RentalDetailResponse.builder()
                 .id(rental.getId())
+                .requestId(rental.getRequest() != null ? rental.getRequest().getId() : null)
                 .product(com.ioc.internship.dto.response.ProductSummaryResponse.fromEntity(rental.getProduct()))
                 .owner(com.ioc.internship.dto.response.UserSummaryResponse.fromEntity(rental.getOwner()))
                 .renter(com.ioc.internship.dto.response.UserSummaryResponse.fromEntity(rental.getRenter()))

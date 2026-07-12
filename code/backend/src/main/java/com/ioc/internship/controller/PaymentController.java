@@ -9,16 +9,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.ioc.internship.dto.request.SepayWebhookRequest;
 
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
 public class PaymentController {
 
     private final PaymentService paymentService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<PaymentResponse> recordPayment(
             @RequestBody PaymentRecordRequest request) {
         return ResponseEntity.ok(paymentService.recordPayment(request));
@@ -32,14 +33,22 @@ public class PaymentController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Page<PaymentResponse>> getAllPayments(Pageable pageable) {
         return ResponseEntity.ok(paymentService.getAllPayments(pageable));
     }
 
     @GetMapping("/rentals/{rentalId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Page<PaymentResponse>> getPaymentsByRental(
             @PathVariable Long rentalId,
             Pageable pageable) {
         return ResponseEntity.ok(paymentService.getPaymentsByRental(rentalId, pageable));
+    }
+
+    @PostMapping("/sepay-webhook")
+    public ResponseEntity<Void> sepayWebhook(@RequestBody SepayWebhookRequest request) {
+        paymentService.processSepayWebhook(request);
+        return ResponseEntity.ok().build();
     }
 }

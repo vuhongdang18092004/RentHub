@@ -2,9 +2,11 @@ package com.ioc.internship.service.impl;
 
 import com.ioc.internship.dto.request.PaymentRecordRequest;
 import com.ioc.internship.dto.request.RefundRequest;
+import com.ioc.internship.dto.request.SepayWebhookRequest;
 import com.ioc.internship.dto.response.PaymentResponse;
 import com.ioc.internship.entity.*;
 import com.ioc.internship.repository.PaymentRepository;
+import com.ioc.internship.repository.ProductRepository;
 import com.ioc.internship.repository.RentalRepository;
 import com.ioc.internship.repository.ReportRepository;
 import com.ioc.internship.repository.UserRepository;
@@ -36,6 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final UserRepository userRepository;
     private final RentalService rentalService;
     private final NotificationService notificationService;
+    private final ProductRepository productRepository;
 
     @Override
     @Transactional
@@ -90,6 +93,13 @@ public class PaymentServiceImpl implements PaymentService {
             } catch (Exception e) {
                 log.error("Failed to send notification for payment success", e);
             }
+        }
+
+        // Nếu thanh toán RENTAL_FEE thành công → cập nhật trạng thái đơn thuê sang ACTIVE
+        if (request.getStatus() == PaymentStatus.SUCCESS && request.getPaymentType() == PaymentType.RENTAL_FEE) {
+            rental.setStatus(RentalStatus.ACTIVE);
+            rentalRepository.save(rental);
+            log.info("[PAYMENT] Rental ID={} updated to ACTIVE after RENTAL_FEE payment", rental.getId());
         }
 
         return mapToResponse(savedPayment);
@@ -212,5 +222,78 @@ public class PaymentServiceImpl implements PaymentService {
                 .status(payment.getStatus())
                 .paidAt(payment.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void processSepayWebhook(SepayWebhookRequest request) {
+        log.info("[SEPAY WEBHOOK] Nhận thông tin thanh toán: content='{}', amount={}", 
+                request.getTransactionContent(), request.getTransferAmount());
+
+        String content = request.getTransactionContent();
+        if (content == null || content.trim().isEmpty()) {
+            log.warn("[SEPAY WEBHOOK] Nội dung chuyển khoản trống, bỏ qua");
+            return;
+        }
+
+        // Regex tìm RH (không phân biệt hoa thường) theo sau là các chữ số
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(?i)RH\\s*(\\d+)");
+        java.util.regex.Matcher matcher = pattern.matcher(content);
+        if (!matcher.find()) {
+            log.warn("[SEPAY WEBHOOK] Nội dung chuyển khoản '{}' không chứa mã đơn hàng hợp lệ (dạng RH + ID), bỏ qua", content);
+            return;
+        }
+
+        Long rentalId = Long.parseLong(matcher.group(1));
+        log.info("[SEPAY WEBHOOK] Đã trích xuất rentalId = {}", rentalId);
+
+        Rental rental = rentalRepository.findById(rentalId).orElse(null);
+        if (rental == null) {
+            log.error("[SEPAY WEBHOOK] Không tìm thấy đơn thuê tương ứng với ID = {}", rentalId);
+            return;
+        }
+
+        String txCode = request.getCode();
+        if (txCode == null || txCode.trim().isEmpty()) {
+            txCode = "SP_" + request.getId();
+        }
+
+        boolean alreadyPaid = paymentRepository.existsByTransactionCode(txCode);
+        if (alreadyPaid) {
+            return;
+        }
+
+        // Save rental fee payment
+        Payment feePayment = Payment.builder()
+                .rental(rental)
+                .payer(rental.getRenter())
+                .paymentType(PaymentType.RENTAL_FEE)
+                .paymentMethod(PaymentMethod.PAYOS)
+                .amount(BigDecimal.valueOf(request.getTransferAmount() != null ? request.getTransferAmount() : 0.0))
+                .transactionCode(txCode)
+                .status(PaymentStatus.SUCCESS)
+                .build();
+        paymentRepository.save(feePayment);
+
+        // Save deposit payment if deposit exists
+        BigDecimal depositAmount = rental.getDepositAmount();
+        if (depositAmount != null && depositAmount.compareTo(BigDecimal.ZERO) > 0) {
+            Payment depositPayment = Payment.builder()
+                    .rental(rental)
+                    .payer(rental.getRenter())
+                    .paymentType(PaymentType.DEPOSIT)
+                    .paymentMethod(PaymentMethod.PAYOS)
+                    .amount(depositAmount)
+                    .transactionCode(txCode + "_DEP")
+                    .status(PaymentStatus.SUCCESS)
+                    .build();
+            paymentRepository.save(depositPayment);
+        }
+
+        // Transition Rental Status
+        if (rental.getStatus().equals(RentalStatus.WAITING_PAYMENT)) {
+            rental.setStatus(RentalStatus.ACTIVE);
+            rentalRepository.save(rental);
+        }
     }
 }

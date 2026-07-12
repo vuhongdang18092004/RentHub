@@ -123,6 +123,7 @@ function CheckoutContent() {
           }
         } catch (err: any) {
           console.error("Lỗi lấy chi tiết yêu cầu đặt thuê:", err);
+          if (err.response?.status === 401 || err.response?.status === 403) return;
           const errMsg = err.response?.data?.message || "Không thể tải thông tin yêu cầu đặt thuê.";
           triggerToast(errMsg);
           router.push("/rentals/renter");
@@ -149,6 +150,32 @@ function CheckoutContent() {
     }, 1000);
     return () => clearInterval(interval);
   }, [step, timeLeft]);
+
+  // Poll rental request status when waiting for payment on Step 2
+  useEffect(() => {
+    if (step !== 2 || !requestIdParam) return;
+
+    let isSubscribed = true;
+    const interval = setInterval(async () => {
+      try {
+        const data = await rentalService.getMyRentalRequestDetail(parseInt(requestIdParam));
+        if (isSubscribed) {
+          if (data.rentalStatus === "ACTIVE" || data.rentalStatus === "RETURN_PENDING" || data.rentalStatus === "COMPLETED") {
+            setPaymentRequest(data);
+            setStep(4); // Transition to Success Bill
+            triggerToast("Thanh toán thành công qua SePay! 🎉");
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi tự động kiểm tra thanh toán:", error);
+      }
+    }, 3000); // Check every 3 seconds
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+    };
+  }, [step, requestIdParam, triggerToast]);
 
   // Calculate pricing dynamically based on current flow
   let finalSubtotal = totalPrice;
@@ -321,6 +348,51 @@ function CheckoutContent() {
       console.error(err);
       const errMsg = err.response?.data?.message || "Có lỗi xảy ra khi xác nhận thanh toán.";
       triggerToast(errMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Demo bypass confirmation method - ghi nhận thanh toán thủ công và nhảy qua bước hóa đơn
+  const handleDemoBypass = async () => {
+    if (!paymentRequest?.rentalId) {
+      triggerToast("Không tìm thấy đơn thuê để thanh toán!");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      // Ghi nhận phí thuê
+      await paymentService.recordPayment({
+        rentalId: paymentRequest.rentalId,
+        paymentType: "RENTAL_FEE",
+        amount: finalTotal,
+        transactionCode: orderCode + "_MANUAL",
+        paymentMethod: "PAYOS",
+        status: "SUCCESS"
+      });
+
+      // Ghi nhận tiền cọc nếu có
+      if (finalDeposit > 0) {
+        try {
+          await paymentService.recordPayment({
+            rentalId: paymentRequest.rentalId,
+            paymentType: "DEPOSIT",
+            amount: finalDeposit,
+            transactionCode: orderCode + "_DEP_MANUAL",
+            paymentMethod: "PAYOS",
+            status: "SUCCESS"
+          });
+        } catch (e) {
+          console.warn("Deposit already recorded or failed", e);
+        }
+      }
+
+      triggerToast("Thanh toán thành công! 🎉");
+      setStep(4); // Nhảy thẳng sang màn hình hóa đơn
+    } catch (err: any) {
+      console.error(err);
+      const msg = err.response?.data?.message || err.message || "Lỗi xác nhận thanh toán.";
+      triggerToast(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -691,7 +763,14 @@ function CheckoutContent() {
                 </div>
 
                 {/* Step 2 buttons */}
-                <div className="flex gap-4">
+                <div className="w-full space-y-3">
+                  <button
+                    onClick={handleDemoBypass}
+                    disabled={isSubmitting}
+                    className="w-full py-3.5 bg-violet-650 hover:bg-violet-750 disabled:opacity-50 text-white font-extrabold rounded-2xl shadow-md transition-all text-xs tracking-wider uppercase text-center"
+                  >
+                    {isSubmitting ? "Đang xử lý..." : "Xác nhận đã chuyển tiền"}
+                  </button>
                   <button
                     onClick={() => {
                       if (paymentRequest) {

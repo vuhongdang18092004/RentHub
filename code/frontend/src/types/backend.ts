@@ -262,6 +262,7 @@ export interface ReportResponse {
 
 export interface RentalDetailResponse {
   id: number;
+  requestId?: number;
   product: ProductSummaryResponse;
   owner: UserSummaryResponse;
   renter: UserSummaryResponse;

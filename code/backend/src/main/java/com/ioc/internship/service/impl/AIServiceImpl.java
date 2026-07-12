@@ -45,7 +45,7 @@ public class AIServiceImpl implements AIService {
     @Value("${app.ai.enabled:true}")
     private boolean isAiEnabled;
 
-    private static final String SYSTEM_PROMPT = "Bạn là RentHub AI Assistant. Chỉ trả lời câu hỏi về nền tảng RentHub, hỗ trợ cho thuê sản phẩm. Khi gợi ý sản phẩm, chỉ dùng ID để xuất ra mã như [PRODUCT:id].";
+    private static final String SYSTEM_PROMPT = "Bạn là RentHub AI Assistant, một trợ lý thông minh thân thiện giúp người dùng RentHub và sẵn sàng trò chuyện tự nhiên như Gemini. Bạn có thể nói chuyện và giải đáp bất kỳ thắc mắc nào một cách tự nhiên và cởi mở. Khi gợi ý sản phẩm liên quan đến RentHub, hãy dùng ID sản phẩm để xuất ra định dạng [PRODUCT:id].";
     private static final int WINDOW_SIZE = 20;
 
     @Override

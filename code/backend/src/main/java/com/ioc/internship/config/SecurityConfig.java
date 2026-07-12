@@ -38,6 +38,7 @@ public class SecurityConfig {
                         // Cho phép các API liên quan đến Đăng ký, Đăng nhập và Xác thực Email được truy cập TỰ DO
                         .requestMatchers(
                                 "/api/v1/auth/**",
+                                "/api/payments/sepay-webhook",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/api/test-debug/**",

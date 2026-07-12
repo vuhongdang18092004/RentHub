@@ -46,6 +46,9 @@ tasks.named('test') {
 
 bootRun {
     def envFile = file('.env')
+    if (!envFile.exists()) {
+        envFile = file('../.env')
+    }
     if (envFile.exists()) {
         envFile.eachLine { line ->
             if (line && !line.startsWith('#') && line.contains('=')) {
@@ -54,4 +57,8 @@ bootRun {
             }
         }
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.annotationProcessorPath = configurations.annotationProcessor
 }

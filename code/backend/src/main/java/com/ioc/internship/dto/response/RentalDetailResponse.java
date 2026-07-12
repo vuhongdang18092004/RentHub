@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 public class RentalDetailResponse {
     private Long id;
+    private Long requestId;
     private ProductSummaryResponse product;
     private UserSummaryResponse owner;
     private UserSummaryResponse renter;

@@ -66,6 +66,14 @@ public class RentalRequestServiceImpl implements RentalRequestService {
             throw new RuntimeException("400 Bad Request: You already have a pending rental request for this product. Please cancel it or wait for the owner's response.");
         }
 
+        // Kiểm tra trùng lịch đặt thuê với các đơn thuê đã được duyệt khác
+        LocalDate requestStart = request.getStartDate().minusDays(1);
+        LocalDate requestEnd = request.getEndDate().plusDays(1);
+        boolean conflict = rentalRepository.existsConflictingRental(product.getId(), requestStart, requestEnd);
+        if (conflict) {
+            throw new RuntimeException("400 Bad Request: Sản phẩm đã có lịch đặt thuê trùng với thời gian này. Vui lòng chọn lịch khác!");
+        }
+
         RentalRequest rentalRequest = RentalRequest.builder()
                 .product(product)
                 .renter(renter)
@@ -396,12 +404,6 @@ public class RentalRequestServiceImpl implements RentalRequestService {
         }
 
         rental.setStatus(RentalStatus.ACTIVE);
-        
-        // Cập nhật trạng thái sản phẩm sang RENTED (Đang thuê)
-        Product product = rental.getProduct();
-        product.setStatus(ProductStatus.RENTED);
-        productRepository.save(product);
-
         rentalRepository.save(rental);
     }
 

@@ -141,6 +141,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const selectConversation = async (id: number) => {
     setActiveConversationId(id);
+    if (id === null || id === undefined) {
+      setMessages([]);
+      return;
+    }
     setLoadingMessages(true);
     setPage(0);
     setHasMore(true);

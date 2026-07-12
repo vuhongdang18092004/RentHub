@@ -27,6 +27,10 @@ public class Review extends BaseEntity {
     @JoinColumn(name = "reviewer_id", nullable = false)
     private UserEntity reviewer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewed_user_id", nullable = false)
+    private UserEntity reviewedUser;
+
     @Column(nullable = false)
     private Integer rating;
 

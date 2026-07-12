@@ -79,6 +79,9 @@ public class GeminiProvider implements AIProvider {
                     
                     Map<String, Object> part = new HashMap<>();
                     part.put("functionCall", functionCall);
+                    if (toolCall.getThoughtSignature() != null && !toolCall.getThoughtSignature().trim().isEmpty()) {
+                        part.put("thought_signature", toolCall.getThoughtSignature());
+                    }
                     parts.add(part);
                 }
             }
@@ -194,6 +197,9 @@ public class GeminiProvider implements AIProvider {
                     toolCall.setId(UUID.randomUUID().toString()); // Gemini doesn't always provide IDs, generate one
                     if (funcCall.has("args")) {
                         toolCall.setArguments(objectMapper.convertValue(funcCall.get("args"), Map.class));
+                    }
+                    if (part.has("thought_signature")) {
+                        toolCall.setThoughtSignature(part.get("thought_signature").asText());
                     }
                     if (result.getToolCalls() == null) {
                         result.setToolCalls(new ArrayList<>());

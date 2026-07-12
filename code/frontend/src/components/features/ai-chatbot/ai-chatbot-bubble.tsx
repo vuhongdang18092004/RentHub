@@ -259,6 +259,17 @@ export function AiChatbotBubble() {
       .catch(console.error);
   }, []);
 
+  // Reset AI chat when user changes
+  useEffect(() => {
+    setConversationId(undefined);
+    setMessages([
+      {
+        sender: "assistant",
+        text: "Xin chào! Tôi là Trợ lý AI thông minh của RentHub. Bạn đang tìm thuê đồ đi phượt, đồ công nghệ hay muốn tôi gợi ý sản phẩm phù hợp nào?"
+      }
+    ]);
+  }, [user?.id]);
+
   useEffect(() => {
     if (user && isOpen && !conversationId) {
       aiService.getConversations().then(res => {

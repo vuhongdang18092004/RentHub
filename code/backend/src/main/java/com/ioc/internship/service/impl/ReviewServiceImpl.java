@@ -64,6 +64,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .rental(rental)
                 .product(product)
                 .reviewer(renter)
+                .reviewedUser(product.getOwner())
                 .rating(request.getRating())
                 .comment(request.getComment())
                 .build();

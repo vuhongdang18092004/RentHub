@@ -246,6 +246,17 @@ export function GlobalChatWidget() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const userMessageEndRef = useRef<HTMLDivElement>(null);
 
+  // Reset AI chat when user changes
+  useEffect(() => {
+    setAiConversationId(undefined);
+    setAiMessages([
+      {
+        sender: "assistant",
+        text: "Xin chào! Tôi là Trợ lý AI thông minh của RentHub. Bạn đang tìm thuê đồ đi phượt, đồ công nghệ hay muốn tôi gợi ý sản phẩm phù hợp nào?"
+      }
+    ]);
+  }, [user?.id]);
+
   // Auto open from context (e.g. from product page "Chat với chủ đồ")
   useEffect(() => {
     if (contextIsOpen) {

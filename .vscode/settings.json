@@ -1,4 +1,10 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "editor.colorDecorators": true,
+    "editor.colorDecoratorsLimit": 500,
+    "tailwindCSS.colorDecorators": true,
+    "files.associations": {
+        "*.css": "css"
+    }
 }
